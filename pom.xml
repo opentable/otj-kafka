@@ -54,7 +54,6 @@
           <groupId>org.slf4j</groupId>
         </exclusion>
       </exclusions>
-      <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.apache.kafka</groupId>
@@ -71,7 +70,6 @@
           <groupId>org.slf4j</groupId>
         </exclusion>
       </exclusions>
-      <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.apache.kafka</groupId>
@@ -87,14 +85,12 @@
           <groupId>org.slf4j</groupId>
         </exclusion>
       </exclusions>
-      <scope>test</scope>
     </dependency>
 
     <dependency>
       <groupId>org.apache.zookeeper</groupId>
       <artifactId>zookeeper</artifactId>
       <version>3.4.8</version>
-      <scope>test</scope>
       <exclusions>
         <exclusion>
           <groupId>log4j</groupId>
@@ -108,22 +104,20 @@
     </dependency>
 
     <dependency>
-      <groupId>com.google.guava</groupId>
-      <artifactId>guava</artifactId>
-      <scope>test</scope>
-    </dependency>
-
-    <dependency>
       <groupId>org.apache.curator</groupId>
       <artifactId>curator-test</artifactId>
       <version>2.6.0</version>
-      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>com.google.guava</groupId>
+      <artifactId>guava</artifactId>
     </dependency>
 
     <dependency>
       <groupId>junit</groupId>
       <artifactId>junit</artifactId>
-      <scope>test</scope>
+      <optional>true</optional>
     </dependency>
 
     <dependency>

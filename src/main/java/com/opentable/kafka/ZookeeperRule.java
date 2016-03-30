@@ -14,6 +14,8 @@
 package com.opentable.kafka;
 
 import java.io.IOException;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.LinkedBlockingDeque;
 
 import com.google.common.base.Throwables;
 
@@ -26,6 +28,7 @@ import org.junit.rules.ExternalResource;
 public class ZookeeperRule extends ExternalResource implements Watcher
 {
     private TestingServer zk;
+    private final BlockingQueue<WatchedEvent> eventQueue = new LinkedBlockingDeque<>();
 
     @Override
     protected void before() throws Throwable
@@ -34,9 +37,7 @@ public class ZookeeperRule extends ExternalResource implements Watcher
 
         ZooKeeper zk = new ZooKeeper(getConnectString(), 10000, this);
         while (!zk.getState().isConnected()) {
-            synchronized (this) {
-                wait();
-            }
+            eventQueue.take();
         }
         zk.close();
     }
@@ -58,8 +59,6 @@ public class ZookeeperRule extends ExternalResource implements Watcher
 
     @Override
     public void process(WatchedEvent event) {
-        synchronized (this) {
-            notifyAll();
-        }
+        eventQueue.add(event);
     }
 }
