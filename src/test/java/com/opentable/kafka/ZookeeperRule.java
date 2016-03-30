@@ -18,9 +18,12 @@ import java.io.IOException;
 import com.google.common.base.Throwables;
 
 import org.apache.curator.test.TestingServer;
+import org.apache.zookeeper.WatchedEvent;
+import org.apache.zookeeper.Watcher;
+import org.apache.zookeeper.ZooKeeper;
 import org.junit.rules.ExternalResource;
 
-public class ZookeeperRule extends ExternalResource
+public class ZookeeperRule extends ExternalResource implements Watcher
 {
     private TestingServer zk;
 
@@ -28,6 +31,14 @@ public class ZookeeperRule extends ExternalResource
     protected void before() throws Throwable
     {
         zk = new TestingServer();
+
+        ZooKeeper zk = new ZooKeeper(getConnectString(), 10000, this);
+        while (!zk.getState().isConnected()) {
+            synchronized (this) {
+                wait();
+            }
+        }
+        zk.close();
     }
 
     @Override
@@ -43,5 +54,12 @@ public class ZookeeperRule extends ExternalResource
     public String getConnectString()
     {
         return zk.getConnectString();
+    }
+
+    @Override
+    public void process(WatchedEvent event) {
+        synchronized (this) {
+            notifyAll();
+        }
     }
 }
