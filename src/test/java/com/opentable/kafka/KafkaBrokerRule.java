@@ -54,10 +54,15 @@ public class KafkaBrokerRule extends ExternalResource
 
     private KafkaConfig createConfig()
     {
-        port = TestUtils.RandomPort();
+        try (ServerSocket ss = new ServerSocket(0)) {
+            port = ss.getLocalPort();
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
+
         Properties config = TestUtils.createBrokerConfig(1, zookeeperConnectString.get(),
                 TestUtils.createBrokerConfig$default$3(), TestUtils.createBrokerConfig$default$4(),
-                TestUtils.createBrokerConfig$default$5(), TestUtils.createBrokerConfig$default$6(),
+                port, TestUtils.createBrokerConfig$default$6(),
                 TestUtils.createBrokerConfig$default$7(), TestUtils.createBrokerConfig$default$8(),
                 TestUtils.createBrokerConfig$default$9(), TestUtils.createBrokerConfig$default$10(),
                 TestUtils.createBrokerConfig$default$11(), TestUtils.createBrokerConfig$default$12(),
@@ -67,6 +72,7 @@ public class KafkaBrokerRule extends ExternalResource
 
     public String getKafkaBrokerConnect()
     {
+        Preconditions.checkState(port > 0, "no port set yet");
         return "localhost:" + port;
     }
 
