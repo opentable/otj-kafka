@@ -13,11 +13,23 @@
  */
 package com.opentable.kafka;
 
+import java.io.IOException;
+import java.io.UncheckedIOException;
+import java.net.ServerSocket;
 import java.util.Properties;
 import java.util.function.Supplier;
 
+import com.google.common.base.Preconditions;
+
+import org.apache.kafka.clients.consumer.KafkaConsumer;
+import org.apache.kafka.clients.producer.KafkaProducer;
+import org.apache.kafka.common.serialization.Deserializer;
+import org.apache.kafka.common.serialization.Serializer;
+import org.apache.kafka.common.serialization.StringDeserializer;
+import org.apache.kafka.common.serialization.StringSerializer;
 import org.junit.rules.ExternalResource;
 
+import kafka.admin.AdminUtils;
 import kafka.server.KafkaConfig;
 import kafka.server.KafkaServer;
 import kafka.utils.TestUtils;
@@ -79,5 +91,45 @@ public class KafkaBrokerRule extends ExternalResource
     public KafkaServer getServer()
     {
         return kafka;
+    }
+
+    public void createTopic(String topic) {
+        AdminUtils.createTopic(kafka.zkUtils(), topic, 1, 1, new Properties());
+    }
+
+    public KafkaConsumer<String, String> createConsumer() {
+        return createConsumer(StringDeserializer.class);
+    }
+
+    public <V> KafkaConsumer<String, V> createConsumer(Class<? extends Deserializer<V>> valueDeser) {
+        return createConsumer(StringDeserializer.class, valueDeser);
+    }
+
+    public <K, V> KafkaConsumer<K, V> createConsumer(Class<? extends Deserializer<K>> keyDeser, Class<? extends Deserializer<V>> valueDeser) {
+        Properties props = new Properties();
+        props.put("auto.offset.reset", "earliest");
+        props.put("bootstrap.servers", getKafkaBrokerConnect());
+        props.put("group.id", "wat");
+        props.put("key.deserializer", keyDeser.getName());
+        props.put("value.deserializer", valueDeser.getName());
+        return new KafkaConsumer<>(props);
+    }
+
+    public KafkaProducer<String, String> createProducer() {
+        return createProducer(StringSerializer.class);
+    }
+
+    public <V> KafkaProducer<String, V> createProducer(Class<? extends Serializer<V>> valueSer) {
+        return createProducer(StringSerializer.class, valueSer);
+    }
+
+    public <K, V> KafkaProducer<K, V> createProducer(Class<? extends Serializer<K>> keySer, Class<? extends Serializer<V>> valueSer) {
+        Properties props = new Properties();
+        props.put("acks", "all");
+        props.put("retries", "3");
+        props.put("bootstrap.servers", getKafkaBrokerConnect());
+        props.put("key.serializer", keySer.getName());
+        props.put("value.serializer", valueSer.getName());
+        return new KafkaProducer<>(props);
     }
 }
