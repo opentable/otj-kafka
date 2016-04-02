@@ -26,12 +26,12 @@
     <connection>scm:git:git://github.com/opentable/otj-kafka.git</connection>
     <developerConnection>scm:git:git@github.com:opentable/otj-kafka.git</developerConnection>
     <url>http://github.com/opentable/otj-kafka</url>
-    <tag>otj-kafka-1.0.0</tag>
+    <tag>HEAD</tag>
   </scm>
 
   <groupId>com.opentable.components</groupId>
   <artifactId>otj-kafka</artifactId>
-  <version>1.0.0</version>
+  <version>1.0.1-SNAPSHOT</version>
   <description>Kafka integrations component</description>
 
   <dependencies>
