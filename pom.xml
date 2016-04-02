@@ -24,7 +24,7 @@
 
   <scm>
     <connection>scm:git:git://github.com/opentable/otj-kafka.git</connection>
-    <developerConnection>scm:git:git@github.com:opentable/otj-kafak.git</developerConnection>
+    <developerConnection>scm:git:git@github.com:opentable/otj-kafka.git</developerConnection>
     <url>http://github.com/opentable/otj-kafka</url>
     <tag>HEAD</tag>
   </scm>
