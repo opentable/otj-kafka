@@ -16,6 +16,9 @@ package com.opentable.kafka;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.net.ServerSocket;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Properties;
 import java.util.function.Supplier;
 
@@ -40,6 +43,8 @@ public class KafkaBrokerRule extends ExternalResource
     private KafkaServer kafka;
     private int port;
 
+    private final List<String> topicsToCreate = new ArrayList<>();
+
     public KafkaBrokerRule(ZookeeperRule zk)
     {
         this(zk::getConnectString);
@@ -50,12 +55,19 @@ public class KafkaBrokerRule extends ExternalResource
         this.zookeeperConnectString = zookeeperConnectString;
     }
 
+    public KafkaBrokerRule withTopics(String... topics) {
+        topicsToCreate.addAll(Arrays.asList(topics));
+        return this;
+    }
+
     @Override
     protected void before() throws Throwable
     {
         kafka = new KafkaServer(createConfig(),
                 KafkaServer.$lessinit$greater$default$2(), KafkaServer.$lessinit$greater$default$3());
         kafka.startup();
+
+        topicsToCreate.forEach(this::createTopic);
     }
 
     @Override
