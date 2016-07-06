@@ -31,6 +31,8 @@ import org.apache.kafka.common.serialization.Serializer;
 import org.apache.kafka.common.serialization.StringDeserializer;
 import org.apache.kafka.common.serialization.StringSerializer;
 import org.junit.rules.ExternalResource;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import kafka.admin.AdminUtils;
 import kafka.server.KafkaConfig;
@@ -39,6 +41,7 @@ import kafka.utils.TestUtils;
 
 public class KafkaBrokerRule extends ExternalResource
 {
+    private static final Logger LOG = LoggerFactory.getLogger(KafkaBrokerRule.class);
     private final Supplier<String> zookeeperConnectString;
     private KafkaServer kafka;
     private int port;
@@ -65,7 +68,9 @@ public class KafkaBrokerRule extends ExternalResource
     {
         kafka = new KafkaServer(createConfig(),
                 KafkaServer.$lessinit$greater$default$2(), KafkaServer.$lessinit$greater$default$3());
+        LOG.info("Server created");
         kafka.startup();
+        LOG.info("Server started up");
 
         topicsToCreate.forEach(this::createTopic);
     }
@@ -107,6 +112,7 @@ public class KafkaBrokerRule extends ExternalResource
 
     public void createTopic(String topic) {
         AdminUtils.createTopic(kafka.zkUtils(), topic, 1, 1, new Properties());
+        LOG.info("Topic {} created", topic);
     }
 
     public KafkaConsumer<String, String> createConsumer(String groupId) {
