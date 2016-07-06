@@ -109,19 +109,19 @@ public class KafkaBrokerRule extends ExternalResource
         AdminUtils.createTopic(kafka.zkUtils(), topic, 1, 1, new Properties());
     }
 
-    public KafkaConsumer<String, String> createConsumer() {
-        return createConsumer(StringDeserializer.class);
+    public KafkaConsumer<String, String> createConsumer(String groupId) {
+        return createConsumer(groupId, StringDeserializer.class);
     }
 
-    public <V> KafkaConsumer<String, V> createConsumer(Class<? extends Deserializer<V>> valueDeser) {
-        return createConsumer(StringDeserializer.class, valueDeser);
+    public <V> KafkaConsumer<String, V> createConsumer(String groupId, Class<? extends Deserializer<V>> valueDeser) {
+        return createConsumer(groupId, StringDeserializer.class, valueDeser);
     }
 
-    public <K, V> KafkaConsumer<K, V> createConsumer(Class<? extends Deserializer<K>> keyDeser, Class<? extends Deserializer<V>> valueDeser) {
+    public <K, V> KafkaConsumer<K, V> createConsumer(String groupId, Class<? extends Deserializer<K>> keyDeser, Class<? extends Deserializer<V>> valueDeser) {
         Properties props = new Properties();
         props.put("auto.offset.reset", "earliest");
         props.put("bootstrap.servers", getKafkaBrokerConnect());
-        props.put("group.id", "wat");
+        props.put("group.id", groupId);
         props.put("key.deserializer", keyDeser.getName());
         props.put("value.deserializer", valueDeser.getName());
         return new KafkaConsumer<>(props);

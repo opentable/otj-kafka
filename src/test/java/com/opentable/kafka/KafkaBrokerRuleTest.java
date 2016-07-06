@@ -43,7 +43,7 @@ public class KafkaBrokerRuleTest {
             producer.send(new ProducerRecord<String, String>(TEST_TOPIC, TEST_VALUE));
         }
 
-        try (KafkaConsumer<String, String> consumer = kb.createConsumer()) {
+        try (KafkaConsumer<String, String> consumer = kb.createConsumer("test")) {
             consumer.subscribe(Collections.singletonList(TEST_TOPIC));
             ConsumerRecords<String, String> records = consumer.poll(5000);
             assertEquals(1, records.count());
