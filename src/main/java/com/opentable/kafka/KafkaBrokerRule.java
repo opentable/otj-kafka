@@ -95,7 +95,8 @@ public class KafkaBrokerRule extends ExternalResource
                 TestUtils.createBrokerConfig$default$7(), TestUtils.createBrokerConfig$default$8(),
                 TestUtils.createBrokerConfig$default$9(), TestUtils.createBrokerConfig$default$10(),
                 TestUtils.createBrokerConfig$default$11(), TestUtils.createBrokerConfig$default$12(),
-                TestUtils.createBrokerConfig$default$13(), TestUtils.createBrokerConfig$default$14());
+                TestUtils.createBrokerConfig$default$13(), TestUtils.createBrokerConfig$default$14(),
+                TestUtils.createBrokerConfig$default$15(), TestUtils.createBrokerConfig$default$16());
         return new KafkaConfig(config);
     }
 
@@ -111,7 +112,8 @@ public class KafkaBrokerRule extends ExternalResource
     }
 
     public void createTopic(String topic) {
-        AdminUtils.createTopic(kafka.zkUtils(), topic, 1, 1, new Properties());
+        AdminUtils.createTopic(kafka.zkUtils(), topic, 1, 1,
+                AdminUtils.createTopic$default$5(), AdminUtils.createTopic$default$6());
         LOG.info("Topic {} created", topic);
     }
 
