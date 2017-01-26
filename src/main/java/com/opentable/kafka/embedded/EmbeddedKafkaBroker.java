@@ -11,18 +11,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.opentable.kafka;
+package com.opentable.kafka.embedded;
 
+import java.io.Closeable;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.net.ServerSocket;
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Properties;
-import java.util.function.Supplier;
 
-import com.google.common.base.Preconditions;
+import javax.annotation.PostConstruct;
+import javax.annotation.PreDestroy;
 
 import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.clients.producer.KafkaProducer;
@@ -30,42 +29,36 @@ import org.apache.kafka.common.serialization.Deserializer;
 import org.apache.kafka.common.serialization.Serializer;
 import org.apache.kafka.common.serialization.StringDeserializer;
 import org.apache.kafka.common.serialization.StringSerializer;
-import org.junit.rules.ExternalResource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import com.google.common.base.Preconditions;
 
 import kafka.admin.AdminUtils;
 import kafka.server.KafkaConfig;
 import kafka.server.KafkaServer;
 import kafka.utils.TestUtils;
 
-public class KafkaBrokerRule extends ExternalResource
+public class EmbeddedKafkaBroker implements Closeable
 {
-    private static final Logger LOG = LoggerFactory.getLogger(KafkaBrokerRule.class);
-    private final Supplier<String> zookeeperConnectString;
+    private static final Logger LOG = LoggerFactory.getLogger(EmbeddedKafkaBroker.class);
+
+    private final List<String> topicsToCreate;
+
+    private EmbeddedZookeeper ezk;
     private KafkaServer kafka;
     private int port;
 
-    private final List<String> topicsToCreate = new ArrayList<>();
-
-    public KafkaBrokerRule(ZookeeperRule zk)
+    protected EmbeddedKafkaBroker(List<String> topicsToCreate)
     {
-        this(zk::getConnectString);
+        this.topicsToCreate = topicsToCreate;
     }
 
-    public KafkaBrokerRule(Supplier<String> zookeeperConnectString)
+    @PostConstruct
+    public EmbeddedKafkaBroker start()
     {
-        this.zookeeperConnectString = zookeeperConnectString;
-    }
-
-    public KafkaBrokerRule withTopics(String... topics) {
-        topicsToCreate.addAll(Arrays.asList(topics));
-        return this;
-    }
-
-    @Override
-    protected void before() throws Throwable
-    {
+        ezk = new EmbeddedZookeeper();
+        ezk.start();
         kafka = new KafkaServer(createConfig(),
                 KafkaServer.$lessinit$greater$default$2(), KafkaServer.$lessinit$greater$default$3());
         LOG.info("Server created");
@@ -73,12 +66,18 @@ public class KafkaBrokerRule extends ExternalResource
         LOG.info("Server started up");
 
         topicsToCreate.forEach(this::createTopic);
+        return this;
     }
 
     @Override
-    protected void after()
+    @PreDestroy
+    public void close()
     {
-        kafka.shutdown();
+        try {
+            kafka.shutdown();
+        } finally {
+            ezk.close();
+        }
     }
 
     private KafkaConfig createConfig()
@@ -89,7 +88,7 @@ public class KafkaBrokerRule extends ExternalResource
             throw new UncheckedIOException(e);
         }
 
-        Properties config = TestUtils.createBrokerConfig(1, zookeeperConnectString.get(),
+        Properties config = TestUtils.createBrokerConfig(1, ezk.getConnectString(),
                 TestUtils.createBrokerConfig$default$3(), TestUtils.createBrokerConfig$default$4(),
                 port, TestUtils.createBrokerConfig$default$6(),
                 TestUtils.createBrokerConfig$default$7(), TestUtils.createBrokerConfig$default$8(),

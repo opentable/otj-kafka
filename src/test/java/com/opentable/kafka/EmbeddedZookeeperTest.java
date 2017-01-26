@@ -23,14 +23,29 @@ import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.Watcher.Event.KeeperState;
 import org.apache.zookeeper.ZooKeeper;
-import org.junit.Rule;
+import org.junit.After;
+import org.junit.Before;
 import org.junit.Test;
 
-public class ZookeeperRuleTest implements Watcher {
-    @Rule
-    public ZookeeperRule zk = new ZookeeperRule();
+import com.opentable.kafka.embedded.EmbeddedZookeeper;
+
+public class EmbeddedZookeeperTest implements Watcher {
 
     private final List<WatchedEvent> events = new ArrayList<>();
+    private EmbeddedZookeeper zk;
+
+    @Before
+    public void setUp() {
+        zk = new EmbeddedZookeeper();
+        zk.start();
+    }
+
+    @After
+    public void close() {
+        if (zk != null) {
+            zk.close();
+        }
+    }
 
     @Test(timeout = 60000)
     public void testBoots() throws Exception {

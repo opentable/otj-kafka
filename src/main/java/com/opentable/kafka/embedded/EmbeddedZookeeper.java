@@ -11,9 +11,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.opentable.kafka;
+package com.opentable.kafka.embedded;
 
+import java.io.Closeable;
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingDeque;
 
@@ -23,38 +25,41 @@ import org.apache.curator.test.TestingServer;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.ZooKeeper;
-import org.junit.rules.ExternalResource;
 
-public class ZookeeperRule extends ExternalResource implements Watcher
+public class EmbeddedZookeeper implements Watcher, Closeable
 {
-    private TestingServer zk;
+    private TestingServer server;
     private final BlockingQueue<WatchedEvent> eventQueue = new LinkedBlockingDeque<>();
 
-    @Override
-    protected void before() throws Throwable
+    public void start()
     {
-        zk = new TestingServer();
+        try {
+            server = new TestingServer();
 
-        ZooKeeper zk = new ZooKeeper(getConnectString(), 10000, this);
-        while (!zk.getState().isConnected()) {
-            eventQueue.take();
+            ZooKeeper zk = new ZooKeeper(getConnectString(), 10000, this);
+            while (!zk.getState().isConnected()) {
+                eventQueue.take();
+            }
+            zk.close();
+        } catch (Exception e) {
+            Throwables.throwIfUnchecked(e);
+            throw new RuntimeException(e);
         }
-        zk.close();
     }
 
     @Override
-    protected void after()
+    public void close()
     {
         try {
-            zk.close();
+            server.close();
         } catch (IOException e) {
-            throw Throwables.propagate(e);
+            throw new UncheckedIOException(e);
         }
     }
 
     public String getConnectString()
     {
-        return zk.getConnectString();
+        return server.getConnectString();
     }
 
     @Override
