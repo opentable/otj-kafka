@@ -19,7 +19,7 @@
   <parent>
     <groupId>com.opentable</groupId>
     <artifactId>otj-parent-oss</artifactId>
-    <version>55</version>
+    <version>73</version>
   </parent>
 
   <scm>
@@ -63,6 +63,7 @@
     <dependency>
       <groupId>com.google.guava</groupId>
       <artifactId>guava</artifactId>
+      <version>21.0</version>
     </dependency>
 
     <dependency>
@@ -74,6 +75,7 @@
       <groupId>junit</groupId>
       <artifactId>junit</artifactId>
       <optional>true</optional>
+      <version>4.12</version>
     </dependency>
 
     <dependency>
@@ -85,12 +87,6 @@
       <groupId>org.slf4j</groupId>
       <artifactId>log4j-over-slf4j</artifactId>
       <scope>runtime</scope>
-    </dependency>
-
-    <dependency>
-      <groupId>org.hamcrest</groupId>
-      <artifactId>hamcrest-core</artifactId>
-      <scope>test</scope>
     </dependency>
   </dependencies>
 </project>
