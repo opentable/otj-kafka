@@ -23,27 +23,29 @@ import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.RuleChain;
+
+import com.opentable.kafka.embedded.EmbeddedKafkaBroker;
+import com.opentable.kafka.embedded.EmbeddedKafkaBuilder;
+import com.opentable.kafka.embedded.EmbeddedKafkaRule;
 
 public class KafkaBrokerRuleTest {
     private static final String TEST_TOPIC = "test-topic";
     private static final String TEST_VALUE = "The quick brown fox jumps over the lazy dog.";
 
-    private final ZookeeperRule zk = new ZookeeperRule();
-    private final KafkaBrokerRule kb = new KafkaBrokerRule(zk);
-
     @Rule
-    public RuleChain rules = RuleChain.outerRule(zk).around(kb);
+    public final EmbeddedKafkaRule kb = new EmbeddedKafkaBuilder()
+            .withTopics(TEST_TOPIC)
+            .rule();
 
     @Test(timeout = 30000)
     public void testKafkaRule() throws Exception {
-        kb.createTopic(TEST_TOPIC);
+        EmbeddedKafkaBroker ekb = kb.getBroker();
 
-        try (KafkaProducer<String, String> producer = kb.createProducer()) {
+        try (KafkaProducer<String, String> producer = ekb.createProducer()) {
             producer.send(new ProducerRecord<String, String>(TEST_TOPIC, TEST_VALUE));
         }
 
-        try (KafkaConsumer<String, String> consumer = kb.createConsumer("test")) {
+        try (KafkaConsumer<String, String> consumer = ekb.createConsumer("test")) {
             consumer.subscribe(Collections.singletonList(TEST_TOPIC));
             ConsumerRecords<String, String> records = consumer.poll(5000);
             assertEquals(1, records.count());
