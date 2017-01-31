@@ -35,6 +35,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import kafka.admin.AdminUtils;
+import kafka.admin.RackAwareMode;
 import kafka.server.KafkaConfig;
 import kafka.server.KafkaServer;
 import kafka.utils.TestUtils;
@@ -60,7 +61,9 @@ public class EmbeddedKafkaBroker implements Closeable
         ezk = new EmbeddedZookeeper();
         ezk.start();
         kafka = new KafkaServer(createConfig(),
-                KafkaServer.$lessinit$greater$default$2(), KafkaServer.$lessinit$greater$default$3());
+                KafkaServer.$lessinit$greater$default$2(),
+                KafkaServer.$lessinit$greater$default$3(),
+                KafkaServer.$lessinit$greater$default$4());
         LOG.info("Server created");
         kafka.startup();
         LOG.info("Server started up");
@@ -94,7 +97,8 @@ public class EmbeddedKafkaBroker implements Closeable
                 TestUtils.createBrokerConfig$default$7(), TestUtils.createBrokerConfig$default$8(),
                 TestUtils.createBrokerConfig$default$9(), TestUtils.createBrokerConfig$default$10(),
                 TestUtils.createBrokerConfig$default$11(), TestUtils.createBrokerConfig$default$12(),
-                TestUtils.createBrokerConfig$default$13(), TestUtils.createBrokerConfig$default$14());
+                TestUtils.createBrokerConfig$default$13(), TestUtils.createBrokerConfig$default$14(),
+                TestUtils.createBrokerConfig$default$15(), TestUtils.createBrokerConfig$default$16());
         return new KafkaConfig(config);
     }
 
@@ -114,7 +118,7 @@ public class EmbeddedKafkaBroker implements Closeable
     }
 
     public void createTopic(String topic) {
-        AdminUtils.createTopic(kafka.zkUtils(), topic, 1, 1, new Properties());
+        AdminUtils.createTopic(kafka.zkUtils(), topic, 1, 1, new Properties(), new RackAwareMode.Safe$());
         LOG.info("Topic {} created", topic);
     }
 

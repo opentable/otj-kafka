@@ -19,7 +19,7 @@
   <parent>
     <groupId>com.opentable</groupId>
     <artifactId>otj-parent-oss</artifactId>
-    <version>73</version>
+    <version>75-SNAPSHOT</version>
   </parent>
 
   <scm>
@@ -28,6 +28,10 @@
     <url>http://github.com/opentable/otj-kafka</url>
     <tag>HEAD</tag>
   </scm>
+
+  <properties>
+    <dep.kafka.version>0.10.1.0</dep.kafka.version>
+  </properties>
 
   <groupId>com.opentable.components</groupId>
   <artifactId>otj-kafka</artifactId>
@@ -43,6 +47,12 @@
       <groupId>org.apache.kafka</groupId>
       <artifactId>kafka_2.10</artifactId>
       <classifier>test</classifier>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.kafka</groupId>
+      <artifactId>kafka-clients</artifactId>
+      <classifier>test</classifier>
+      <scope>runtime</scope>
     </dependency>
     <dependency>
       <groupId>org.apache.kafka</groupId>
