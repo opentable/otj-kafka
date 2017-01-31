@@ -123,13 +123,18 @@ public class EmbeddedKafkaBroker implements Closeable
     }
 
     public <K, V> KafkaConsumer<K, V> createConsumer(String groupId, Class<? extends Deserializer<K>> keyDeser, Class<? extends Deserializer<V>> valueDeser) {
-        Properties props = new Properties();
-        props.put("auto.offset.reset", "earliest");
-        props.put("bootstrap.servers", getKafkaBrokerConnect());
-        props.put("group.id", groupId);
+        Properties props = baseConsumerProperties(groupId);
         props.put("key.deserializer", keyDeser.getName());
         props.put("value.deserializer", valueDeser.getName());
         return new KafkaConsumer<>(props);
+    }
+
+    public <V> KafkaConsumer<String, V> createConsumer(String groupId, Deserializer<V> valueDeserializer) {
+        return createConsumer(groupId, new StringDeserializer(), valueDeserializer);
+    }
+
+    public <K, V> KafkaConsumer<K, V> createConsumer(String groupId, Deserializer<K> keyDeserializer, Deserializer<V> valueDeserializer) {
+        return new KafkaConsumer<>(baseConsumerProperties(groupId), keyDeserializer, valueDeserializer);
     }
 
     public KafkaProducer<String, String> createProducer() {
@@ -141,12 +146,29 @@ public class EmbeddedKafkaBroker implements Closeable
     }
 
     public <K, V> KafkaProducer<K, V> createProducer(Class<? extends Serializer<K>> keySer, Class<? extends Serializer<V>> valueSer) {
+        Properties props = baseProducerProperties();
+        props.put("key.serializer", keySer.getName());
+        props.put("value.serializer", valueSer.getName());
+        return new KafkaProducer<>(props);
+    }
+
+    public <V> KafkaProducer<String, V> createProducer(Serializer<V> valueSerializer) {
+        return new KafkaProducer<>(baseProducerProperties(), new StringSerializer(), valueSerializer);
+    }
+
+    private Properties baseConsumerProperties(String groupId) {
+        Properties props = new Properties();
+        props.put("auto.offset.reset", "earliest");
+        props.put("bootstrap.servers", getKafkaBrokerConnect());
+        props.put("group.id", groupId);
+        return props;
+    }
+
+    private Properties baseProducerProperties() {
         Properties props = new Properties();
         props.put("acks", "all");
         props.put("retries", "3");
         props.put("bootstrap.servers", getKafkaBrokerConnect());
-        props.put("key.serializer", keySer.getName());
-        props.put("value.serializer", valueSer.getName());
-        return new KafkaProducer<>(props);
+        return props;
     }
 }
