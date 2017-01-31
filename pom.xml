@@ -29,6 +29,10 @@
     <tag>HEAD</tag>
   </scm>
 
+  <properties>
+    <dep.kafka.version>0.10.2.0</dep.kafka.version>
+  </properties>
+
   <groupId>com.opentable.components</groupId>
   <artifactId>otj-kafka</artifactId>
   <version>2.0.0-SNAPSHOT</version>
@@ -43,6 +47,12 @@
     <dependency>
       <groupId>org.apache.kafka</groupId>
       <artifactId>kafka_2.10</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.kafka</groupId>
+      <artifactId>kafka-clients</artifactId>
+      <classifier>test</classifier>
+      <scope>runtime</scope>
     </dependency>
     <dependency>
       <groupId>org.apache.kafka</groupId>

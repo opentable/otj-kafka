@@ -37,6 +37,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import kafka.admin.AdminUtils;
+import kafka.admin.RackAwareMode;
 import kafka.server.KafkaConfig;
 import kafka.server.KafkaServer;
 
@@ -70,7 +71,9 @@ public class EmbeddedKafkaBroker implements Closeable
         ezk = new EmbeddedZookeeper();
         ezk.start();
         kafka = new KafkaServer(createConfig(),
-                KafkaServer.$lessinit$greater$default$2(), KafkaServer.$lessinit$greater$default$3());
+                KafkaServer.$lessinit$greater$default$2(),
+                KafkaServer.$lessinit$greater$default$3(),
+                KafkaServer.$lessinit$greater$default$4());
         LOG.info("Server created");
         kafka.startup();
         LOG.info("Server started up");
@@ -133,7 +136,7 @@ public class EmbeddedKafkaBroker implements Closeable
     }
 
     public void createTopic(String topic) {
-        AdminUtils.createTopic(kafka.zkUtils(), topic, 1, 1, new Properties());
+        AdminUtils.createTopic(kafka.zkUtils(), topic, 1, 1, new Properties(), new RackAwareMode.Safe$());
         LOG.info("Topic {} created", topic);
     }
 
