@@ -18,8 +18,8 @@
   <modelVersion>4.0.0</modelVersion>
   <parent>
     <groupId>com.opentable</groupId>
-    <artifactId>otj-parent-oss</artifactId>
-    <version>75-SNAPSHOT</version>
+    <artifactId>otj-parent-spring</artifactId>
+    <version>76</version>
   </parent>
 
   <scm>
@@ -73,7 +73,6 @@
     <dependency>
       <groupId>com.google.guava</groupId>
       <artifactId>guava</artifactId>
-      <version>21.0</version>
     </dependency>
 
     <dependency>
@@ -90,7 +89,6 @@
       <groupId>junit</groupId>
       <artifactId>junit</artifactId>
       <optional>true</optional>
-      <version>4.12</version>
     </dependency>
 
     <dependency>
