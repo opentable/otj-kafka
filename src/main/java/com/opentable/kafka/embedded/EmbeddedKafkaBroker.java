@@ -104,6 +104,10 @@ public class EmbeddedKafkaBroker implements Closeable
         return "localhost:" + port;
     }
 
+    public EmbeddedZookeeper getZookeeper() {
+        return ezk;
+    }
+
     public KafkaServer getServer()
     {
         return kafka;
