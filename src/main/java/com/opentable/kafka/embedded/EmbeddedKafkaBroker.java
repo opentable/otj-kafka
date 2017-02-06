@@ -17,6 +17,8 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.net.ServerSocket;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.List;
 import java.util.Properties;
 
@@ -38,7 +40,8 @@ import kafka.admin.AdminUtils;
 import kafka.admin.RackAwareMode;
 import kafka.server.KafkaConfig;
 import kafka.server.KafkaServer;
-import kafka.utils.TestUtils;
+
+import com.opentable.io.DeleteRecursively;
 
 public class EmbeddedKafkaBroker implements Closeable
 {
@@ -50,6 +53,8 @@ public class EmbeddedKafkaBroker implements Closeable
     private KafkaServer kafka;
     private int port;
 
+    private Path stateDir;
+
     protected EmbeddedKafkaBroker(List<String> topicsToCreate)
     {
         this.topicsToCreate = topicsToCreate;
@@ -58,6 +63,11 @@ public class EmbeddedKafkaBroker implements Closeable
     @PostConstruct
     public EmbeddedKafkaBroker start()
     {
+        try {
+            stateDir = Files.createTempDirectory("embedded-kafka");
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
         ezk = new EmbeddedZookeeper();
         ezk.start();
         kafka = new KafkaServer(createConfig(),
@@ -81,6 +91,11 @@ public class EmbeddedKafkaBroker implements Closeable
         } finally {
             ezk.close();
         }
+        try {
+            Files.walkFileTree(stateDir, DeleteRecursively.INSTANCE);
+        } catch (IOException e) {
+            LOG.error("while deleting {}", stateDir, e);
+        }
     }
 
     private KafkaConfig createConfig()
@@ -91,14 +106,17 @@ public class EmbeddedKafkaBroker implements Closeable
             throw new UncheckedIOException(e);
         }
 
-        Properties config = TestUtils.createBrokerConfig(1, ezk.getConnectString(),
-                TestUtils.createBrokerConfig$default$3(), TestUtils.createBrokerConfig$default$4(),
-                port, TestUtils.createBrokerConfig$default$6(),
-                TestUtils.createBrokerConfig$default$7(), TestUtils.createBrokerConfig$default$8(),
-                TestUtils.createBrokerConfig$default$9(), TestUtils.createBrokerConfig$default$10(),
-                TestUtils.createBrokerConfig$default$11(), TestUtils.createBrokerConfig$default$12(),
-                TestUtils.createBrokerConfig$default$13(), TestUtils.createBrokerConfig$default$14(),
-                TestUtils.createBrokerConfig$default$15(), TestUtils.createBrokerConfig$default$16());
+        Properties config = new Properties();
+        config.put(KafkaConfig.ZkConnectProp(), ezk.getConnectString());
+        config.put(KafkaConfig.ListenersProp(), "PLAINTEXT://localhost:" + port);
+        config.put(KafkaConfig.LogDirProp(), stateDir.resolve("logs").toString());
+        config.put(KafkaConfig.ZkConnectionTimeoutMsProp(), "10000");
+        config.put(KafkaConfig.ReplicaSocketTimeoutMsProp(), "1500");
+        config.put(KafkaConfig.ControllerSocketTimeoutMsProp(), "1500");
+        config.put(KafkaConfig.ControlledShutdownEnableProp(), "true");
+        config.put(KafkaConfig.DeleteTopicEnableProp(), "false");
+        config.put(KafkaConfig.ControlledShutdownRetryBackoffMsProp(), "100");
+        config.put(KafkaConfig.LogCleanerDedupeBufferSizeProp(), "2097152");
         return new KafkaConfig(config);
     }
 
