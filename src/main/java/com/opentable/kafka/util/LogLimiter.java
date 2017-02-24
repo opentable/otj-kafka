@@ -62,7 +62,8 @@ public class LogLimiter {
         }
 
         if (count == maxCount) {
-            LOG.error("Log type '{}' exceeded rate limiter, suppressing further messages for 10 minutes", key);
+            LOG.error("Reporting errors of type '{}' exceeded rate limit, "
+                    + "suppressing further error message reporting for this key until reset", key);
         }
 
         return false;
