@@ -34,10 +34,10 @@ import org.slf4j.LoggerFactory;
 // TODO: this class probably wants to be smarter about thread safety.
 // Initial synchronized implementation was observed to hold up fine in Buzzsaw
 // at up to at least 80K msg/s but we can do better :)
-public class KafkaMessageSink<K, V> implements MessageSink<K, V, Callback> {
+public final class KafkaMessageSink<K, V> implements MessageSink<K, V, Callback> {
     private static final Logger LOG = LoggerFactory.getLogger(KafkaMessageSink.class);
     /** Maximum buffer of futures we will wait for.  If this fills, forces a sync flush. */
-    private final long OUTSTANDING_PANIC = 1_000_000;
+    private static final long OUTSTANDING_PANIC = 1_000_000;
 
     @GuardedBy("this")
     private final LinkedHashSet<Future<RecordMetadata>> outstandingSends = new LinkedHashSet<>();
