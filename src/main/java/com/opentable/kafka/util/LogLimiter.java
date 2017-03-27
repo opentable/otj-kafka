@@ -26,7 +26,7 @@ import org.slf4j.LoggerFactory;
  * Utility to rate-limit logging messages.
  */
 public class LogLimiter {
-    private final Logger LOG = LoggerFactory.getLogger(LogLimiter.class);
+    private static final Logger LOG = LoggerFactory.getLogger(LogLimiter.class);
 
     private final String name;
     private final long maxCount;
