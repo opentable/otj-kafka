@@ -18,7 +18,7 @@ import java.io.Closeable;
 /**
  * Common interface that accepts messages.
  *
- * The destination is expected to be <b>idemopotent</b>.
+ * The destination is expected to be <b>idempotent</b>.
  * At any point, the destination may fail.  After reconnecting some messages
  * may be re-played.  This implements <b>at-least-once</b> delivery.
  *
