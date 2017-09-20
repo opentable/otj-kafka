@@ -12,6 +12,14 @@ import org.apache.kafka.common.serialization.Deserializer;
 import org.apache.kafka.common.serialization.Serde;
 import org.apache.kafka.common.serialization.Serializer;
 
+/**
+ * Serializes arbitrary Java data types to and from JSON using Jackson.
+ *
+ * <p>
+ * Implements interfaces convenient for Kafka use.
+ *
+ * @param <T> the type to serialize and deserialize
+ */
 public class JsonSerde<T> implements Serde<T>, Serializer<T>, Deserializer<T> {
     private final ObjectMapper mapper;
     private final JavaType type;
