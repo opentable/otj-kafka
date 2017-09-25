@@ -1,6 +1,11 @@
 otj-kafka changelog
 ===================
 
+2.2.0
+-----
+
+* added producer creator helper method for key serializer instance
+
 2.1.0
 -----
 
