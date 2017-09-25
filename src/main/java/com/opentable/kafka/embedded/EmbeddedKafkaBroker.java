@@ -180,7 +180,11 @@ public class EmbeddedKafkaBroker implements Closeable
     }
 
     public <V> KafkaProducer<String, V> createProducer(Serializer<V> valueSerializer) {
-        return new KafkaProducer<>(baseProducerProperties(), new StringSerializer(), valueSerializer);
+        return createProducer(new StringSerializer(), valueSerializer);
+    }
+
+    public <K, V> KafkaProducer<K, V> createProducer(Serializer<K> keySerializer, Serializer<V> valueSerializer) {
+        return new KafkaProducer<>(baseProducerProperties(), keySerializer, valueSerializer);
     }
 
     private Properties baseConsumerProperties(String groupId) {
