@@ -8,6 +8,8 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.stream.Collectors;
 
+import com.google.common.base.Verify;
+
 import org.apache.kafka.clients.admin.AdminClientConfig;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
@@ -123,7 +125,7 @@ public class OffsetMonitor implements Closeable {
         try (OffsetMonitor mon = new OffsetMonitor("ot-kafka-util-om-cli", brokerList)) {
             final Map<Integer, Long> topicSizes = mon.getTopicSizes(topic);
             final Map<Integer, Long> groupOffsets = mon.getGroupOffsets(groupId, topic);
-            assert topicSizes.keySet().equals(groupOffsets.keySet());
+            Verify.verify(topicSizes.keySet().equals(groupOffsets.keySet()));
             System.out.printf("# partition size offset lag%n");
             topicSizes
                     .keySet()
