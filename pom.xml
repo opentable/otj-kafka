@@ -39,6 +39,14 @@
       <groupId>com.opentable.components</groupId>
       <artifactId>otj-core</artifactId>
     </dependency>
+    <dependency>
+      <groupId>com.opentable.components</groupId>
+      <artifactId>otj-metrics</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>com.opentable.components</groupId>
+      <artifactId>otj-executors</artifactId>
+    </dependency>
 
     <dependency>
       <groupId>org.apache.kafka</groupId>
@@ -88,6 +96,11 @@
     <dependency>
       <groupId>com.fasterxml.jackson.core</groupId>
       <artifactId>jackson-core</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>io.dropwizard.metrics</groupId>
+      <artifactId>metrics-core</artifactId>
     </dependency>
 
     <dependency>
