@@ -11,7 +11,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 import com.codahale.metrics.Metric;
-import com.codahale.metrics.MetricSet;
+import com.codahale.metrics.MetricRegistry;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
@@ -22,26 +22,37 @@ import org.slf4j.LoggerFactory;
 
 import com.opentable.concurrent.OTExecutors;
 import com.opentable.metrics.AtomicLongGauge;
+import com.opentable.metrics.graphite.MetricSets;
 
 /**
- * {@link MetricSet} implementation that monitors consumer groups consuming from topics.
+ * Class that monitors consumer groups consuming from topics; registers its metrics with a metric registry.
  *
  * Runs a thread that polls the Kafka broker; use {@link #start()} and {@link #stop()} to spin up and down.
  *
  * The metric namespace is as follows.
  *
  * <p>
- * {@code <topic>.{partition.%d,total}.{size,offset,lag}}
+ * {@code <metric prefix>.<topic>.{partition.%d,total}.{size,offset,lag}}
  *
  * <p>
  * Size is the maximum offset of the topic (this is independent of any consumer). Offset is the current offset of the
  * consumer. Lag is the size minus the offset. Totals are summed across the partitions.
  * NB: Since the queries for the topic sizes and consumer offsets are necessarily separate, they race; this means that
  * lag can possibly be negative.
+ *
+ * <p>
+ * Future work: Have alternate constructor in which you don't specify any topics, and the class uses the
+ * {@link OffsetMonitor} to dynamically register metrics based on the topics that the consumer group is consuming.
+ *
+ * <p>
+ * Future work: Have alternate constructor in which you don't specify any groups either, and the class uses the
+ * {@link OffsetMonitor} to dynamically register metrics based on all consumer groups' topic consumption.
  */
-public class OffsetMetrics implements MetricSet, Closeable {
+public class OffsetMetrics implements Closeable {
     private static final Logger LOG = LoggerFactory.getLogger(OffsetMetrics.class);
 
+    private final String metricPrefix;
+    private final MetricRegistry metricRegistry;
     private final String groupId;
     private final Collection<String> topics;
     private final Duration pollPeriod;
@@ -49,17 +60,26 @@ public class OffsetMetrics implements MetricSet, Closeable {
     private final Map<String, Metric> metricMap;
     private final ScheduledExecutorService exec;
 
-    public OffsetMetrics(final String groupId, final String brokerList, final Collection<String> topics) {
-        this(groupId, brokerList, topics, Duration.ofSeconds(10));
+    public OffsetMetrics(
+            final String metricPrefix,
+            final MetricRegistry metricRegistry,
+            final String groupId,
+            final String brokerList,
+            final Collection<String> topics) {
+        this(metricPrefix, metricRegistry, groupId, brokerList, topics, Duration.ofSeconds(10));
     }
 
     @VisibleForTesting
     OffsetMetrics(
+            final String metricPrefix,
+            final MetricRegistry metricRegistry,
             final String groupId,
             final String brokerList,
             final Collection<String> topics,
             final Duration pollPeriod) {
         Preconditions.checkArgument(!topics.isEmpty(), "no topics");
+        this.metricPrefix = metricPrefix;
+        this.metricRegistry = metricRegistry;
         this.groupId = groupId;
         this.topics = topics;
         this.pollPeriod = pollPeriod;
@@ -74,13 +94,13 @@ public class OffsetMetrics implements MetricSet, Closeable {
                 return;
             }
             for (final int part : sizes.keySet()) {
-                builder.put(String.format("%s.partition.%d.size",   topic, part), new AtomicLongGauge());
-                builder.put(String.format("%s.partition.%d.offset", topic, part), new AtomicLongGauge());
-                builder.put(String.format("%s.partition.%d.lag",    topic, part), new AtomicLongGauge());
+                builder.put(partitionName(topic, part, "size"), new AtomicLongGauge());
+                builder.put(partitionName(topic, part, "offset"), new AtomicLongGauge());
+                builder.put(partitionName(topic, part, "lag"), new AtomicLongGauge());
             }
-            builder.put(String.format("%s.total.size",   topic), new AtomicLongGauge());
-            builder.put(String.format("%s.total.offset", topic), new AtomicLongGauge());
-            builder.put(String.format("%s.total.lag",    topic), new AtomicLongGauge());
+            builder.put(totalName(topic, "size"), new AtomicLongGauge());
+            builder.put(totalName(topic, "offset"), new AtomicLongGauge());
+            builder.put(totalName(topic, "lag"), new AtomicLongGauge());
         });
 
         if (!badTopics.isEmpty()) {
@@ -97,16 +117,26 @@ public class OffsetMetrics implements MetricSet, Closeable {
         );
     }
 
-    @Override
-    public Map<String, Metric> getMetrics() {
+    private String partitionName(final String topic, final int partition, final String name) {
+        return String.format("%s.%s.partition.%d.%s", metricPrefix, topic, partition, name);
+    }
+
+    private String totalName(final String topic, final String name) {
+        return String.format("%s.%s.total.%s", metricPrefix, topic, name);
+    }
+
+    @VisibleForTesting
+    Map<String, Metric> getMetrics() {
         return metricMap;
     }
 
     public void start() {
+        metricRegistry.registerAll(() -> metricMap);
         exec.scheduleAtFixedRate(this::poll, 0, pollPeriod.toMillis(), TimeUnit.MILLISECONDS);
     }
 
     public void stop() {
+        MetricSets.removeAll(metricRegistry, () -> metricMap);
         try {
             OTExecutors.shutdownAndAwaitTermination(exec, Duration.ofSeconds(5));
         } catch (final InterruptedException e) {
@@ -133,8 +163,8 @@ public class OffsetMetrics implements MetricSet, Closeable {
 
     private void pollUnsafe(final String topic) {
         final Map<Integer, Long> sizes = monitor.getTopicSizes(topic);
-        sizes.forEach((part, size) -> gauge(String.format("%s.partition.%d.size", topic, part)).set(size));
-        gauge(String.format("%s.total.size", topic)).set(sumValues(sizes));
+        sizes.forEach((part, size) -> gauge(partitionName(topic, part, "size")).set(size));
+        gauge(totalName(topic, "size")).set(sumValues(sizes));
 
         Map<Integer, Long> offsets = monitor.getGroupOffsets(groupId, topic);
         final Map<Integer, Long> lag;
@@ -168,11 +198,11 @@ public class OffsetMetrics implements MetricSet, Closeable {
                     );
         }
 
-        offsets.forEach((part, off) -> gauge(String.format("%s.partition.%d.offset", topic, part)).set(off));
-        lag    .forEach((part, off) -> gauge(String.format("%s.partition.%d.lag",    topic, part)).set(off));
+        offsets.forEach((part, off) -> gauge(partitionName(topic, part, "offset")).set(off));
+        lag    .forEach((part, off) -> gauge(partitionName(topic, part, "lag")).set(off));
 
-        gauge(String.format("%s.total.offset", topic)).set(sumValues(offsets));
-        gauge(String.format("%s.total.lag",    topic)).set(sumValues(lag));
+        gauge(totalName(topic, "offset")).set(sumValues(offsets));
+        gauge(totalName(topic, "lag")).set(sumValues(lag));
     }
 
     private AtomicLongGauge gauge(final String name) {

@@ -4,6 +4,7 @@ import java.time.Duration;
 import java.util.Collections;
 
 import com.codahale.metrics.Counting;
+import com.codahale.metrics.MetricRegistry;
 
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.junit.Test;
@@ -11,19 +12,22 @@ import org.junit.Test;
 import com.opentable.kafka.embedded.EmbeddedKafkaBroker;
 
 public class OffsetMetricsTest {
+    private static final String METRIC_NS = "foobar";
     private static final String GROUP_ID = "group-1";
 
     @Test(timeout = 30_000, expected = IllegalArgumentException.class)
     public void testNoTopics() throws InterruptedException {
         try (EmbeddedKafkaBroker ekb = TestUtils.broker()) {
-            new OffsetMetrics(GROUP_ID, ekb.getKafkaBrokerConnect(), Collections.emptySet());
+            new OffsetMetrics(METRIC_NS, new MetricRegistry(),
+                    GROUP_ID, ekb.getKafkaBrokerConnect(), Collections.emptySet());
         }
     }
 
     @Test(timeout = 30_000, expected = IllegalArgumentException.class)
     public void testMissingTopic() throws InterruptedException {
         try (EmbeddedKafkaBroker ekb = TestUtils.broker()) {
-            new OffsetMetrics(GROUP_ID, ekb.getKafkaBrokerConnect(), Collections.singleton("no-topic-1"));
+            new OffsetMetrics(METRIC_NS, new MetricRegistry(),
+                    GROUP_ID, ekb.getKafkaBrokerConnect(), Collections.singleton("no-topic-1"));
         }
     }
 
@@ -32,6 +36,8 @@ public class OffsetMetricsTest {
         try (EmbeddedKafkaBroker ekb = TestUtils.broker();
              KafkaProducer<String, String> producer = ekb.createProducer();
              OffsetMetrics metrics = new OffsetMetrics(
+                     METRIC_NS,
+                     new MetricRegistry(),
                      GROUP_ID,
                      ekb.getKafkaBrokerConnect(),
                      Collections.singleton(TestUtils.TOPIC_NAME),
@@ -70,7 +76,7 @@ public class OffsetMetricsTest {
 
     private void waitForMetric(final OffsetMetrics metrics, final String nameSuffix, final long value)
             throws InterruptedException {
-        final String metricName = String.format("%s.partition.0." + nameSuffix, TestUtils.TOPIC_NAME);
+        final String metricName = String.format("%s.%s.partition.0.%s", METRIC_NS, TestUtils.TOPIC_NAME, nameSuffix);
         while (true) {
             final Counting c = (Counting) metrics.getMetrics().get(metricName);
             if (c.getCount() == value) {
