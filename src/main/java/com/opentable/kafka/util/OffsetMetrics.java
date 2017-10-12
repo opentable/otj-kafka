@@ -78,6 +78,7 @@ public class OffsetMetrics implements Closeable {
             final String brokerList,
             final Collection<String> topics,
             final Duration pollPeriod) {
+        Preconditions.checkArgument(metricPrefix != null, "null metric prefix");
         Preconditions.checkArgument(!topics.isEmpty(), "no topics");
         this.metricPrefix = metricPrefix;
         this.metricRegistry = metricRegistry;
