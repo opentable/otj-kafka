@@ -48,6 +48,7 @@ import com.opentable.metrics.graphite.MetricSets;
  * Future work: Have alternate constructor in which you don't specify any groups either, and the class uses the
  * {@link OffsetMonitor} to dynamically register metrics based on all consumer groups' topic consumption.
  */
+@SuppressWarnings("PMD.AvoidDuplicateLiterals")
 public class OffsetMetrics implements Closeable {
     private static final Logger LOG = LoggerFactory.getLogger(OffsetMetrics.class);
 
