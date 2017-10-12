@@ -1,4 +1,4 @@
-package com.opentable.kafka;
+package com.opentable.kafka.util;
 
 import java.util.Map;
 
@@ -7,7 +7,6 @@ import org.assertj.core.api.Assertions;
 import org.junit.Test;
 
 import com.opentable.kafka.embedded.EmbeddedKafkaBroker;
-import com.opentable.kafka.util.OffsetMonitor;
 
 public class OffsetMonitorTest {
     private static final String MISSING_TOPIC_NAME = "missing-topic-1";

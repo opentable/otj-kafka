@@ -1,4 +1,4 @@
-package com.opentable.kafka;
+package com.opentable.kafka.util;
 
 import java.time.Duration;
 import java.util.Collections;
@@ -14,7 +14,6 @@ import org.assertj.core.api.Assertions;
 
 import com.opentable.kafka.embedded.EmbeddedKafkaBroker;
 import com.opentable.kafka.embedded.EmbeddedKafkaBuilder;
-import com.opentable.kafka.util.OffsetMonitor;
 
 public final class TestUtils {
     private TestUtils() {
