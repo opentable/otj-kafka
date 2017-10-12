@@ -13,14 +13,14 @@ import com.opentable.kafka.embedded.EmbeddedKafkaBroker;
 public class OffsetMetricsTest {
     private static final String GROUP_ID = "group-1";
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test(timeout = 30_000, expected = IllegalArgumentException.class)
     public void testNoTopics() throws InterruptedException {
         try (EmbeddedKafkaBroker ekb = TestUtils.broker()) {
             new OffsetMetrics(GROUP_ID, ekb.getKafkaBrokerConnect(), Collections.emptySet());
         }
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test(timeout = 30_000, expected = IllegalArgumentException.class)
     public void testMissingTopic() throws InterruptedException {
         try (EmbeddedKafkaBroker ekb = TestUtils.broker()) {
             new OffsetMetrics(GROUP_ID, ekb.getKafkaBrokerConnect(), Collections.singleton("no-topic-1"));
