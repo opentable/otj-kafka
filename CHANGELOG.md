@@ -1,6 +1,11 @@
 otj-kafka changelog
 ===================
 
+2.3.0
+-----
+
+* added offset monitoring utilities
+
 2.2.0
 -----
 
