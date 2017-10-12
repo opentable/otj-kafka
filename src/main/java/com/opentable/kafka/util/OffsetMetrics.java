@@ -37,7 +37,7 @@ import com.opentable.metrics.AtomicLongGauge;
  * Size is the maximum offset of the topic (this is independent of any consumer). Offset is the current offset of the
  * consumer. Lag is the size minus the offset. Totals are summed across the partitions.
  */
-public class OffsetMetrics implements MetricSet, AutoCloseable, Closeable {
+public class OffsetMetrics implements MetricSet, Closeable {
     private static final Logger LOG = LoggerFactory.getLogger(OffsetMetrics.class);
 
     private final String groupId;

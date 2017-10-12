@@ -19,7 +19,7 @@ import org.apache.kafka.common.serialization.Serdes;
 import kafka.admin.AdminClient;
 import scala.collection.JavaConverters;
 
-public class OffsetMonitor implements AutoCloseable, Closeable {
+public class OffsetMonitor implements Closeable {
     private static final Duration TIMEOUT = Duration.ofSeconds(30);
 
     private final String consumerGroupId;
