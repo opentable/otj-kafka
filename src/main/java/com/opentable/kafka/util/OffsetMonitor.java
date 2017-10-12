@@ -53,8 +53,11 @@ public class OffsetMonitor implements Closeable {
 
     @Override
     public void close() {
-        consumer.close();
-        adminClient.close();
+        try {
+            consumer.close();
+        } finally {
+            adminClient.close();
+        }
     }
 
     /**
