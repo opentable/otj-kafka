@@ -11,6 +11,9 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
+import javax.annotation.PostConstruct;
+import javax.annotation.PreDestroy;
+
 import com.codahale.metrics.Metric;
 import com.codahale.metrics.MetricRegistry;
 import com.google.common.annotations.VisibleForTesting;
@@ -143,11 +146,13 @@ public class OffsetMetrics implements Closeable {
         return metricMap;
     }
 
+    @PostConstruct
     public void start() {
         metricRegistry.registerAll(() -> metricMap);
         exec.scheduleAtFixedRate(this::poll, 0, pollPeriod.toMillis(), TimeUnit.MILLISECONDS);
     }
 
+    @PreDestroy
     public void stop() {
         MetricSets.removeAll(metricRegistry, () -> metricMap);
         try {
