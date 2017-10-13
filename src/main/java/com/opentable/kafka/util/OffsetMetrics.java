@@ -3,6 +3,7 @@ package com.opentable.kafka.util;
 import java.io.Closeable;
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Map;
 import java.util.concurrent.Executors;
@@ -51,6 +52,7 @@ import com.opentable.metrics.graphite.MetricSets;
 @SuppressWarnings("PMD.AvoidDuplicateLiterals")
 public class OffsetMetrics implements Closeable {
     private static final Logger LOG = LoggerFactory.getLogger(OffsetMetrics.class);
+    private static final Duration DEFAULT_PERIOD = Duration.ofSeconds(10);
 
     private final String metricPrefix;
     private final MetricRegistry metricRegistry;
@@ -67,7 +69,16 @@ public class OffsetMetrics implements Closeable {
             final String groupId,
             final String brokerList,
             final Collection<String> topics) {
-        this(metricPrefix, metricRegistry, groupId, brokerList, topics, Duration.ofSeconds(10));
+        this(metricPrefix, metricRegistry, groupId, brokerList, topics, DEFAULT_PERIOD);
+    }
+
+    public OffsetMetrics(
+            final String metricPrefix,
+            final MetricRegistry metricRegistry,
+            final String groupId,
+            final String brokerList,
+            final String... topics) {
+        this(metricPrefix, metricRegistry, groupId, brokerList, Arrays.asList(topics), DEFAULT_PERIOD);
     }
 
     @VisibleForTesting
