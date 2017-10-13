@@ -52,12 +52,14 @@ public class EmbeddedKafkaBroker implements Closeable
     private EmbeddedZookeeper ezk;
     private KafkaServer kafka;
     private int port;
+    private final boolean autoCreateTopics;
 
     private Path stateDir;
 
-    protected EmbeddedKafkaBroker(List<String> topicsToCreate)
+    protected EmbeddedKafkaBroker(final List<String> topicsToCreate, final boolean autoCreateTopics)
     {
         this.topicsToCreate = topicsToCreate;
+        this.autoCreateTopics = autoCreateTopics;
     }
 
     @PostConstruct
@@ -118,7 +120,7 @@ public class EmbeddedKafkaBroker implements Closeable
         config.put(KafkaConfig.ControlledShutdownRetryBackoffMsProp(), "100");
         config.put(KafkaConfig.LogCleanerDedupeBufferSizeProp(), "2097152");
         config.put(KafkaConfig.OffsetsTopicReplicationFactorProp(), (short) 1);
-        config.put(KafkaConfig.AutoCreateTopicsEnableProp(), false);
+        config.put(KafkaConfig.AutoCreateTopicsEnableProp(), autoCreateTopics);
         return new KafkaConfig(config);
     }
 
