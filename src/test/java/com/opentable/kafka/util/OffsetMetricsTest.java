@@ -6,7 +6,6 @@ import java.util.Collections;
 import com.codahale.metrics.Counting;
 import com.codahale.metrics.MetricRegistry;
 
-import org.apache.kafka.clients.producer.KafkaProducer;
 import org.junit.Test;
 
 import com.opentable.kafka.embedded.EmbeddedKafkaBroker;
@@ -34,7 +33,6 @@ public class OffsetMetricsTest {
     @Test(timeout = 60_000)
     public void testMetrics() throws InterruptedException {
         try (EmbeddedKafkaBroker ekb = TestUtils.broker();
-             KafkaProducer<String, String> producer = ekb.createProducer();
              OffsetMetrics metrics = new OffsetMetrics(
                      METRIC_NS,
                      new MetricRegistry(),
