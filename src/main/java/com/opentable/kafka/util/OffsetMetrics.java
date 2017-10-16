@@ -3,7 +3,6 @@ package com.opentable.kafka.util;
 import java.io.Closeable;
 import java.time.Duration;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Map;
 import java.util.concurrent.Executors;
@@ -15,7 +14,6 @@ import java.util.stream.Collectors;
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 
-import com.codahale.metrics.ExponentiallyDecayingReservoir;
 import com.codahale.metrics.Histogram;
 import com.codahale.metrics.Metric;
 import com.codahale.metrics.MetricRegistry;
@@ -65,8 +63,6 @@ import com.opentable.metrics.graphite.MetricSets;
 @SuppressWarnings("PMD.AvoidDuplicateLiterals")
 public class OffsetMetrics implements Closeable {
     private static final Logger LOG = LoggerFactory.getLogger(OffsetMetrics.class);
-    private static final Supplier<Reservoir> DEFAULT_RESERVOIR = ExponentiallyDecayingReservoir::new;
-    private static final Duration DEFAULT_PERIOD = Duration.ofSeconds(10);
 
     private final String metricPrefix;
     private final MetricRegistry metricRegistry;
@@ -77,63 +73,21 @@ public class OffsetMetrics implements Closeable {
     private final Map<String, Metric> metricMap;
     private final ScheduledExecutorService exec;
 
-    public OffsetMetrics(
+    public static OffsetMetricsBuilder builder(
             final String metricPrefix,
             final MetricRegistry metricRegistry,
             final String groupId,
-            final String brokerList,
-            final Collection<String> topics
+            final String brokerList
     ) {
-        this(
+        return new OffsetMetricsBuilder(
                 metricPrefix,
                 metricRegistry,
                 groupId,
-                brokerList,
-                topics,
-                DEFAULT_RESERVOIR,
-                DEFAULT_PERIOD
+                brokerList
         );
     }
 
-    public OffsetMetrics(
-            final String metricPrefix,
-            final MetricRegistry metricRegistry,
-            final String groupId,
-            final String brokerList,
-            final String... topics
-    ) {
-        this(
-                metricPrefix,
-                metricRegistry,
-                groupId,
-                brokerList,
-                Arrays.asList(topics),
-                DEFAULT_RESERVOIR,
-                DEFAULT_PERIOD
-        );
-    }
-
-    @VisibleForTesting
     OffsetMetrics(
-            final String metricPrefix,
-            final MetricRegistry metricRegistry,
-            final String groupId,
-            final String brokerList,
-            final Collection<String> topics,
-            final Duration pollPeriod
-    ) {
-        this(
-                metricPrefix,
-                metricRegistry,
-                groupId,
-                brokerList,
-                topics,
-                DEFAULT_RESERVOIR,
-                pollPeriod
-        );
-    }
-
-    private OffsetMetrics(
             final String metricPrefix,
             final MetricRegistry metricRegistry,
             final String groupId,

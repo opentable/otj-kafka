@@ -1,7 +1,6 @@
 package com.opentable.kafka.util;
 
 import java.time.Duration;
-import java.util.Collections;
 
 import com.codahale.metrics.Counting;
 import com.codahale.metrics.MetricRegistry;
@@ -17,30 +16,30 @@ public class OffsetMetricsTest {
     @Test(timeout = 30_000, expected = IllegalArgumentException.class)
     public void testNoTopics() throws InterruptedException {
         try (EmbeddedKafkaBroker ekb = TestUtils.broker()) {
-            new OffsetMetrics(METRIC_NS, new MetricRegistry(),
-                    GROUP_ID, ekb.getKafkaBrokerConnect(), Collections.emptySet());
+            OffsetMetrics
+                    .builder(METRIC_NS, new MetricRegistry(), GROUP_ID, ekb.getKafkaBrokerConnect())
+                    .build();
         }
     }
 
     @Test(timeout = 30_000, expected = IllegalArgumentException.class)
     public void testMissingTopic() throws InterruptedException {
         try (EmbeddedKafkaBroker ekb = TestUtils.broker()) {
-            new OffsetMetrics(METRIC_NS, new MetricRegistry(),
-                    GROUP_ID, ekb.getKafkaBrokerConnect(), Collections.singleton("no-topic-1"));
+            OffsetMetrics
+                    .builder(METRIC_NS, new MetricRegistry(), GROUP_ID, ekb.getKafkaBrokerConnect())
+                    .withTopic("no-topic-1")
+                    .build();
         }
     }
 
     @Test(timeout = 60_000)
     public void testMetrics() throws InterruptedException {
         try (EmbeddedKafkaBroker ekb = TestUtils.broker();
-             OffsetMetrics metrics = new OffsetMetrics(
-                     METRIC_NS,
-                     new MetricRegistry(),
-                     GROUP_ID,
-                     ekb.getKafkaBrokerConnect(),
-                     Collections.singleton(TestUtils.TOPIC_NAME),
-                     Duration.ofMillis(500)
-             )
+             OffsetMetrics metrics = OffsetMetrics
+                     .builder(METRIC_NS, new MetricRegistry(), GROUP_ID, ekb.getKafkaBrokerConnect())
+                     .withTopic(TestUtils.TOPIC_NAME)
+                     .withPollPeriod(Duration.ofMillis(500))
+                     .build()
         ) {
             metrics.start();
 
