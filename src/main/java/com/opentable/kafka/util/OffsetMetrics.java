@@ -33,7 +33,8 @@ import com.opentable.metrics.graphite.MetricSets;
 /**
  * Class that monitors consumer groups consuming from topics; registers its metrics with a metric registry.
  *
- * Runs a thread that polls the Kafka broker; use {@link #start()} and {@link #stop()} to spin up and down.
+ * Runs a thread that polls the Kafka broker; use {@link #start()} and {@link #stop()} to spin up and down. They are
+ * annotated with post-construct and pre-destroy, respectively, in order to simplify Spring integration.
  *
  * The metric namespace is as follows; each metric is a {@link com.codahale.metrics.Gauge<Long>}.
  *
