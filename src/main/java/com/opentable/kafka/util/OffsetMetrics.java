@@ -9,13 +9,17 @@ import java.util.Map;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 
+import com.codahale.metrics.ExponentiallyDecayingReservoir;
+import com.codahale.metrics.Histogram;
 import com.codahale.metrics.Metric;
 import com.codahale.metrics.MetricRegistry;
+import com.codahale.metrics.Reservoir;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
@@ -33,7 +37,7 @@ import com.opentable.metrics.graphite.MetricSets;
  *
  * Runs a thread that polls the Kafka broker; use {@link #start()} and {@link #stop()} to spin up and down.
  *
- * The metric namespace is as follows.
+ * The metric namespace is as follows; each metric is a {@link com.codahale.metrics.Gauge<Long>}.
  *
  * <p>
  * {@code <metric prefix>.<topic>.{partition.%d,total}.{size,offset,lag}}
@@ -43,6 +47,12 @@ import com.opentable.metrics.graphite.MetricSets;
  * consumer. Lag is the size minus the offset. Totals are summed across the partitions.
  * NB: Since the queries for the topic sizes and consumer offsets are necessarily separate, they race; this means that
  * lag can possibly be negative.
+ *
+ * <p>
+ * In addition to these gauges, lag distribution {@link Histogram}s are also available as follows.
+ *
+ * <p>
+ * {@code <metric prefix>.<topic>.total.lag-distribution}
  *
  * <p>
  * Future work: Have alternate constructor in which you don't specify any topics, and the class uses the
@@ -55,6 +65,7 @@ import com.opentable.metrics.graphite.MetricSets;
 @SuppressWarnings("PMD.AvoidDuplicateLiterals")
 public class OffsetMetrics implements Closeable {
     private static final Logger LOG = LoggerFactory.getLogger(OffsetMetrics.class);
+    private static final Supplier<Reservoir> DEFAULT_RESERVOIR = ExponentiallyDecayingReservoir::new;
     private static final Duration DEFAULT_PERIOD = Duration.ofSeconds(10);
 
     private final String metricPrefix;
@@ -71,8 +82,17 @@ public class OffsetMetrics implements Closeable {
             final MetricRegistry metricRegistry,
             final String groupId,
             final String brokerList,
-            final Collection<String> topics) {
-        this(metricPrefix, metricRegistry, groupId, brokerList, topics, DEFAULT_PERIOD);
+            final Collection<String> topics
+    ) {
+        this(
+                metricPrefix,
+                metricRegistry,
+                groupId,
+                brokerList,
+                topics,
+                DEFAULT_RESERVOIR,
+                DEFAULT_PERIOD
+        );
     }
 
     public OffsetMetrics(
@@ -80,8 +100,17 @@ public class OffsetMetrics implements Closeable {
             final MetricRegistry metricRegistry,
             final String groupId,
             final String brokerList,
-            final String... topics) {
-        this(metricPrefix, metricRegistry, groupId, brokerList, Arrays.asList(topics), DEFAULT_PERIOD);
+            final String... topics
+    ) {
+        this(
+                metricPrefix,
+                metricRegistry,
+                groupId,
+                brokerList,
+                Arrays.asList(topics),
+                DEFAULT_RESERVOIR,
+                DEFAULT_PERIOD
+        );
     }
 
     @VisibleForTesting
@@ -91,6 +120,26 @@ public class OffsetMetrics implements Closeable {
             final String groupId,
             final String brokerList,
             final Collection<String> topics,
+            final Duration pollPeriod
+    ) {
+        this(
+                metricPrefix,
+                metricRegistry,
+                groupId,
+                brokerList,
+                topics,
+                DEFAULT_RESERVOIR,
+                pollPeriod
+        );
+    }
+
+    private OffsetMetrics(
+            final String metricPrefix,
+            final MetricRegistry metricRegistry,
+            final String groupId,
+            final String brokerList,
+            final Collection<String> topics,
+            final Supplier<Reservoir> reservoirSupplier,
             final Duration pollPeriod) {
         Preconditions.checkArgument(metricPrefix != null, "null metric prefix");
         Preconditions.checkArgument(!topics.isEmpty(), "no topics");
@@ -117,6 +166,8 @@ public class OffsetMetrics implements Closeable {
             builder.put(totalName(topic, "size"), new AtomicLongGauge());
             builder.put(totalName(topic, "offset"), new AtomicLongGauge());
             builder.put(totalName(topic, "lag"), new AtomicLongGauge());
+
+            builder.put(totalName(topic, "lag-distribution"), new Histogram(reservoirSupplier.get()));
         });
 
         if (!badTopics.isEmpty()) {
@@ -217,7 +268,10 @@ public class OffsetMetrics implements Closeable {
         }
 
         offsets.forEach((part, off) -> gauge(partitionName(topic, part, "offset")).set(off));
-        lag    .forEach((part, off) -> gauge(partitionName(topic, part, "lag")).set(off));
+        lag    .forEach((part, off) -> {
+            gauge(partitionName(topic, part, "lag")).set(off);
+            ((Histogram) metricMap.get(totalName(topic, "lag-distribution"))).update(off);
+        });
 
         gauge(totalName(topic, "offset")).set(sumValues(offsets));
         gauge(totalName(topic, "lag")).set(sumValues(lag));
