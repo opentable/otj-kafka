@@ -156,6 +156,7 @@ public class EmbeddedKafkaBroker implements Closeable
             while (true) {
                 try {
                     adminClient.listGroupOffsets("ot-kafka-embedded-not-a-real-group");
+                    break;
                 } catch (final TimeoutException e) {
                     if (!(e.getCause() instanceof CoordinatorNotAvailableException)) {
                         throw e;
@@ -163,7 +164,6 @@ public class EmbeddedKafkaBroker implements Closeable
                     loopSleep(start);
                     continue;
                 }
-                break;
             }
         } finally {
             adminClient.close();
