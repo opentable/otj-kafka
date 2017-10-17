@@ -5,48 +5,44 @@ import java.time.Duration;
 import com.codahale.metrics.Counting;
 import com.codahale.metrics.MetricRegistry;
 
+import org.junit.Rule;
 import org.junit.Test;
-
-import com.opentable.kafka.embedded.EmbeddedKafkaBroker;
 
 public class OffsetMetricsTest {
     private static final String METRIC_NS = "foobar";
-    private static final String GROUP_ID = "group-1";
+
+    @Rule
+    public final ReadWriteRule rw = new ReadWriteRule();
 
     @Test(timeout = 30_000, expected = IllegalArgumentException.class)
     public void testNoTopics() throws InterruptedException {
-        try (EmbeddedKafkaBroker ekb = TestUtils.broker()) {
-            OffsetMetrics
-                    .builder(METRIC_NS, new MetricRegistry(), GROUP_ID, ekb.getKafkaBrokerConnect())
-                    .build();
-        }
+        OffsetMetrics
+                .builder(METRIC_NS, new MetricRegistry(), rw.getGroupId(), rw.getBroker().getKafkaBrokerConnect())
+                .build();
     }
 
     @Test(timeout = 30_000, expected = IllegalArgumentException.class)
     public void testMissingTopic() throws InterruptedException {
-        try (EmbeddedKafkaBroker ekb = TestUtils.broker()) {
-            OffsetMetrics
-                    .builder(METRIC_NS, new MetricRegistry(), GROUP_ID, ekb.getKafkaBrokerConnect())
-                    .withTopic("no-topic-1")
-                    .build();
-        }
+        OffsetMetrics
+                .builder(METRIC_NS, new MetricRegistry(), rw.getGroupId(), rw.getBroker().getKafkaBrokerConnect())
+                .withTopic("no-topic-1")
+                .build();
     }
 
     @Test(timeout = 60_000)
     public void testMetrics() throws InterruptedException {
-        try (EmbeddedKafkaBroker ekb = TestUtils.broker();
-             OffsetMetrics metrics = OffsetMetrics
-                     .builder(METRIC_NS, new MetricRegistry(), GROUP_ID, ekb.getKafkaBrokerConnect())
-                     .withTopic(TestUtils.TOPIC_NAME)
-                     .withPollPeriod(Duration.ofMillis(500))
-                     .build()
+        try (OffsetMetrics metrics = OffsetMetrics
+                .builder(METRIC_NS, new MetricRegistry(), rw.getGroupId(), rw.getBroker().getKafkaBrokerConnect())
+                .withTopic(rw.getTopicName())
+                .withPollPeriod(Duration.ofMillis(500))
+                .build()
         ) {
             metrics.start();
 
             // Write and read some test records.
             final int n = 10;
-            TestUtils.writeTestRecords(ekb, 1, n);
-            TestUtils.readTestRecords(ekb, n);
+            rw.writeTestRecords(1, n);
+            rw.readTestRecords(n);
 
             // Ensure metrics true with records written and read.
             waitForMetric(metrics, "size", n);
@@ -55,7 +51,7 @@ public class OffsetMetricsTest {
 
             // Write some more, but don't read yet.
             final int more = 3;
-            TestUtils.writeTestRecords(ekb, n + 1, n + more);
+            rw.writeTestRecords(n + 1, n + more);
 
             // Ensure metrics true up, including lag.
             waitForMetric(metrics, "size", n + more);
@@ -63,7 +59,7 @@ public class OffsetMetricsTest {
             waitForMetric(metrics, "offset", n);
 
             // Have consumer catch up.
-            TestUtils.readTestRecords(ekb, more);
+            rw.readTestRecords(more);
 
             // Make sure lag goes back to zero and offset catches up.
             waitForMetric(metrics, "lag", 0);
@@ -73,13 +69,13 @@ public class OffsetMetricsTest {
 
     private void waitForMetric(final OffsetMetrics metrics, final String nameSuffix, final long value)
             throws InterruptedException {
-        final String metricName = String.format("%s.%s.partition.0.%s", METRIC_NS, TestUtils.TOPIC_NAME, nameSuffix);
+        final String metricName = String.format("%s.%s.partition.0.%s", METRIC_NS, rw.getTopicName(), nameSuffix);
         while (true) {
             final Counting c = (Counting) metrics.getMetrics().get(metricName);
             if (c.getCount() == value) {
                 break;
             }
-            TestUtils.loopSleep();
+            ReadWriteRule.loopSleep();
         }
     }
 }
