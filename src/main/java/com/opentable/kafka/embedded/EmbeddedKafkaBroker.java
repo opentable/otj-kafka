@@ -19,6 +19,8 @@ import java.io.UncheckedIOException;
 import java.net.ServerSocket;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Duration;
+import java.time.Instant;
 import java.util.List;
 import java.util.Properties;
 
@@ -27,15 +29,22 @@ import javax.annotation.PreDestroy;
 
 import com.google.common.base.Preconditions;
 
+import org.apache.kafka.clients.admin.AdminClientConfig;
+import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.clients.producer.KafkaProducer;
+import org.apache.kafka.common.PartitionInfo;
+import org.apache.kafka.common.errors.CoordinatorNotAvailableException;
+import org.apache.kafka.common.errors.TimeoutException;
 import org.apache.kafka.common.serialization.Deserializer;
+import org.apache.kafka.common.serialization.Serdes;
 import org.apache.kafka.common.serialization.Serializer;
 import org.apache.kafka.common.serialization.StringDeserializer;
 import org.apache.kafka.common.serialization.StringSerializer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import kafka.admin.AdminClient;
 import kafka.admin.AdminUtils;
 import kafka.admin.RackAwareMode;
 import kafka.server.KafkaConfig;
@@ -46,18 +55,22 @@ import com.opentable.io.DeleteRecursively;
 public class EmbeddedKafkaBroker implements Closeable
 {
     private static final Logger LOG = LoggerFactory.getLogger(EmbeddedKafkaBroker.class);
+    private static final Duration TIMEOUT = Duration.ofSeconds(10);
+    private static final Duration LOOP_SLEEP = Duration.ofMillis(500);
 
     private final List<String> topicsToCreate;
 
     private EmbeddedZookeeper ezk;
     private KafkaServer kafka;
     private int port;
+    private final boolean autoCreateTopics;
 
     private Path stateDir;
 
-    protected EmbeddedKafkaBroker(List<String> topicsToCreate)
+    protected EmbeddedKafkaBroker(final List<String> topicsToCreate, final boolean autoCreateTopics)
     {
         this.topicsToCreate = topicsToCreate;
+        this.autoCreateTopics = autoCreateTopics;
     }
 
     @PostConstruct
@@ -79,6 +92,15 @@ public class EmbeddedKafkaBroker implements Closeable
         LOG.info("Server started up");
 
         topicsToCreate.forEach(this::createTopic);
+
+        LOG.info("waiting for embedded kafka broker to become ready");
+        try {
+            waitUntilReady();
+        } catch (final InterruptedException e) {
+            LOG.error("interrupted waiting for broker to become ready", e);
+            Thread.currentThread().interrupt();
+        }
+
         return this;
     }
 
@@ -95,6 +117,62 @@ public class EmbeddedKafkaBroker implements Closeable
             Files.walkFileTree(stateDir, DeleteRecursively.INSTANCE);
         } catch (IOException e) {
             LOG.error("while deleting {}", stateDir, e);
+        }
+    }
+
+    private void waitUntilReady() throws InterruptedException {
+        final Instant start = Instant.now();
+        waitForTopics(start);
+        waitForCoordinator(start);
+    }
+
+    private void waitForTopics(final Instant start) throws InterruptedException {
+        LOG.info("waiting for topics");
+        final Properties props = new Properties();
+        props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, getKafkaBrokerConnect());
+        props.put(ConsumerConfig.GROUP_ID_CONFIG, "test-wait-for-topics");
+        props.put(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG, false);
+        props.put(ConsumerConfig.SESSION_TIMEOUT_MS_CONFIG, (int) TIMEOUT.toMillis());
+        final Deserializer<byte[]> deser = Serdes.ByteArray().deserializer();
+        try (KafkaConsumer<byte[], byte[]> consumer = new KafkaConsumer<>(props, deser, deser)) {
+            for (final String topic : topicsToCreate) {
+                while (true) {
+                    final List<PartitionInfo> parts = consumer.partitionsFor(topic);
+                    if (parts != null) {
+                        break;
+                    }
+                    loopSleep(start);
+                }
+            }
+        }
+    }
+
+    private void waitForCoordinator(final Instant start) throws InterruptedException {
+        LOG.info("waiting for coordinator");
+        final Properties props = new Properties();
+        props.put(AdminClientConfig.BOOTSTRAP_SERVERS_CONFIG, getKafkaBrokerConnect());
+        final AdminClient adminClient = AdminClient.create(props);
+        try {
+            while (true) {
+                try {
+                    adminClient.listGroupOffsets("ot-kafka-embedded-not-a-real-group");
+                    break;
+                } catch (final TimeoutException e) {
+                    if (!(e.getCause() instanceof CoordinatorNotAvailableException)) {
+                        throw e;
+                    }
+                    loopSleep(start);
+                }
+            }
+        } finally {
+            adminClient.close();
+        }
+    }
+
+    private static void loopSleep(final Instant start) throws InterruptedException {
+        Thread.sleep(LOOP_SLEEP.toMillis());
+        if (Instant.now().isAfter(start.plus(TIMEOUT))) {
+            throw new RuntimeException("timed out");
         }
     }
 
@@ -118,6 +196,7 @@ public class EmbeddedKafkaBroker implements Closeable
         config.put(KafkaConfig.ControlledShutdownRetryBackoffMsProp(), "100");
         config.put(KafkaConfig.LogCleanerDedupeBufferSizeProp(), "2097152");
         config.put(KafkaConfig.OffsetsTopicReplicationFactorProp(), (short) 1);
+        config.put(KafkaConfig.AutoCreateTopicsEnableProp(), autoCreateTopics);
         return new KafkaConfig(config);
     }
 

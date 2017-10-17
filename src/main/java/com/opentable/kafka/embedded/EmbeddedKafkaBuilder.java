@@ -18,6 +18,7 @@ import java.util.Arrays;
 import java.util.List;
 
 public class EmbeddedKafkaBuilder {
+    private boolean autoCreateTopics;
     private final List<String> topicsToCreate = new ArrayList<>();
 
     public EmbeddedKafkaBuilder withTopics(String... topics) {
@@ -25,8 +26,13 @@ public class EmbeddedKafkaBuilder {
         return this;
     }
 
+    public EmbeddedKafkaBuilder autoCreateTopics(final boolean autoCreateTopics) {
+        this.autoCreateTopics = autoCreateTopics;
+        return this;
+    }
+
     EmbeddedKafkaBroker build() {
-        return new EmbeddedKafkaBroker(topicsToCreate);
+        return new EmbeddedKafkaBroker(topicsToCreate, autoCreateTopics);
     }
 
     public EmbeddedKafkaBroker start() {
