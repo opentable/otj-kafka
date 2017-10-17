@@ -40,17 +40,17 @@ public class OffsetMetricsBuilder {
         this.brokerList = brokerList;
     }
 
-    public OffsetMetricsBuilder withTopics(final Collection<String> topics) {
+    public OffsetMetricsBuilder addTopics(final Collection<String> topics) {
         this.topics.addAll(topics);
         return this;
     }
 
-    public OffsetMetricsBuilder withTopics(final String... topics) {
-        return withTopics(Arrays.asList(topics));
+    public OffsetMetricsBuilder addTopics(final String... topics) {
+        return addTopics(Arrays.asList(topics));
     }
 
-    public OffsetMetricsBuilder withTopic(final String topic) {
-        return withTopics(Collections.singleton(topic));
+    public OffsetMetricsBuilder addTopic(final String topic) {
+        return addTopics(Collections.singleton(topic));
     }
 
     /**

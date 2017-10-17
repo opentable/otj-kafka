@@ -25,7 +25,7 @@ public class OffsetMetricsTest {
     public void testMissingTopic() throws InterruptedException {
         OffsetMetrics
                 .builder(METRIC_NS, new MetricRegistry(), rw.getGroupId(), rw.getBroker().getKafkaBrokerConnect())
-                .withTopic("no-topic-1")
+                .addTopics("no-topic-1")
                 .build();
     }
 
@@ -33,7 +33,7 @@ public class OffsetMetricsTest {
     public void testMetrics() throws InterruptedException {
         try (OffsetMetrics metrics = OffsetMetrics
                 .builder(METRIC_NS, new MetricRegistry(), rw.getGroupId(), rw.getBroker().getKafkaBrokerConnect())
-                .withTopic(rw.getTopicName())
+                .addTopic(rw.getTopicName())
                 .withPollPeriod(Duration.ofMillis(500))
                 .build()
         ) {
