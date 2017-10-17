@@ -2,7 +2,6 @@ package com.opentable.kafka.util;
 
 import java.util.Map;
 
-import org.apache.kafka.clients.producer.KafkaProducer;
 import org.assertj.core.api.Assertions;
 import org.junit.Test;
 
@@ -17,8 +16,7 @@ public class OffsetMonitorTest {
         Map<Integer, Long> sizes, offsets;
 
         try (EmbeddedKafkaBroker ekb = TestUtils.broker()) {
-            try (OffsetMonitor monitor = new OffsetMonitor("test", ekb.getKafkaBrokerConnect());
-                 KafkaProducer<String, String> producer = ekb.createProducer()) {
+            try (OffsetMonitor monitor = new OffsetMonitor("test", ekb.getKafkaBrokerConnect())) {
                 // Test that we can get right answer for empty topic.
                 sizes = monitor.getTopicSizes(TestUtils.TOPIC_NAME);
                 Assertions.assertThat(sizes).isNotNull();
