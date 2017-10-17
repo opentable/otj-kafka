@@ -5,6 +5,7 @@ otj-kafka changelog
 -----
 
 * added offset monitoring utilities
+* embedded kafka broker will now ready itself
 
 2.2.0
 -----
