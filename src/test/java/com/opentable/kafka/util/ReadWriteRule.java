@@ -14,7 +14,7 @@ import com.opentable.kafka.embedded.EmbeddedKafkaBroker;
 import com.opentable.kafka.embedded.EmbeddedKafkaBuilder;
 
 final class ReadWriteRule extends ExternalResource {
-    private static final Duration LOOP_SLEEP = Duration.ofSeconds(1);
+    private static final Duration POLL_TIME = Duration.ofSeconds(1);
     private static final String TOPIC_NAME = "topic-1";
     private static final String GROUP_ID = "group-1";
 
@@ -56,12 +56,13 @@ final class ReadWriteRule extends ExternalResource {
         }
     }
 
+    // Contains infinite loop.  Make sure to include a timeout for the test using this.
     void readTestRecords(final int expect) {
         try (KafkaConsumer<String, String> consumer = ekb.createConsumer(GROUP_ID)) {
             consumer.subscribe(Collections.singleton(ReadWriteRule.TOPIC_NAME));
             ConsumerRecords<String, String> records;
             while (true) {
-                records = consumer.poll(Duration.ofSeconds(1).toMillis());
+                records = consumer.poll(POLL_TIME.toMillis());
                 if (!records.isEmpty()) {
                     break;
                 }
@@ -73,6 +74,6 @@ final class ReadWriteRule extends ExternalResource {
     }
 
     static void loopSleep() throws InterruptedException {
-        Thread.sleep(LOOP_SLEEP.toMillis());
+        Thread.sleep(POLL_TIME.toMillis());
     }
 }
