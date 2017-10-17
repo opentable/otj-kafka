@@ -172,7 +172,7 @@ public class EmbeddedKafkaBroker implements Closeable
     private static void loopSleep(final Instant start) throws InterruptedException {
         Thread.sleep(LOOP_SLEEP.toMillis());
         if (Instant.now().isAfter(start.plus(TIMEOUT))) {
-            throw new AssertionError("timed out");
+            throw new RuntimeException("timed out");
         }
     }
 
