@@ -162,7 +162,6 @@ public class EmbeddedKafkaBroker implements Closeable
                         throw e;
                     }
                     loopSleep(start);
-                    continue;
                 }
             }
         } finally {
