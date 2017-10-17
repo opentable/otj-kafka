@@ -154,13 +154,13 @@ public class OffsetMetrics implements Closeable {
 
     @PostConstruct
     public void start() {
-        metricRegistry.registerAll(() -> metricMap);
+        metricRegistry.registerAll(this::getMetrics);
         exec.scheduleAtFixedRate(this::poll, 0, pollPeriod.toMillis(), TimeUnit.MILLISECONDS);
     }
 
     @PreDestroy
     public void stop() {
-        MetricSets.removeAll(metricRegistry, () -> metricMap);
+        MetricSets.removeAll(metricRegistry, this::getMetrics);
         try {
             OTExecutors.shutdownAndAwaitTermination(exec, Duration.ofSeconds(5));
         } catch (final InterruptedException e) {
