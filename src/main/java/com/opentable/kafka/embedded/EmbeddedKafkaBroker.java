@@ -195,6 +195,7 @@ public class EmbeddedKafkaBroker implements Closeable
         config.put(KafkaConfig.DeleteTopicEnableProp(), "false");
         config.put(KafkaConfig.ControlledShutdownRetryBackoffMsProp(), "100");
         config.put(KafkaConfig.LogCleanerDedupeBufferSizeProp(), "2097152");
+        config.put(KafkaConfig.OffsetsTopicPartitionsProp(), 1);
         config.put(KafkaConfig.OffsetsTopicReplicationFactorProp(), (short) 1);
         config.put(KafkaConfig.AutoCreateTopicsEnableProp(), autoCreateTopics);
         return new KafkaConfig(config);
