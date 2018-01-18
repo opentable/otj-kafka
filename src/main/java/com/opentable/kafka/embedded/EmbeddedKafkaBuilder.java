@@ -20,6 +20,7 @@ import java.util.List;
 public class EmbeddedKafkaBuilder {
     private boolean autoCreateTopics;
     private final List<String> topicsToCreate = new ArrayList<>();
+    private int nPartitions = 1;
 
     public EmbeddedKafkaBuilder withTopics(String... topics) {
         topicsToCreate.addAll(Arrays.asList(topics));
@@ -31,8 +32,13 @@ public class EmbeddedKafkaBuilder {
         return this;
     }
 
+    public EmbeddedKafkaBuilder nPartitions(final int nPartitions) {
+        this.nPartitions = nPartitions;
+        return this;
+    }
+
     EmbeddedKafkaBroker build() {
-        return new EmbeddedKafkaBroker(topicsToCreate, autoCreateTopics);
+        return new EmbeddedKafkaBroker(topicsToCreate, autoCreateTopics, nPartitions);
     }
 
     public EmbeddedKafkaBroker start() {

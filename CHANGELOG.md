@@ -1,6 +1,16 @@
 otj-kafka changelog
 ===================
 
+2.4.2
+-----
+
+* limit kafka offset metrics logging
+
+2.4.1
+-----
+
+* improved embedded kafka startup time (offset partitions: 50 -> 1)
+
 2.4.0
 -----
 

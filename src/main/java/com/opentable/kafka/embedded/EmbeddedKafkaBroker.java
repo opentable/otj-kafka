@@ -64,13 +64,17 @@ public class EmbeddedKafkaBroker implements Closeable
     private KafkaServer kafka;
     private int port;
     private final boolean autoCreateTopics;
+    private final int nPartitions;
 
     private Path stateDir;
 
-    protected EmbeddedKafkaBroker(final List<String> topicsToCreate, final boolean autoCreateTopics)
-    {
+    protected EmbeddedKafkaBroker(
+            final List<String> topicsToCreate,
+            final boolean autoCreateTopics,
+            final int nPartitions) {
         this.topicsToCreate = topicsToCreate;
         this.autoCreateTopics = autoCreateTopics;
+        this.nPartitions = nPartitions;
     }
 
     @PostConstruct
@@ -138,13 +142,14 @@ public class EmbeddedKafkaBroker implements Closeable
             for (final String topic : topicsToCreate) {
                 while (true) {
                     final List<PartitionInfo> parts = consumer.partitionsFor(topic);
-                    if (parts != null) {
+                    if (parts != null && parts.size() == nPartitions) {
                         break;
                     }
                     loopSleep(start);
                 }
             }
         }
+        LOG.info("topics ready, all having {} partition{}", nPartitions, nPartitions != 1 ? "s" : "");
     }
 
     private void waitForCoordinator(final Instant start) throws InterruptedException {
@@ -217,7 +222,7 @@ public class EmbeddedKafkaBroker implements Closeable
     }
 
     public void createTopic(String topic) {
-        AdminUtils.createTopic(kafka.zkUtils(), topic, 1, 1, new Properties(), new RackAwareMode.Safe$());
+        AdminUtils.createTopic(kafka.zkUtils(), topic, nPartitions, 1, new Properties(), new RackAwareMode.Safe$());
         LOG.info("Topic {} created", topic);
     }
 
