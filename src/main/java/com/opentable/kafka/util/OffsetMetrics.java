@@ -26,6 +26,11 @@ import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import io.github.bucket4j.Bandwidth;
+import io.github.bucket4j.Bucket;
+import io.github.bucket4j.Bucket4j;
+import io.github.bucket4j.Refill;
+
 import com.opentable.concurrent.OTExecutors;
 import com.opentable.metrics.AtomicLongGauge;
 import com.opentable.metrics.graphite.MetricSets;
@@ -64,6 +69,11 @@ import com.opentable.metrics.graphite.MetricSets;
 @SuppressWarnings("PMD.AvoidDuplicateLiterals")
 public class OffsetMetrics implements Closeable {
     private static final Logger LOG = LoggerFactory.getLogger(OffsetMetrics.class);
+
+    private final Bucket logLimitBucket = Bucket4j
+            .builder()
+            .addLimit(Bandwidth.classic(6, Refill.smooth(1, Duration.ofMinutes(10))))
+            .build();
 
     private final String metricPrefix;
     private final MetricRegistry metricRegistry;
@@ -206,8 +216,10 @@ public class OffsetMetrics implements Closeable {
                     );
         } else {
             if (!sizes.keySet().equals(offsets.keySet())) {
-                LOG.error("sizes/offsets partitions do not match for topic {}: {}/{}",
-                        topic, sizes.keySet(), offsets.keySet());
+                if (logLimitBucket.tryConsume(1)) {
+                    LOG.warn("sizes/offsets partitions do not match for topic {}: {}/{}",
+                            topic, sizes.keySet(), offsets.keySet());
+                }
                 return;
             }
             final Map<Integer, Long> finalOffsets = offsets;
