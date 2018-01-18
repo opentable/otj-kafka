@@ -1,6 +1,11 @@
 otj-kafka changelog
 ===================
 
+2.4.2
+-----
+
+* limit kafka offset metrics logging
+
 2.4.1
 -----
 
