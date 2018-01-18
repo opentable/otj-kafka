@@ -142,13 +142,14 @@ public class EmbeddedKafkaBroker implements Closeable
             for (final String topic : topicsToCreate) {
                 while (true) {
                     final List<PartitionInfo> parts = consumer.partitionsFor(topic);
-                    if (parts != null) {
+                    if (parts != null && parts.size() == nPartitions) {
                         break;
                     }
                     loopSleep(start);
                 }
             }
         }
+        LOG.info("topics ready, all having {} partition{}", nPartitions, nPartitions != 1 ? "s" : "");
     }
 
     private void waitForCoordinator(final Instant start) throws InterruptedException {
