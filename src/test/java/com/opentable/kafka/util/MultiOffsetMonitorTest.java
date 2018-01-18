@@ -80,7 +80,7 @@ public class MultiOffsetMonitorTest {
             Map<Integer, Long> mon1GroupOffsets;
             Map<Integer, Long> mon2GroupOffsets;
 
-            // Wait offset record to fill.
+            // Wait for offset record to fill.
             consumer.subscribe(Collections.singleton(TOPIC_NAME));
             while (true) {
                 LOG.info("consumed {} records", consumer.poll(Duration.ofSeconds(1).toMillis()).count());
