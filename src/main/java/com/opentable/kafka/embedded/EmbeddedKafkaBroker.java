@@ -64,13 +64,17 @@ public class EmbeddedKafkaBroker implements Closeable
     private KafkaServer kafka;
     private int port;
     private final boolean autoCreateTopics;
+    private final int nPartitions;
 
     private Path stateDir;
 
-    protected EmbeddedKafkaBroker(final List<String> topicsToCreate, final boolean autoCreateTopics)
-    {
+    protected EmbeddedKafkaBroker(
+            final List<String> topicsToCreate,
+            final boolean autoCreateTopics,
+            final int nPartitions) {
         this.topicsToCreate = topicsToCreate;
         this.autoCreateTopics = autoCreateTopics;
+        this.nPartitions = nPartitions;
     }
 
     @PostConstruct
@@ -217,7 +221,7 @@ public class EmbeddedKafkaBroker implements Closeable
     }
 
     public void createTopic(String topic) {
-        AdminUtils.createTopic(kafka.zkUtils(), topic, 1, 1, new Properties(), new RackAwareMode.Safe$());
+        AdminUtils.createTopic(kafka.zkUtils(), topic, nPartitions, 1, new Properties(), new RackAwareMode.Safe$());
         LOG.info("Topic {} created", topic);
     }
 
