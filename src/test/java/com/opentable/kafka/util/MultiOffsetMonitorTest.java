@@ -71,7 +71,7 @@ public class MultiOffsetMonitorTest {
                 final byte[] value = RandomStringUtils.randomAlphanumeric(20).getBytes(StandardCharsets.UTF_8);
                 futures.add(producer.send(new ProducerRecord<>(TOPIC_NAME, key, value)));
             }
-            for (final Future future : futures) {
+            for (final Future<?> future : futures) {
                 future.get();
             }
 

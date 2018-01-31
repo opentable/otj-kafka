@@ -1,5 +1,11 @@
 otj-kafka changelog
 ===================
+
+2.7.0
+-----
+
+* Add a LogProgressRestoreListener to watch Kafka restore
+
 2.6.1
 -----
 * Spring Boot 2/5.0.4
