@@ -1,5 +1,6 @@
 package com.opentable.kafka.util;
 
+import java.io.Closeable;
 import java.time.Duration;
 import java.util.Collections;
 
@@ -13,7 +14,7 @@ import org.junit.rules.ExternalResource;
 import com.opentable.kafka.embedded.EmbeddedKafkaBroker;
 import com.opentable.kafka.embedded.EmbeddedKafkaBuilder;
 
-final class ReadWriteRule extends ExternalResource {
+final class ReadWriteRule extends ExternalResource implements Closeable, AutoCloseable {
     private static final Duration POLL_TIME = Duration.ofSeconds(1);
     private static final String TOPIC_NAME = "topic-1";
     private static final String GROUP_ID = "group-1";
@@ -35,6 +36,11 @@ final class ReadWriteRule extends ExternalResource {
 
     @Override
     protected void after() {
+        close();
+    }
+
+    @Override
+    public void close() {
         ekb.close();
     }
 
