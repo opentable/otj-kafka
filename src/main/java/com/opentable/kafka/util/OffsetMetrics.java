@@ -11,6 +11,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
+import javax.annotation.Nullable;
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 
@@ -80,6 +81,8 @@ public class OffsetMetrics implements Closeable {
     private final String groupId;
     private final Collection<String> topics;
     private final Duration pollPeriod;
+    @Nullable
+    private final Supplier<Map<Integer, Long>> offsetsSupplier;
     private final OffsetMonitor monitor;
     private final Map<String, Metric> metricMap;
     private final ScheduledExecutorService exec;
@@ -105,7 +108,9 @@ public class OffsetMetrics implements Closeable {
             final String brokerList,
             final Collection<String> topics,
             final Supplier<Reservoir> reservoirSupplier,
-            final Duration pollPeriod) {
+            final Duration pollPeriod,
+            @Nullable
+            final Supplier<Map<Integer, Long>> offsetsSupplier) {
         Preconditions.checkArgument(metricPrefix != null, "null metric prefix");
         Preconditions.checkArgument(!topics.isEmpty(), "no topics");
         this.metricPrefix = metricPrefix;
@@ -113,6 +118,7 @@ public class OffsetMetrics implements Closeable {
         this.groupId = groupId;
         this.topics = topics;
         this.pollPeriod = pollPeriod;
+        this.offsetsSupplier = offsetsSupplier;
         monitor = new OffsetMonitor(groupId, brokerList);
 
         final Collection<String> badTopics = new ArrayList<>();
@@ -200,7 +206,14 @@ public class OffsetMetrics implements Closeable {
         sizes.forEach((part, size) -> gauge(partitionName(topic, part, "size")).set(size));
         gauge(totalName(topic, "size")).set(sumValues(sizes));
 
-        Map<Integer, Long> offsets = monitor.getGroupOffsets(groupId, topic);
+        final boolean expectKafkaManagedOffsets = offsetsSupplier == null;
+        final Supplier<Map<Integer, Long>> offsetsSupplier;
+        if (expectKafkaManagedOffsets) {
+            offsetsSupplier = () -> monitor.getGroupOffsets(groupId, topic);
+        } else {
+            offsetsSupplier = this.offsetsSupplier;
+        }
+        Map<Integer, Long> offsets = offsetsSupplier.get();
         final Map<Integer, Long> lag;
         if (offsets.isEmpty()) {
             // Consumer may not be consuming this topic yet (or consumer might not exist).
@@ -215,7 +228,7 @@ public class OffsetMetrics implements Closeable {
                             )
                     );
         } else {
-            if (!sizes.keySet().equals(offsets.keySet())) {
+            if (expectKafkaManagedOffsets && !sizes.keySet().equals(offsets.keySet())) {
                 if (logLimitBucket.tryConsume(1)) {
                     LOG.warn("sizes/offsets partitions do not match for topic {}: {}/{}",
                             topic, sizes.keySet(), offsets.keySet());

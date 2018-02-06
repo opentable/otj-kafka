@@ -5,6 +5,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 import java.util.function.Supplier;
 
@@ -27,6 +28,7 @@ public class OffsetMetricsBuilder {
 
     private Duration pollPeriod = Duration.ofSeconds(10);
     private Supplier<Reservoir> reservoirSupplier = ExponentiallyDecayingReservoir::new;
+    private Supplier<Map<Integer, Long>> offsetsSupplier;
 
     OffsetMetricsBuilder(
             final String metricPrefix,
@@ -62,6 +64,11 @@ public class OffsetMetricsBuilder {
         return this;
     }
 
+    public OffsetMetricsBuilder withOffsetsSupplier(final Supplier<Map<Integer, Long>> offsetsSupplier) {
+        this.offsetsSupplier = offsetsSupplier;
+        return this;
+    }
+
     @VisibleForTesting
     OffsetMetricsBuilder withPollPeriod(final Duration pollPeriod) {
         this.pollPeriod = pollPeriod;
@@ -76,7 +83,8 @@ public class OffsetMetricsBuilder {
                 brokerList,
                 ImmutableSet.copyOf(topics),
                 reservoirSupplier,
-                pollPeriod
+                pollPeriod,
+                offsetsSupplier
         );
     }
 }
