@@ -15,14 +15,14 @@ public class OffsetMetricsTest {
     public final ReadWriteRule rw = new ReadWriteRule();
 
     @Test(timeout = 30_000, expected = IllegalArgumentException.class)
-    public void testNoTopics() throws InterruptedException {
+    public void testNoTopics() {
         OffsetMetrics
                 .builder(METRIC_NS, new MetricRegistry(), rw.getGroupId(), rw.getBroker().getKafkaBrokerConnect())
                 .build();
     }
 
     @Test(timeout = 30_000, expected = IllegalArgumentException.class)
-    public void testMissingTopic() throws InterruptedException {
+    public void testMissingTopic() {
         OffsetMetrics
                 .builder(METRIC_NS, new MetricRegistry(), rw.getGroupId(), rw.getBroker().getKafkaBrokerConnect())
                 .addTopics("no-topic-1")
