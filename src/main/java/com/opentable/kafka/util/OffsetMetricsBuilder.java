@@ -64,6 +64,7 @@ public class OffsetMetricsBuilder {
         return this;
     }
 
+    /** Use this if you are managing your own offsets. The map should yield partition -> offset. */
     public OffsetMetricsBuilder withOffsetsSupplier(final Supplier<Map<Integer, Long>> offsetsSupplier) {
         this.offsetsSupplier = offsetsSupplier;
         return this;

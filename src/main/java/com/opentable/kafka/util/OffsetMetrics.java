@@ -46,7 +46,7 @@ import com.opentable.metrics.graphite.MetricSets;
  * Runs a thread that polls the Kafka broker; use {@link #start()} and {@link #stop()} to spin up and down. They are
  * annotated with post-construct and pre-destroy, respectively, in order to simplify Spring integration.
  *
- * The metric namespace is as follows; each metric is a {@link com.codahale.metrics.Gauge<Long>}.
+ * The metric namespace is as follows; each metric is a {@link Gauge}&lt;{@link Long}&gt;, and can be {@code null}.
  *
  * <p>
  * {@code <metric prefix>.<topic>.{partition.%d,total}.{size,offset,lag}}
@@ -62,6 +62,13 @@ import com.opentable.metrics.graphite.MetricSets;
  *
  * <p>
  * {@code <metric prefix>.<topic>.total.lag-distribution}
+ *
+ * <p>
+ * Use an offsets supplier if you are managing your own offsets.
+ * Without an offsets supplier, this class will attempt to read consumer group offsets from the Kafka broker, and will
+ * require the partitions for which offsets are stored to match the partitions for which size information is reported.
+ * With an offsets supplier, this class will call it periodically. The offsets supplier's keys (partitions) must be a
+ * subset of the keys (also partitions) of the size information reported by the broker.
  *
  * <p>
  * Future work: Have alternate constructor in which you don't specify any topics, and the class uses the
@@ -85,6 +92,7 @@ public class OffsetMetrics implements Closeable {
     private final String groupId;
     private final Collection<String> topics;
     private final Duration pollPeriod;
+    /** Partition -> offset. */
     @Nullable
     private final Supplier<Map<Integer, Long>> offsetsSupplier;
     private final OffsetMonitor monitor;
@@ -280,10 +288,16 @@ public class OffsetMetrics implements Closeable {
         return (LongGauge) metricMap.get(name);
     }
 
+    /** Sum values in {@code map} over <em>only</em> keys present in {@code keys}. */
     private static <K> long limitedSumValues(final Collection<K> keys, final Map<K, Long> map) {
         return keys.stream().mapToLong(map::get).sum();
     }
 
+    /**
+     * Run {@code f} on keys and values of {@code map} in a &ldquo;limited&rdquo; manner.
+     * Specifically, for keys present in {@code keys}, call {@code f} with the key and value present in {@code map}.
+     * For keys not present in {@code keys}, call {@code f} with the key and {@code null} instead of the value.
+     */
     private static <K, V> void limitedIter(
             final Collection<K> keys,
             final Map<K, V> map,
