@@ -5,9 +5,11 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
@@ -15,6 +17,8 @@ import javax.annotation.Nullable;
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 
+import com.codahale.metrics.Counting;
+import com.codahale.metrics.Gauge;
 import com.codahale.metrics.Histogram;
 import com.codahale.metrics.Metric;
 import com.codahale.metrics.MetricRegistry;
@@ -33,7 +37,6 @@ import io.github.bucket4j.Bucket4j;
 import io.github.bucket4j.Refill;
 
 import com.opentable.concurrent.OTExecutors;
-import com.opentable.metrics.AtomicLongGauge;
 import com.opentable.metrics.graphite.MetricSets;
 
 /**
@@ -130,13 +133,13 @@ public class OffsetMetrics implements Closeable {
                 return;
             }
             for (final int part : sizes.keySet()) {
-                builder.put(partitionName(topic, part, "size"), new AtomicLongGauge());
-                builder.put(partitionName(topic, part, "offset"), new AtomicLongGauge());
-                builder.put(partitionName(topic, part, "lag"), new AtomicLongGauge());
+                builder.put(partitionName(topic, part, "size"), new LongGauge());
+                builder.put(partitionName(topic, part, "offset"), new LongGauge());
+                builder.put(partitionName(topic, part, "lag"), new LongGauge());
             }
-            builder.put(totalName(topic, "size"), new AtomicLongGauge());
-            builder.put(totalName(topic, "offset"), new AtomicLongGauge());
-            builder.put(totalName(topic, "lag"), new AtomicLongGauge());
+            builder.put(totalName(topic, "size"), new LongGauge());
+            builder.put(totalName(topic, "offset"), new LongGauge());
+            builder.put(totalName(topic, "lag"), new LongGauge());
 
             builder.put(totalName(topic, "lag-distribution"), new Histogram(reservoirSupplier.get()));
         });
@@ -257,11 +260,29 @@ public class OffsetMetrics implements Closeable {
         gauge(totalName(topic, "lag")).set(sumValues(lags));
     }
 
-    private AtomicLongGauge gauge(final String name) {
-        return (AtomicLongGauge) metricMap.get(name);
+    private LongGauge gauge(final String name) {
+        return (LongGauge) metricMap.get(name);
     }
 
     private static long sumValues(final Map<?, Long> map) {
         return map.values().stream().mapToLong(size -> size).sum();
+    }
+
+    private static class LongGauge implements Gauge<Long>, Counting {
+        private final AtomicReference<Long> value = new AtomicReference<>();
+
+        @Override
+        public Long getValue() {
+            return value.get();
+        }
+
+        @Override
+        public long getCount() {
+            return Optional.ofNullable(getValue()).orElse(0L);
+        }
+
+        private void set(final Long value) {
+            this.value.set(value);
+        }
     }
 }
