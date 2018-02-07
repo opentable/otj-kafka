@@ -10,6 +10,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.BiConsumer;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
@@ -206,8 +207,6 @@ public class OffsetMetrics implements Closeable {
 
     private void pollUnsafe(final String topic) {
         final Map<Integer, Long> sizes = monitor.getTopicSizes(topic);
-        sizes.forEach((part, size) -> gauge(partitionName(topic, part, "size")).set(size));
-        gauge(totalName(topic, "size")).set(sumValues(sizes));
 
         final boolean expectKafkaManagedOffsets = offsetsSupplier == null;
         final Supplier<Map<Integer, Long>> offsetsSupplier;
@@ -249,7 +248,7 @@ public class OffsetMetrics implements Closeable {
                 }
             }
             final Map<Integer, Long> finalOffsets = offsets;
-            lags = sizes
+            lags = offsets
                     .keySet()
                     .stream()
                     .collect(
@@ -260,22 +259,40 @@ public class OffsetMetrics implements Closeable {
                     );
         }
 
-        offsets.forEach((part, off) -> gauge(partitionName(topic, part, "offset")).set(off));
-        lags    .forEach((part, lag) -> {
+        // The keys of offsets is a non-empty subset of the keys of sizes, and the keys of offsets and lags are
+        // identical.
+        final Collection<Integer> knownPartitions = offsets.keySet();
+
+        limitedIter(knownPartitions, sizes, (part, size) -> gauge(partitionName(topic, part, "size")).set(size));
+        gauge(totalName(topic, "size")).set(limitedSumValues(knownPartitions, sizes));
+
+        limitedIter(knownPartitions, offsets, (part, off) -> gauge(partitionName(topic, part, "offset")).set(off));
+        limitedIter(knownPartitions, lags, (part, lag) -> {
             gauge(partitionName(topic, part, "lag")).set(lag);
             ((Histogram) metricMap.get(totalName(topic, "lag-distribution"))).update(lag);
         });
 
-        gauge(totalName(topic, "offset")).set(sumValues(offsets));
-        gauge(totalName(topic, "lag")).set(sumValues(lags));
+        gauge(totalName(topic, "offset")).set(limitedSumValues(knownPartitions, offsets));
+        gauge(totalName(topic, "lag")).set(limitedSumValues(knownPartitions, lags));
     }
 
     private LongGauge gauge(final String name) {
         return (LongGauge) metricMap.get(name);
     }
 
-    private static long sumValues(final Map<?, Long> map) {
-        return map.values().stream().mapToLong(size -> size).sum();
+    private static <K> long limitedSumValues(final Collection<K> keys, final Map<K, Long> map) {
+        return keys.stream().mapToLong(map::get).sum();
+    }
+
+    private static <K, V> void limitedIter(
+            final Collection<K> keys,
+            final Map<K, V> map,
+            final BiConsumer<K, V> f) {
+        map.forEach((k, v) -> {
+            if (keys.contains(k)) {
+                f.accept(k, v);
+            }
+        });
     }
 
     private static class LongGauge implements Gauge<Long>, Counting {
