@@ -229,7 +229,7 @@ public class OffsetMetrics implements Closeable {
         final Map<Integer, Long> lags;
         if (offsets.isEmpty()) {
             // Consumer may not be consuming this topic yet (or consumer might not exist).
-            // In case consumer existed previously, we set all offsets and lag to null.
+            // In case consumer existed previously, we set all offsets and lag to 0.
             offsets = lags = sizes
                     .keySet()
                     .stream()
