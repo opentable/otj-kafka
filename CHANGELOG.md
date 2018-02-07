@@ -1,6 +1,11 @@
 otj-kafka changelog
 ===================
 
+2.5.0
+-----
+
+* offset metrics now supports self-offset management
+
 2.4.2
 -----
 
