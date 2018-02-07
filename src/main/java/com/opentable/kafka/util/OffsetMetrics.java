@@ -247,7 +247,9 @@ public class OffsetMetrics implements Closeable {
                 msg = "offsets not subset of sizes";
             }
             if (!test.apply(offsets)) {
-                LOG.warn("{} for topic {}: {}/{}", msg, topic, offsets.keySet(), sizes.keySet());
+                if (logLimitBucket.tryConsume(1)) {
+                    LOG.warn("{} for topic {}: {}/{}", msg, topic, offsets.keySet(), sizes.keySet());
+                }
                 return;
             }
             final Map<Integer, Long> finalOffsets = offsets;
