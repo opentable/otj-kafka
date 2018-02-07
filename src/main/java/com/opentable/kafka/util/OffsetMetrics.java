@@ -2,11 +2,8 @@ package com.opentable.kafka.util;
 
 import java.io.Closeable;
 import java.time.Duration;
-import java.util.AbstractMap;
-import java.util.AbstractSet;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Iterator;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -30,8 +27,8 @@ import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.Reservoir;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
-import com.google.common.collect.AbstractIterator;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 
@@ -240,22 +237,18 @@ public class OffsetMetrics implements Closeable {
                             )
                     );
         } else {
+            final Function<Map<Integer, Long>, Boolean> test;
+            final String msg;
             if (expectKafkaManagedOffsets) {
-                if (!sizes.keySet().equals(offsets.keySet())) {
-                    if (logLimitBucket.tryConsume(1)) {
-                        LOG.warn("sizes/offsets partitions do not match for topic {}: {}/{}",
-                                topic, sizes.keySet(), offsets.keySet());
-                    }
-                    return;
-                }
+                test = map -> sizes.keySet().equals(map.keySet());
+                msg = "offsets/sizes partitions do not match";
             } else {
-                if (!sizes.keySet().containsAll(offsets.keySet())) {
-                    if (logLimitBucket.tryConsume(1)) {
-                        LOG.warn("offsets not subset of sizes for topic {}: {}/{}",
-                                topic, offsets.keySet(), sizes.keySet());
-                    }
-                    return;
-                }
+                test = map -> sizes.keySet().containsAll(map.keySet());
+                msg = "offsets not subset of sizes";
+            }
+            if (!test.apply(offsets)) {
+                LOG.warn("{} for topic {}: {}/{}", msg, topic, offsets.keySet(), sizes.keySet());
+                return;
             }
             final Map<Integer, Long> finalOffsets = offsets;
             lags = offsets
@@ -273,10 +266,11 @@ public class OffsetMetrics implements Closeable {
         // identical.
         final Set<Integer> knownParts = offsets.keySet();
         final Set<Integer> unknownParts = Sets.difference(offsets.keySet(), knownParts);
+        final Map<Integer, Long> subSizes = Maps.filterKeys(sizes, offsets::containsKey);
 
-        subMap(knownParts, sizes).forEach((part, size) -> gauge(partitionName(topic, part, "size")).set(size));
-        unknownParts.forEach(              part        -> gauge(partitionName(topic, part, "size")).set(null));
-        gauge(totalName(topic, "size")).set(sumValues(subMap(knownParts, sizes)));
+        subSizes    .forEach((part, size) -> gauge(partitionName(topic, part, "size")).set(size));
+        unknownParts.forEach( part        -> gauge(partitionName(topic, part, "size")).set(null));
+        gauge(totalName(topic, "size")).set(sumValues(subSizes));
 
         offsets     .forEach((part, off) -> gauge(partitionName(topic, part, "offset")).set(off));
         unknownParts.forEach( part       -> gauge(partitionName(topic, part, "offset")).set(null));
@@ -296,40 +290,6 @@ public class OffsetMetrics implements Closeable {
 
     private static long sumValues(final Map<?, Long> map) {
         return map.values().stream().mapToLong(x -> x).sum();
-    }
-
-    /**
-     * Sub-map of {@code map} whose keys are the elements of {@code keys} with corresponding values from {@code map}.
-     */
-    private static <K, V> Map<K, V> subMap(final Collection<K> keys, final Map<K, V> map) {
-        return new AbstractMap<K, V>() {
-            @Override
-            public Set<Entry<K, V>> entrySet() {
-                return new AbstractSet<Entry<K, V>>() {
-                    @Override
-                    public Iterator<Entry<K, V>> iterator() {
-                        final Iterator<Entry<K, V>> itr = map.entrySet().iterator();
-                        return new AbstractIterator<Entry<K, V>>() {
-                            @Override
-                            protected Entry<K, V> computeNext() {
-                                while (itr.hasNext()) {
-                                    final Entry<K, V> e = itr.next();
-                                    if (keys.contains(e.getKey())) {
-                                        return e;
-                                    }
-                                }
-                                return endOfData();
-                            }
-                        };
-                    }
-
-                    @Override
-                    public int size() {
-                        return keys.size();
-                    }
-                };
-            }
-        };
     }
 
     @VisibleForTesting
