@@ -5,13 +5,15 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
+import java.util.function.Function;
+import java.util.function.Supplier;
 
 import com.codahale.metrics.ExponentiallyDecayingReservoir;
 import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.Reservoir;
 import com.google.common.annotations.VisibleForTesting;
-import com.google.common.base.Supplier;
 import com.google.common.collect.ImmutableSet;
 
 /**
@@ -27,6 +29,7 @@ public class OffsetMetricsBuilder {
 
     private Duration pollPeriod = Duration.ofSeconds(10);
     private Supplier<Reservoir> reservoirSupplier = ExponentiallyDecayingReservoir::new;
+    private Function<String, Map<Integer, Long>> offsetsSupplier;
 
     OffsetMetricsBuilder(
             final String metricPrefix,
@@ -62,6 +65,12 @@ public class OffsetMetricsBuilder {
         return this;
     }
 
+    /** Use this if you are managing your own offsets. Given a topic, the map should yield partition -> offset. */
+    public OffsetMetricsBuilder withOffsetsSupplier(final Function<String, Map<Integer, Long>> offsetsSupplier) {
+        this.offsetsSupplier = offsetsSupplier;
+        return this;
+    }
+
     @VisibleForTesting
     OffsetMetricsBuilder withPollPeriod(final Duration pollPeriod) {
         this.pollPeriod = pollPeriod;
@@ -76,7 +85,8 @@ public class OffsetMetricsBuilder {
                 brokerList,
                 ImmutableSet.copyOf(topics),
                 reservoirSupplier,
-                pollPeriod
+                pollPeriod,
+                offsetsSupplier
         );
     }
 }
