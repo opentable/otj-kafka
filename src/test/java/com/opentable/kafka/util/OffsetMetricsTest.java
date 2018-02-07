@@ -87,7 +87,7 @@ public class OffsetMetricsTest {
                         .builder(METRIC_NS, metricRegistry, rw.getGroupId(), rw.getBroker().getKafkaBrokerConnect())
                         .addTopic(rw.getTopicName())
                         .withPollPeriod(Duration.ofMillis(500))
-                        .withOffsetsSupplier(() -> offsets)
+                        .withOffsetsSupplier(topic -> offsets)
                         .build()
         ) {
             metrics.start();

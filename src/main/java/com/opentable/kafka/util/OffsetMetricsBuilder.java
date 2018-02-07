@@ -7,6 +7,7 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Function;
 import java.util.function.Supplier;
 
 import com.codahale.metrics.ExponentiallyDecayingReservoir;
@@ -28,7 +29,7 @@ public class OffsetMetricsBuilder {
 
     private Duration pollPeriod = Duration.ofSeconds(10);
     private Supplier<Reservoir> reservoirSupplier = ExponentiallyDecayingReservoir::new;
-    private Supplier<Map<Integer, Long>> offsetsSupplier;
+    private Function<String, Map<Integer, Long>> offsetsSupplier;
 
     OffsetMetricsBuilder(
             final String metricPrefix,
@@ -64,8 +65,8 @@ public class OffsetMetricsBuilder {
         return this;
     }
 
-    /** Use this if you are managing your own offsets. The map should yield partition -> offset. */
-    public OffsetMetricsBuilder withOffsetsSupplier(final Supplier<Map<Integer, Long>> offsetsSupplier) {
+    /** Use this if you are managing your own offsets. Given a topic, the map should yield partition -> offset. */
+    public OffsetMetricsBuilder withOffsetsSupplier(final Function<String, Map<Integer, Long>> offsetsSupplier) {
         this.offsetsSupplier = offsetsSupplier;
         return this;
     }

@@ -11,6 +11,7 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiConsumer;
+import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
@@ -89,13 +90,12 @@ public class OffsetMetrics implements Closeable {
 
     private final String metricPrefix;
     private final MetricRegistry metricRegistry;
-    private final String groupId;
     private final Collection<String> topics;
     private final Duration pollPeriod;
-    /** Partition -> offset. */
-    @Nullable
-    private final Supplier<Map<Integer, Long>> offsetsSupplier;
     private final OffsetMonitor monitor;
+    private final boolean expectKafkaManagedOffsets;
+    /** Topic -> partition -> offset. */
+    private final Function<String, Map<Integer, Long>> offsetsSupplier;
     private final Map<String, Metric> metricMap;
     private final ScheduledExecutorService exec;
 
@@ -122,16 +122,20 @@ public class OffsetMetrics implements Closeable {
             final Supplier<Reservoir> reservoirSupplier,
             final Duration pollPeriod,
             @Nullable
-            final Supplier<Map<Integer, Long>> offsetsSupplier) {
+            final Function<String, Map<Integer, Long>> offsetsSupplier) {
         Preconditions.checkArgument(metricPrefix != null, "null metric prefix");
         Preconditions.checkArgument(!topics.isEmpty(), "no topics");
         this.metricPrefix = metricPrefix;
         this.metricRegistry = metricRegistry;
-        this.groupId = groupId;
         this.topics = topics;
         this.pollPeriod = pollPeriod;
-        this.offsetsSupplier = offsetsSupplier;
         monitor = new OffsetMonitor(groupId, brokerList);
+        expectKafkaManagedOffsets = offsetsSupplier == null;
+        if (expectKafkaManagedOffsets) {
+            this.offsetsSupplier = topic -> monitor.getGroupOffsets(groupId, topic);
+        } else {
+            this.offsetsSupplier = offsetsSupplier;
+        }
 
         final Collection<String> badTopics = new ArrayList<>();
         final ImmutableMap.Builder<String, Metric> builder = ImmutableMap.builder();
@@ -216,14 +220,7 @@ public class OffsetMetrics implements Closeable {
     private void pollUnsafe(final String topic) {
         final Map<Integer, Long> sizes = monitor.getTopicSizes(topic);
 
-        final boolean expectKafkaManagedOffsets = offsetsSupplier == null;
-        final Supplier<Map<Integer, Long>> offsetsSupplier;
-        if (expectKafkaManagedOffsets) {
-            offsetsSupplier = () -> monitor.getGroupOffsets(groupId, topic);
-        } else {
-            offsetsSupplier = this.offsetsSupplier;
-        }
-        Map<Integer, Long> offsets = offsetsSupplier.get();
+        Map<Integer, Long> offsets = offsetsSupplier.apply(topic);
         final Map<Integer, Long> lags;
         if (offsets.isEmpty()) {
             // Consumer may not be consuming this topic yet (or consumer might not exist).
