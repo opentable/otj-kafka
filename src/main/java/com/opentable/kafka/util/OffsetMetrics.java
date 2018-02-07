@@ -231,12 +231,22 @@ public class OffsetMetrics implements Closeable {
                             )
                     );
         } else {
-            if (expectKafkaManagedOffsets && !sizes.keySet().equals(offsets.keySet())) {
-                if (logLimitBucket.tryConsume(1)) {
-                    LOG.warn("sizes/offsets partitions do not match for topic {}: {}/{}",
-                            topic, sizes.keySet(), offsets.keySet());
+            if (expectKafkaManagedOffsets) {
+                if (!sizes.keySet().equals(offsets.keySet())) {
+                    if (logLimitBucket.tryConsume(1)) {
+                        LOG.warn("sizes/offsets partitions do not match for topic {}: {}/{}",
+                                topic, sizes.keySet(), offsets.keySet());
+                    }
+                    return;
                 }
-                return;
+            } else {
+                if (!sizes.keySet().containsAll(offsets.keySet())) {
+                    if (logLimitBucket.tryConsume(1)) {
+                        LOG.warn("offsets not subset of sizes for topic {}: {}/{}",
+                                topic, offsets.keySet(), sizes.keySet());
+                    }
+                    return;
+                }
             }
             final Map<Integer, Long> finalOffsets = offsets;
             lags = sizes
