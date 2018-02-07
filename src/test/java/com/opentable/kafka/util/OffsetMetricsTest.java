@@ -1,10 +1,15 @@
 package com.opentable.kafka.util;
 
 import java.time.Duration;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
 
 import com.codahale.metrics.Counting;
 import com.codahale.metrics.MetricRegistry;
+import com.google.common.collect.ImmutableMap;
 
+import org.assertj.core.api.Assertions;
 import org.junit.Test;
 
 public class OffsetMetricsTest {
@@ -66,6 +71,44 @@ public class OffsetMetricsTest {
             // Make sure lag goes back to zero and offset catches up.
             waitForMetric(rw, metrics, "lag", 0);
             waitForMetric(rw, metrics, "offset", n + more);
+        }
+    }
+
+    @Test(timeout = 60_000)
+    public void testOwnOffsets() throws InterruptedException {
+        final Map<Integer, Long> offsets = ImmutableMap.of(
+                0, 50L,
+                1, 50L
+        );
+        final MetricRegistry metricRegistry = new MetricRegistry();
+        try (
+                ReadWriteRule rw = new ReadWriteRule(3);
+                OffsetMetrics metrics = OffsetMetrics
+                        .builder(METRIC_NS, metricRegistry, rw.getGroupId(), rw.getBroker().getKafkaBrokerConnect())
+                        .addTopic(rw.getTopicName())
+                        .withPollPeriod(Duration.ofMillis(500))
+                        .withOffsetsSupplier(() -> offsets)
+                        .build()
+        ) {
+            metrics.start();
+
+            waitForMetric(rw, metrics, "size", 0);
+            waitForMetric(rw, metrics, "offset", 50);
+            waitForMetric(rw, metrics, "lag", -50);
+
+            final String prefix = String.format("%s.%s.partition.", METRIC_NS, rw.getTopicName());
+            final Set<Integer> partitions = new HashSet<>();
+            metricRegistry.getMetrics().forEach((name, metric) -> {
+                if (name.startsWith(prefix)) {
+                    final OffsetMetrics.LongGauge gauge = (OffsetMetrics.LongGauge) metric;
+                    final String partitionString = name.substring(prefix.length(), prefix.length() + 1);
+                    final int partition = Integer.parseInt(partitionString);
+                    if (gauge.getValue() != null) {
+                        partitions.add(partition);
+                    }
+                }
+            });
+            Assertions.assertThat(partitions).containsExactly(0, 1);
         }
     }
 

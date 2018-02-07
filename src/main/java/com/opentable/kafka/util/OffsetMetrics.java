@@ -311,7 +311,8 @@ public class OffsetMetrics implements Closeable {
         });
     }
 
-    private static class LongGauge implements Gauge<Long>, Counting {
+    @VisibleForTesting
+    static class LongGauge implements Gauge<Long>, Counting {
         private final AtomicReference<Long> value = new AtomicReference<>();
 
         @Override
