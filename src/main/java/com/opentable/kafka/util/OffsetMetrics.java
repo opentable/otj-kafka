@@ -214,11 +214,11 @@ public class OffsetMetrics implements Closeable {
             offsetsSupplier = this.offsetsSupplier;
         }
         Map<Integer, Long> offsets = offsetsSupplier.get();
-        final Map<Integer, Long> lag;
+        final Map<Integer, Long> lags;
         if (offsets.isEmpty()) {
             // Consumer may not be consuming this topic yet (or consumer might not exist).
             // In case consumer existed previously, we set all offsets and lag to 0.
-            offsets = lag = sizes
+            offsets = lags = sizes
                     .keySet()
                     .stream()
                     .collect(
@@ -236,7 +236,7 @@ public class OffsetMetrics implements Closeable {
                 return;
             }
             final Map<Integer, Long> finalOffsets = offsets;
-            lag = sizes
+            lags = sizes
                     .keySet()
                     .stream()
                     .collect(
@@ -248,13 +248,13 @@ public class OffsetMetrics implements Closeable {
         }
 
         offsets.forEach((part, off) -> gauge(partitionName(topic, part, "offset")).set(off));
-        lag    .forEach((part, off) -> {
-            gauge(partitionName(topic, part, "lag")).set(off);
-            ((Histogram) metricMap.get(totalName(topic, "lag-distribution"))).update(off);
+        lags    .forEach((part, lag) -> {
+            gauge(partitionName(topic, part, "lag")).set(lag);
+            ((Histogram) metricMap.get(totalName(topic, "lag-distribution"))).update(lag);
         });
 
         gauge(totalName(topic, "offset")).set(sumValues(offsets));
-        gauge(totalName(topic, "lag")).set(sumValues(lag));
+        gauge(totalName(topic, "lag")).set(sumValues(lags));
     }
 
     private AtomicLongGauge gauge(final String name) {
