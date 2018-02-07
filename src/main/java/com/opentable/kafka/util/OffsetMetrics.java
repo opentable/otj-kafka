@@ -2,15 +2,18 @@ package com.opentable.kafka.util;
 
 import java.io.Closeable;
 import java.time.Duration;
+import java.util.AbstractMap;
+import java.util.AbstractSet;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Iterator;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
@@ -27,7 +30,9 @@ import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.Reservoir;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
+import com.google.common.collect.AbstractIterator;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Sets;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 
 import org.slf4j.Logger;
@@ -266,46 +271,70 @@ public class OffsetMetrics implements Closeable {
 
         // The keys of offsets is a non-empty subset of the keys of sizes, and the keys of offsets and lags are
         // identical.
-        final Collection<Integer> knownPartitions = offsets.keySet();
+        final Set<Integer> knownParts = offsets.keySet();
+        final Set<Integer> unknownParts = keysNotPresent(knownParts, sizes);
 
-        limitedIter(knownPartitions, sizes, (part, size) -> gauge(partitionName(topic, part, "size")).set(size));
-        gauge(totalName(topic, "size")).set(limitedSumValues(knownPartitions, sizes));
+        subMap(knownParts, sizes).forEach((part, size) -> gauge(partitionName(topic, part, "size")).set(size));
+        unknownParts.forEach(              part        -> gauge(partitionName(topic, part, "size")).set(null));
+        gauge(totalName(topic, "size")).set(sumValues(subMap(knownParts, sizes)));
 
-        limitedIter(knownPartitions, offsets, (part, off) -> gauge(partitionName(topic, part, "offset")).set(off));
-        limitedIter(knownPartitions, lags, (part, lag) -> {
+        offsets     .forEach((part, off) -> gauge(partitionName(topic, part, "offset")).set(off));
+        unknownParts.forEach( part       -> gauge(partitionName(topic, part, "offset")).set(null));
+        gauge(totalName(topic, "offset")).set(sumValues(offsets));
+
+        lags.forEach((part, lag) -> {
             gauge(partitionName(topic, part, "lag")).set(lag);
             ((Histogram) metricMap.get(totalName(topic, "lag-distribution"))).update(lag);
         });
-
-        gauge(totalName(topic, "offset")).set(limitedSumValues(knownPartitions, offsets));
-        gauge(totalName(topic, "lag")).set(limitedSumValues(knownPartitions, lags));
+        unknownParts.forEach(part -> gauge(partitionName(topic, part, "lag")).set(null));
+        gauge(totalName(topic, "lag")).set(sumValues(lags));
     }
 
     private LongGauge gauge(final String name) {
         return (LongGauge) metricMap.get(name);
     }
 
-    /** Sum values in {@code map} over <em>only</em> keys present in {@code keys}. */
-    private static <K> long limitedSumValues(final Collection<K> keys, final Map<K, Long> map) {
-        return keys.stream().mapToLong(map::get).sum();
+    private static long sumValues(final Map<?, Long> map) {
+        return map.values().stream().mapToLong(x -> x).sum();
     }
 
     /**
-     * Run {@code f} on keys and values of {@code map} in a &ldquo;limited&rdquo; manner.
-     * Specifically, for keys present in {@code keys}, call {@code f} with the key and value present in {@code map}.
-     * For keys not present in {@code keys}, call {@code f} with the key and {@code null} instead of the value.
+     * Sub-map of {@code map} whose keys are the elements of {@code keys} with corresponding values from {@code map}.
      */
-    private static <K, V> void limitedIter(
-            final Collection<K> keys,
-            final Map<K, V> map,
-            final BiConsumer<K, V> f) {
-        map.forEach((k, v) -> {
-            if (keys.contains(k)) {
-                f.accept(k, v);
-            } else {
-                f.accept(k, null);
+    private static <K, V> Map<K, V> subMap(final Collection<K> keys, final Map<K, V> map) {
+        return new AbstractMap<K, V>() {
+            @Override
+            public Set<Entry<K, V>> entrySet() {
+                return new AbstractSet<Entry<K, V>>() {
+                    @Override
+                    public Iterator<Entry<K, V>> iterator() {
+                        final Iterator<Entry<K, V>> itr = map.entrySet().iterator();
+                        return new AbstractIterator<Entry<K, V>>() {
+                            @Override
+                            protected Entry<K, V> computeNext() {
+                                while (itr.hasNext()) {
+                                    final Entry<K, V> e = itr.next();
+                                    if (keys.contains(e.getKey())) {
+                                        return e;
+                                    }
+                                }
+                                return endOfData();
+                            }
+                        };
+                    }
+
+                    @Override
+                    public int size() {
+                        return keys.size();
+                    }
+                };
             }
-        });
+        };
+    }
+
+    /** Keys from {@code map} not present in {@code keys}. */
+    private static <K> Set<K> keysNotPresent(final Set<K> keys, final Map<K, ?> map) {
+        return Sets.difference(map.keySet(), keys);
     }
 
     @VisibleForTesting
