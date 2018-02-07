@@ -231,7 +231,7 @@ public class OffsetMetrics implements Closeable {
                     .collect(
                             Collectors.toMap(
                                     part -> part,
-                                    part -> null
+                                    part -> 0L
                             )
                     );
         } else {
