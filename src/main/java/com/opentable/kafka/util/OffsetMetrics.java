@@ -219,14 +219,14 @@ public class OffsetMetrics implements Closeable {
         final Map<Integer, Long> lags;
         if (offsets.isEmpty()) {
             // Consumer may not be consuming this topic yet (or consumer might not exist).
-            // In case consumer existed previously, we set all offsets and lag to 0.
+            // In case consumer existed previously, we set all offsets and lag to null.
             offsets = lags = sizes
                     .keySet()
                     .stream()
                     .collect(
                             Collectors.toMap(
                                     part -> part,
-                                    part -> 0L
+                                    part -> null
                             )
                     );
         } else {
@@ -291,6 +291,8 @@ public class OffsetMetrics implements Closeable {
         map.forEach((k, v) -> {
             if (keys.contains(k)) {
                 f.accept(k, v);
+            } else {
+                f.accept(k, null);
             }
         });
     }
