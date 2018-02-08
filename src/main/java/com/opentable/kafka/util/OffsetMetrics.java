@@ -267,7 +267,7 @@ public class OffsetMetrics implements Closeable {
         // The keys of offsets is a non-empty subset of the keys of sizes, and the keys of offsets and lags are
         // identical.
         final Set<Integer> knownParts = offsets.keySet();
-        final Set<Integer> unknownParts = Sets.difference(offsets.keySet(), knownParts);
+        final Set<Integer> unknownParts = Sets.difference(sizes.keySet(), knownParts);
         final Map<Integer, Long> subSizes = Maps.filterKeys(sizes, offsets::containsKey);
 
         subSizes    .forEach((part, size) -> gauge(partitionName(topic, part, "size")).set(size));
