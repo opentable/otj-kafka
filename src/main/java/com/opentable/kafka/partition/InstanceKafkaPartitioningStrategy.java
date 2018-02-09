@@ -49,7 +49,7 @@ public class InstanceKafkaPartitioningStrategy implements KafkaPartitioningStrat
             final int instanceNumber = calculateInstanceNumber();
             final int instanceCount = calculateTotalInstances();
             // If kafka is enabled and instance > partition probably a muck up.
-            if (((instanceCount > partitionCount) && (brokerConfig.isEnabled()))) {
+            if (instanceCount > partitionCount) {
                 throw new IllegalStateException("More instances than partitions - probably a misconfiguration?");
             }
             // Calculate distribution of instances to partitions
