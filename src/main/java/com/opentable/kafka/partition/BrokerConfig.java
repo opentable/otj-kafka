@@ -4,9 +4,18 @@ package com.opentable.kafka.partition;
     Use this to create a bean providing the basic configuration needed
  */
 public class BrokerConfig {
-    private final String brokerList; // comma delimited list of brokers
+    /**
+     * Comma delimited list of brokers
+     */
+    private final String brokerList;
+    /**
+     * topic
+     */
     private final String topic; // topic
-    private final boolean enabled; // is it enabled? Should be true for "normal" ops, false for when testing without kafka
+    /**
+     * is it enabled? Should be true for "normal" ops, false for when testing without kafka
+     */
+    private final boolean enabled;
 
     public BrokerConfig(final String brokerList, final String topic, final boolean kafkaEnabled) {
         this.brokerList = brokerList;

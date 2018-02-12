@@ -1,6 +1,6 @@
 otj-kafka changelog
 ===================
-2.5.1
+2.6.0
 -----
 * Add ManualKafkaPartitioningStrategy.
 
