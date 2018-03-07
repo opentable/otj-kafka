@@ -19,7 +19,7 @@
   <parent>
     <groupId>com.opentable</groupId>
     <artifactId>otj-parent-spring</artifactId>
-    <version>139-SNAPSHOT</version>
+    <version>139</version>
   </parent>
 
   <scm>
@@ -33,31 +33,6 @@
   <artifactId>otj-kafka</artifactId>
   <version>2.6.1-SNAPSHOT</version>
   <description>Kafka integrations component</description>
-
-  <dependencyManagement>
-    <dependencies>
-      <dependency>
-        <groupId>com.opentable.components</groupId>
-        <artifactId>otj-metrics</artifactId>
-        <version>2.6.9-SNAPSHOT</version>
-      </dependency>
-      <dependency>
-        <groupId>com.opentable.components</groupId>
-        <artifactId>otj-conservedheaders</artifactId>
-        <version>2.1.2-SNAPSHOT</version>
-      </dependency>
-      <dependency>
-        <groupId>com.opentable.components</groupId>
-        <artifactId>otj-spring</artifactId>
-        <version>1.2.4-SNAPSHOT</version>
-      </dependency>
-      <dependency>
-        <groupId>com.opentable.components</groupId>
-        <artifactId>otj-scopes</artifactId>
-        <version>2.0.2-SNAPSHOT</version>
-      </dependency>
-    </dependencies>
-  </dependencyManagement>
 
   <dependencies>
     <dependency>

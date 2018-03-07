@@ -1,5 +1,9 @@
 otj-kafka changelog
 ===================
+2.6.1
+-----
+* Spring Boot 2/5.0.4
+
 2.6.0
 -----
 * Add ManualKafkaPartitioningStrategy.
