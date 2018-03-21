@@ -203,6 +203,8 @@ public class EmbeddedKafkaBroker implements Closeable
         config.put(KafkaConfig.OffsetsTopicPartitionsProp(), 1);
         config.put(KafkaConfig.OffsetsTopicReplicationFactorProp(), (short) 1);
         config.put(KafkaConfig.AutoCreateTopicsEnableProp(), autoCreateTopics);
+        config.put(KafkaConfig.GroupMinSessionTimeoutMsProp(), 50);
+        config.put(KafkaConfig.GroupInitialRebalanceDelayMsProp(), 50);
         return new KafkaConfig(config);
     }
 
