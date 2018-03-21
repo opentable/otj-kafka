@@ -1,6 +1,11 @@
 otj-kafka changelog
 ===================
 
+2.7.1
+-----
+
+* dramatically improve EmbeddedKafka speed for single-broker case
+
 2.7.0
 -----
 
