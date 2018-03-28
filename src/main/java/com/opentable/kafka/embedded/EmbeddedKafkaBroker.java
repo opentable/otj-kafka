@@ -21,21 +21,28 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Properties;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 
 import com.google.common.base.Preconditions;
 
+import org.apache.kafka.clients.admin.AdminClient;
 import org.apache.kafka.clients.admin.AdminClientConfig;
+import org.apache.kafka.clients.admin.NewTopic;
+import org.apache.kafka.clients.admin.TopicDescription;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.common.PartitionInfo;
-import org.apache.kafka.common.errors.CoordinatorNotAvailableException;
-import org.apache.kafka.common.errors.TimeoutException;
+import org.apache.kafka.common.errors.LeaderNotAvailableException;
 import org.apache.kafka.common.serialization.Deserializer;
 import org.apache.kafka.common.serialization.Serdes;
 import org.apache.kafka.common.serialization.Serializer;
@@ -44,9 +51,6 @@ import org.apache.kafka.common.serialization.StringSerializer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import kafka.admin.AdminClient;
-import kafka.admin.AdminUtils;
-import kafka.admin.RackAwareMode;
 import kafka.server.KafkaConfig;
 import kafka.server.KafkaServer;
 
@@ -62,6 +66,7 @@ public class EmbeddedKafkaBroker implements Closeable
 
     private EmbeddedZookeeper ezk;
     private KafkaServer kafka;
+    private AdminClient admin;
     private int port;
     private final boolean autoCreateTopics;
     private final int nPartitions;
@@ -95,11 +100,14 @@ public class EmbeddedKafkaBroker implements Closeable
         kafka.startup();
         LOG.info("Server started up");
 
+        admin = AdminClient.create(createProperties());
+
         topicsToCreate.forEach(this::createTopic);
 
         LOG.info("waiting for embedded kafka broker to become ready");
         try {
             waitUntilReady();
+            maybeCreateConsumerOffsets();
         } catch (final InterruptedException e) {
             LOG.error("interrupted waiting for broker to become ready", e);
             Thread.currentThread().interrupt();
@@ -108,14 +116,45 @@ public class EmbeddedKafkaBroker implements Closeable
         return this;
     }
 
+    // Create consumer offsets ourselves so we can control replication, partitions, etc
+    private void maybeCreateConsumerOffsets() throws InterruptedException {
+        final String consumerOffsets = "__consumer_offsets";
+        Map<String, TopicDescription> description;
+        final Instant start = Instant.now();
+        LOG.info("Creating consumer offsets");
+        while (true) {
+            try {
+                description = admin.describeTopics(Collections.singleton(consumerOffsets)).all().get(10, TimeUnit.SECONDS);
+                if (description.isEmpty()) {
+                    createTopic(consumerOffsets);
+                }
+                LOG.info("Consumer offsets ready after {}", Duration.between(start, Instant.now()));
+                return;
+            } catch (InterruptedException e1) {
+                Thread.currentThread().interrupt();
+                throw new RuntimeException(e1);
+            } catch (ExecutionException | TimeoutException e1) {
+                if (e1.getCause() instanceof LeaderNotAvailableException) {
+                    loopSleep(start);
+                    continue;
+                }
+                throw new RuntimeException(e1);
+            }
+        }
+    }
+
     @Override
     @PreDestroy
     public void close()
     {
         try {
-            kafka.shutdown();
+            admin.close();
         } finally {
-            ezk.close();
+            try {
+                kafka.shutdown();
+            } finally {
+                ezk.close();
+            }
         }
         try {
             Files.walkFileTree(stateDir, DeleteRecursively.INSTANCE);
@@ -149,29 +188,23 @@ public class EmbeddedKafkaBroker implements Closeable
                 }
             }
         }
-        LOG.info("topics ready, all having {} partition{}", nPartitions, nPartitions != 1 ? "s" : "");
+        LOG.info("topics ready, all having {} partition{}, took{}",
+                nPartitions, nPartitions != 1 ? "s" : "", Duration.between(start, Instant.now()));
     }
 
     private void waitForCoordinator(final Instant start) throws InterruptedException {
-        LOG.info("waiting for coordinator");
-        final Properties props = new Properties();
-        props.put(AdminClientConfig.BOOTSTRAP_SERVERS_CONFIG, getKafkaBrokerConnect());
-        final AdminClient adminClient = AdminClient.create(props);
-        try {
-            while (true) {
-                try {
-                    adminClient.listGroupOffsets("ot-kafka-embedded-not-a-real-group");
-                    break;
-                } catch (final TimeoutException e) {
-                    if (!(e.getCause() instanceof CoordinatorNotAvailableException)) {
-                        throw e;
-                    }
-                    loopSleep(start);
+        while (true) {
+            try {
+                admin.describeCluster().controller().get(10, TimeUnit.SECONDS);
+                break;
+            } catch (final TimeoutException | ExecutionException e) {
+                if (!(e.getCause() instanceof LeaderNotAvailableException)) {
+                    throw new RuntimeException(e);
                 }
+                loopSleep(start);
             }
-        } finally {
-            adminClient.close();
         }
+        LOG.info("coordinator available after {}", Duration.between(start, Instant.now()));
     }
 
     private static void loopSleep(final Instant start) throws InterruptedException {
@@ -189,7 +222,15 @@ public class EmbeddedKafkaBroker implements Closeable
             throw new UncheckedIOException(e);
         }
 
+        Properties config = createProperties();
+        return new KafkaConfig(config);
+    }
+
+    private Properties createProperties() {
+        Preconditions.checkState(port > 0, "no port set yet");
+
         Properties config = new Properties();
+        config.put(AdminClientConfig.BOOTSTRAP_SERVERS_CONFIG, getKafkaBrokerConnect());
         config.put(KafkaConfig.ZkConnectProp(), ezk.getConnectString());
         config.put(KafkaConfig.ListenersProp(), "PLAINTEXT://localhost:" + port);
         config.put(KafkaConfig.LogDirProp(), stateDir.resolve("logs").toString());
@@ -205,7 +246,7 @@ public class EmbeddedKafkaBroker implements Closeable
         config.put(KafkaConfig.AutoCreateTopicsEnableProp(), autoCreateTopics);
         config.put(KafkaConfig.GroupMinSessionTimeoutMsProp(), 50);
         config.put(KafkaConfig.GroupInitialRebalanceDelayMsProp(), 50);
-        return new KafkaConfig(config);
+        return config;
     }
 
     public String getKafkaBrokerConnect()
@@ -224,7 +265,8 @@ public class EmbeddedKafkaBroker implements Closeable
     }
 
     public void createTopic(String topic) {
-        AdminUtils.createTopic(kafka.zkUtils(), topic, nPartitions, 1, new Properties(), new RackAwareMode.Safe$());
+        LOG.info("Creating topic {}", topic);
+        admin.createTopics(Collections.singleton(new NewTopic(topic, nPartitions, (short) 1)));
         LOG.info("Topic {} created", topic);
     }
 
