@@ -41,6 +41,7 @@ import org.apache.kafka.clients.admin.TopicDescription;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.clients.producer.KafkaProducer;
+import org.apache.kafka.common.KafkaException;
 import org.apache.kafka.common.PartitionInfo;
 import org.apache.kafka.common.errors.LeaderNotAvailableException;
 import org.apache.kafka.common.serialization.Deserializer;
@@ -180,9 +181,13 @@ public class EmbeddedKafkaBroker implements Closeable
         try (KafkaConsumer<byte[], byte[]> consumer = new KafkaConsumer<>(props, deser, deser)) {
             for (final String topic : topicsToCreate) {
                 while (true) {
-                    final List<PartitionInfo> parts = consumer.partitionsFor(topic);
-                    if (parts != null && parts.size() == nPartitions) {
-                        break;
+                    try {
+                        final List<PartitionInfo> parts = consumer.partitionsFor(topic);
+                        if (parts != null && parts.size() == nPartitions) {
+                            break;
+                        }
+                    } catch (KafkaException e) {
+                        LOG.debug("Still waiting for topics: {}", e.toString());
                     }
                     loopSleep(start);
                 }
