@@ -1,6 +1,16 @@
 otj-kafka changelog
 ===================
 
+2.8.2
+-----
+
+* improve embedded kafka broker startup
+
+2.8.1
+-----
+
+* minor 1.1.0 bugfix
+
 2.8.0
 -----
 
