@@ -43,7 +43,6 @@ import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.common.KafkaException;
 import org.apache.kafka.common.PartitionInfo;
-import org.apache.kafka.common.errors.LeaderNotAvailableException;
 import org.apache.kafka.common.serialization.Deserializer;
 import org.apache.kafka.common.serialization.Serdes;
 import org.apache.kafka.common.serialization.Serializer;
@@ -101,14 +100,17 @@ public class EmbeddedKafkaBroker implements Closeable
         kafka.startup();
         LOG.info("Server started up");
 
-        admin = AdminClient.create(createProperties());
-
-        topicsToCreate.forEach(this::createTopic);
-
-        LOG.info("waiting for embedded kafka broker to become ready");
         try {
-            waitUntilReady();
+            LOG.info("waiting for embedded kafka broker to become ready");
+            admin = AdminClient.create(createProperties());
+            waitForCoordinator();
+
+            LOG.info("About to create topics");
+            topicsToCreate.forEach(this::createTopic);
+            waitForTopics();
             maybeCreateConsumerOffsets();
+            LOG.info("EmbeddedKafkaBroker start complete");
+
         } catch (final InterruptedException e) {
             LOG.error("interrupted waiting for broker to become ready", e);
             Thread.currentThread().interrupt();
@@ -120,28 +122,12 @@ public class EmbeddedKafkaBroker implements Closeable
     // Create consumer offsets ourselves so we can control replication, partitions, etc
     private void maybeCreateConsumerOffsets() throws InterruptedException {
         final String consumerOffsets = "__consumer_offsets";
-        Map<String, TopicDescription> description;
-        final Instant start = Instant.now();
-        LOG.info("Creating consumer offsets");
-        while (true) {
-            try {
-                description = admin.describeTopics(Collections.singleton(consumerOffsets)).all().get(10, TimeUnit.SECONDS);
-                if (description.isEmpty()) {
-                    createTopic(consumerOffsets);
-                }
-                LOG.info("Consumer offsets ready after {}", Duration.between(start, Instant.now()));
-                return;
-            } catch (InterruptedException e1) {
-                Thread.currentThread().interrupt();
-                throw new RuntimeException(e1);
-            } catch (ExecutionException | TimeoutException e1) {
-                if (e1.getCause() instanceof LeaderNotAvailableException) {
-                    loopSleep(start);
-                    continue;
-                }
-                throw new RuntimeException(e1);
+        retry("create consumer offsets", () -> {
+            Map<String, TopicDescription> description = admin.describeTopics(Collections.singleton(consumerOffsets)).all().get(10, TimeUnit.SECONDS);
+            if (description.isEmpty()) {
+                createTopic(consumerOffsets);
             }
-        }
+        });
     }
 
     @Override
@@ -164,14 +150,9 @@ public class EmbeddedKafkaBroker implements Closeable
         }
     }
 
-    private void waitUntilReady() throws InterruptedException {
-        final Instant start = Instant.now();
-        waitForTopics(start);
-        waitForCoordinator(start);
-    }
-
-    private void waitForTopics(final Instant start) throws InterruptedException {
+    private void waitForTopics() throws InterruptedException {
         LOG.info("waiting for topics");
+        final Instant start = Instant.now();
         final Properties props = new Properties();
         props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, getKafkaBrokerConnect());
         props.put(ConsumerConfig.GROUP_ID_CONFIG, "test-wait-for-topics");
@@ -180,42 +161,60 @@ public class EmbeddedKafkaBroker implements Closeable
         final Deserializer<byte[]> deser = Serdes.ByteArray().deserializer();
         try (KafkaConsumer<byte[], byte[]> consumer = new KafkaConsumer<>(props, deser, deser)) {
             for (final String topic : topicsToCreate) {
-                while (true) {
-                    try {
-                        final List<PartitionInfo> parts = consumer.partitionsFor(topic);
-                        if (parts != null && parts.size() == nPartitions) {
-                            break;
-                        }
-                    } catch (KafkaException e) {
-                        LOG.debug("Still waiting for topics: {}", e.toString());
+                retry(topic + " topic available", () -> {
+                    final List<PartitionInfo> parts = consumer.partitionsFor(topic);
+                    if (parts == null || parts.size() != nPartitions) {
+                        throw new KafkaException("partitions not ready yet: " + parts);
                     }
-                    loopSleep(start);
-                }
+                });
             }
         }
         LOG.info("topics ready, all having {} partition{}, took{}",
                 nPartitions, nPartitions != 1 ? "s" : "", Duration.between(start, Instant.now()));
     }
 
-    private void waitForCoordinator(final Instant start) throws InterruptedException {
-        while (true) {
-            try {
-                admin.describeCluster().controller().get(10, TimeUnit.SECONDS);
-                break;
-            } catch (final TimeoutException | ExecutionException e) {
-                if (!(e.getCause() instanceof LeaderNotAvailableException)) {
-                    throw new RuntimeException(e);
-                }
-                loopSleep(start);
-            }
-        }
-        LOG.info("coordinator available after {}", Duration.between(start, Instant.now()));
+    private void waitForCoordinator() throws InterruptedException {
+        retry("coordinator available", () -> {
+            admin.describeCluster().controller().get(10, TimeUnit.SECONDS);
+        });
     }
 
-    private static void loopSleep(final Instant start) throws InterruptedException {
-        Thread.sleep(LOOP_SLEEP.toMillis());
+    private static void retry(String description, RetryAction action) {
+        final Instant start = Instant.now();
+        Exception last = null;
+        while (true) {
+            try {
+                action.run();
+                LOG.info("{} after {}", description, Duration.between(start, Instant.now()));
+                return;
+            } catch (KafkaException e) {
+                LOG.debug("retrying due to {}", e.toString());
+                last = e;
+            } catch (ExecutionException e) {
+                if (!(e.getCause() instanceof KafkaException)) {
+                    throw new RuntimeException(e);
+                }
+                LOG.debug("retrying due to {}", e.toString());
+                last = e;
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                throw new RuntimeException("interrupted", e);
+            } catch (TimeoutException e) {
+                throw new RuntimeException("timeout", e);
+            }
+            loopSleep(start, last);
+        }
+    }
+
+    private static void loopSleep(final Instant start, Exception last) {
+        try {
+            Thread.sleep(LOOP_SLEEP.toMillis());
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new RuntimeException("interrupted", e);
+        }
         if (Instant.now().isAfter(start.plus(TIMEOUT))) {
-            throw new RuntimeException("timed out");
+            throw new RuntimeException("timed out", last);
         }
     }
 
@@ -335,5 +334,9 @@ public class EmbeddedKafkaBroker implements Closeable
         props.put("retries", "3");
         props.put("bootstrap.servers", getKafkaBrokerConnect());
         return props;
+    }
+
+    interface RetryAction {
+        void run() throws ExecutionException, InterruptedException, KafkaException, TimeoutException;
     }
 }
