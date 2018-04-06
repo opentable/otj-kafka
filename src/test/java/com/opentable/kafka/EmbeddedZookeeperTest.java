@@ -52,7 +52,8 @@ public class EmbeddedZookeeperTest implements Watcher {
         final String connect = zk.getConnectString();
         ZooKeeper client = new ZooKeeper(connect, 60000, this);
 
-        while (!client.getState().isConnected()) {
+        final long since = System.currentTimeMillis();
+        while (events.isEmpty() && System.currentTimeMillis() - since < 30_000) {
             synchronized (this) {
                 wait();
             }
