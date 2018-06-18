@@ -83,6 +83,7 @@ import com.opentable.metrics.graphite.MetricSets;
  */
 @SuppressWarnings("PMD.AvoidDuplicateLiterals")
 public class OffsetMetrics implements Closeable {
+    static final String PREFIX = "kafka.";
     private static final Logger LOG = LoggerFactory.getLogger(OffsetMetrics.class);
 
     private final Bucket logLimitBucket = Bucket4j
@@ -127,7 +128,8 @@ public class OffsetMetrics implements Closeable {
             final Function<String, Map<Integer, Long>> offsetsSupplier) {
         Preconditions.checkArgument(metricPrefix != null, "null metric prefix");
         Preconditions.checkArgument(!topics.isEmpty(), "no topics");
-        this.metricPrefix = metricPrefix;
+        Preconditions.checkArgument(!metricPrefix.contains("."), "Your prefix cannot contain a period");
+        this.metricPrefix = PREFIX + metricPrefix;
         this.metricRegistry = metricRegistry;
         this.topics = topics;
         this.pollPeriod = pollPeriod;
