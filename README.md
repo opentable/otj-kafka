@@ -30,7 +30,9 @@ example from chat.
     }
 
 `OffsetMetrics` registers its metrics on startup, so it requires a reference
-to a `MetricRegistry` and a prefix for the metrics it'll register.
+to a `MetricRegistry` and a prefix for the metrics it'll register. Metrics
+will be registered under the namespace `kafka.<prefix>.<topic>". The prefix
+cannot contain a period.
 
 If not using Spring, just be sure to call `start` after construction, and
 `stop` before disposal or shutdown.
