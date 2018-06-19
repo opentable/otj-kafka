@@ -96,7 +96,7 @@ public class OffsetMetricsTest {
             waitForMetric(rw, metrics, "offset", 50);
             waitForMetric(rw, metrics, "lag", -50);
 
-            final String prefix = String.format("%s.%s.partition.", METRIC_NS, rw.getTopicName());
+            final String prefix = String.format(OffsetMetrics.PREFIX + "%s.%s.partition.", METRIC_NS, rw.getTopicName());
             final Set<Integer> partitions = new HashSet<>();
             metricRegistry.getMetrics().forEach((name, metric) -> {
                 if (name.startsWith(prefix)) {
@@ -118,7 +118,7 @@ public class OffsetMetricsTest {
             final String nameSuffix,
             final long value)
             throws InterruptedException {
-        final String metricName = String.format("%s.%s.partition.0.%s", METRIC_NS, rw.getTopicName(), nameSuffix);
+        final String metricName = String.format(OffsetMetrics.PREFIX + "%s.%s.partition.0.%s", METRIC_NS, rw.getTopicName(), nameSuffix);
         while (true) {
             final Counting c = (Counting) metrics.getMetrics().get(metricName);
             if (c.getCount() == value) {

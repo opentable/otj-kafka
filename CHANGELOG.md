@@ -1,6 +1,11 @@
 otj-kafka changelog
 ===================
 
+2.8.3
+-----
+* OffsetMetrics no longer allows metricsPrefix containing period and is always prepended with "kafka."
+* POM update to 152
+
 2.8.2
 -----
 
