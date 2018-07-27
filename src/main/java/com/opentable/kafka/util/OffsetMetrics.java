@@ -289,7 +289,11 @@ public class OffsetMetrics implements Closeable {
     }
 
     private LongGauge gauge(final String name) {
-        return (LongGauge) metricMap.get(name);
+        final LongGauge result = (LongGauge) metricMap.get(name);
+        if (result == null) {
+            throw new IllegalStateException("Gauge '" + name + "' not found in metricMap=" + metricMap);
+        }
+        return result;
     }
 
     private static long sumValues(final Map<?, Long> map) {
