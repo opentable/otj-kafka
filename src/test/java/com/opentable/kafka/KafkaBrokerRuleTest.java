@@ -15,6 +15,7 @@ package com.opentable.kafka;
 
 import static org.junit.Assert.assertEquals;
 
+import java.time.Duration;
 import java.util.Collections;
 
 import org.apache.kafka.clients.consumer.ConsumerRecords;
@@ -47,7 +48,7 @@ public class KafkaBrokerRuleTest {
 
         try (KafkaConsumer<String, String> consumer = ekb.createConsumer("test")) {
             consumer.subscribe(Collections.singletonList(TEST_TOPIC));
-            ConsumerRecords<String, String> records = consumer.poll(5000);
+            ConsumerRecords<String, String> records = consumer.poll(Duration.ofSeconds(5));
             assertEquals(1, records.count());
             assertEquals(TEST_VALUE, records.iterator().next().value());
         }

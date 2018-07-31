@@ -7,5 +7,5 @@ import com.google.common.collect.Multimap;
  */
 @FunctionalInterface
 public interface InstanceToPartitionMapper {
-    Multimap<Integer, Integer> instanceToPartitionMap(final int partitionCount, final int instanceCount);
+    Multimap<Integer, Integer> instanceToPartitionMap(int partitionCount, int instanceCount);
 }
