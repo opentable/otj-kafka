@@ -1,6 +1,10 @@
 otj-kafka changelog
 ===================
 
+2.8.4
+-----
+* Fix possible NPE in OffsetMetrics
+
 2.8.3
 -----
 * OffsetMetrics no longer allows metricsPrefix containing period and is always prepended with "kafka."
