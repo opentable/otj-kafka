@@ -1,6 +1,10 @@
 otj-kafka changelog
 ===================
 
+3.0.0
+-----
+* Requires and supports Kafka 2.0.0
+
 2.8.3
 -----
 * OffsetMetrics no longer allows metricsPrefix containing period and is always prepended with "kafka."
