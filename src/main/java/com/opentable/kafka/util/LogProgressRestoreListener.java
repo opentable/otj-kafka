@@ -75,7 +75,8 @@ public class LogProgressRestoreListener implements StateRestoreListener, StateLi
         if (Duration.between(lastPrint, now).getSeconds() <= 30) {
             return;
         }
-        long offsetsSoFar = 0, offsetsTotal = 0;
+        long offsetsSoFar = 0;
+        long offsetsTotal = 0;
         for (Entry<String, Partitions> tp : restoreState.entrySet()) {
             final Partitions parts = tp.getValue();
             for (int p = 0; p < parts.offset.length; p++) {

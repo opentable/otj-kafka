@@ -79,7 +79,7 @@ final class ReadWriteRule extends ExternalResource implements Closeable, AutoClo
             consumer.subscribe(Collections.singleton(ReadWriteRule.TOPIC_NAME));
             ConsumerRecords<String, String> records;
             while (true) {
-                records = consumer.poll(POLL_TIME.toMillis());
+                records = consumer.poll(POLL_TIME);
                 if (!records.isEmpty()) {
                     break;
                 }

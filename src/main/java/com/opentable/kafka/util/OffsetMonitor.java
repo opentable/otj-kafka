@@ -6,10 +6,12 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
 import java.util.Properties;
+import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
 
 import com.google.common.base.Verify;
 
+import org.apache.kafka.clients.admin.AdminClient;
 import org.apache.kafka.clients.admin.AdminClientConfig;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
@@ -17,9 +19,6 @@ import org.apache.kafka.common.PartitionInfo;
 import org.apache.kafka.common.TopicPartition;
 import org.apache.kafka.common.serialization.Deserializer;
 import org.apache.kafka.common.serialization.Serdes;
-
-import kafka.admin.AdminClient;
-import scala.collection.JavaConverters;
 
 public class OffsetMonitor implements Closeable {
     private static final Duration TIMEOUT = Duration.ofSeconds(30);
@@ -105,16 +104,26 @@ public class OffsetMonitor implements Closeable {
      * @return map of partition to offset
      */
     public Map<Integer, Long> getGroupOffsets(final String groupId, final String topic) {
-        return JavaConverters.mapAsJavaMap(adminClient.listGroupOffsets(groupId))
-                .entrySet()
-                .stream()
-                .filter(entry -> entry.getKey().topic().equals(topic))
-                .collect(
-                        Collectors.toMap(
-                                entry -> entry.getKey().partition(),
-                                entry -> (Long) entry.getValue()
-                        )
-                );
+
+        try {
+            return adminClient.listConsumerGroupOffsets(groupId)
+                    .partitionsToOffsetAndMetadata()
+                    .get()
+                    .entrySet()
+                    .stream()
+                    .filter(entry -> entry.getKey().topic().equals(topic))
+                    .collect(
+                            Collectors.toMap(
+                                    k -> k.getKey().partition(),
+                                    v -> v.getValue().offset()
+                            )
+                    );
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new RuntimeException("Was interrupted"); //NOPMD
+        } catch (ExecutionException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     @SuppressWarnings("PMD.SystemPrintln")

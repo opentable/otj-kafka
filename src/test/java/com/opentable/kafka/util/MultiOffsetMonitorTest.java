@@ -83,7 +83,7 @@ public class MultiOffsetMonitorTest {
             // Wait for offset record to fill.
             consumer.subscribe(Collections.singleton(TOPIC_NAME));
             while (true) {
-                LOG.info("consumed {} records", consumer.poll(Duration.ofSeconds(1).toMillis()).count());
+                LOG.info("consumed {} records", consumer.poll(Duration.ofSeconds(1)).count());
 
                 mon1TopicSizes = mon1.getTopicSizes(TOPIC_NAME);
                 mon2TopicSizes = mon2.getTopicSizes(TOPIC_NAME);

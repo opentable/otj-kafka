@@ -19,8 +19,9 @@
   <parent>
     <groupId>com.opentable</groupId>
     <artifactId>otj-parent-spring</artifactId>
-    <version>152</version>
+    <version>163</version>
   </parent>
+
 
   <scm>
     <connection>scm:git:git://github.com/opentable/otj-kafka.git</connection>
@@ -29,10 +30,40 @@
     <tag>HEAD</tag>
   </scm>
 
+  <properties>
+    <!-- Remove once otj-parent is updated with this version of otj-metrics, and kafka 2.0.0 -->
+    <dep.kafka.version>2.0.0</dep.kafka.version>
+  </properties>
+
   <groupId>com.opentable.components</groupId>
   <artifactId>otj-kafka</artifactId>
   <version>2.8.5-SNAPSHOT</version>
   <description>Kafka integrations component</description>
+
+  <dependencyManagement>
+    <dependencies>
+      <!-- Remove as well -->
+      <dependency>
+        <groupId>org.apache.zookeeper</groupId>
+        <artifactId>zookeeper</artifactId>
+        <version>3.4.13</version>
+        <exclusions>
+          <exclusion>
+            <groupId>log4j</groupId>
+            <artifactId>log4j</artifactId>
+          </exclusion>
+          <exclusion>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-log4j12</artifactId>
+          </exclusion>
+          <exclusion>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
+          </exclusion>
+        </exclusions>
+      </dependency>
+    </dependencies>
+  </dependencyManagement>
 
   <dependencies>
     <dependency>
@@ -95,11 +126,6 @@
     <dependency>
       <groupId>org.slf4j</groupId>
       <artifactId>slf4j-api</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>org.scala-lang</groupId>
-      <artifactId>scala-library</artifactId>
     </dependency>
 
     <dependency>
