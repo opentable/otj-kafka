@@ -3,7 +3,9 @@ otj-kafka changelog
 
 3.0.0
 -----
-* Requires and supports Kafka 2.0.0
+* **Requires** and supports Kafka 2.0.0
+
+If you want to use Kafka 1.x you need to use an older library version.
 
 2.8.4
 -----
