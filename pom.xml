@@ -27,7 +27,7 @@
     <connection>scm:git:git://github.com/opentable/otj-kafka.git</connection>
     <developerConnection>scm:git:git@github.com:opentable/otj-kafka.git</developerConnection>
     <url>http://github.com/opentable/otj-kafka</url>
-    <tag>HEAD</tag>
+    <tag>otj-kafka-3.0.0</tag>
   </scm>
 
   <properties>
@@ -37,7 +37,7 @@
 
   <groupId>com.opentable.components</groupId>
   <artifactId>otj-kafka</artifactId>
-  <version>2.8.5-SNAPSHOT</version>
+  <version>3.0.0</version>
   <description>Kafka integrations component</description>
 
   <dependencyManagement>
