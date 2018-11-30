@@ -24,7 +24,8 @@ public class LogProgressRestoreListener implements StateRestoreListener, StateLi
     private final Map<String, Partitions> restoreState = new LinkedHashMap<>();
 
     @GuardedBy("this")
-    private Instant lastPrint = Instant.now(), restoreStart = Instant.now();
+    private Instant lastPrint = Instant.now();
+    private Instant restoreStart = Instant.now();
 
     private final StateListener delegate;
 
@@ -101,7 +102,9 @@ public class LogProgressRestoreListener implements StateRestoreListener, StateLi
 
     static class Partitions {
         // NB this assumes partitions start at 0 and are consecutive.
-        long[] start = new long[0], offset = new long[0], end = new long[0];
+        long[] start = new long[0];
+        long[] offset = new long[0];
+        long[] end = new long[0];
 
         void onRestoreStart(TopicPartition topicPartition, long startingOffset, long endingOffset) {
             final int partition = ensurePartition(topicPartition);

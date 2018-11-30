@@ -19,7 +19,7 @@
   <parent>
     <groupId>com.opentable</groupId>
     <artifactId>otj-parent-spring</artifactId>
-    <version>163</version>
+    <version>179</version>
   </parent>
 
 
@@ -31,8 +31,7 @@
   </scm>
 
   <properties>
-    <!-- Remove once otj-parent is updated with this version of otj-metrics, and kafka 2.0.0 -->
-    <dep.kafka.version>2.0.0</dep.kafka.version>
+    <dep.otj-metrics.version>3.0.0</dep.otj-metrics.version>
   </properties>
 
   <groupId>com.opentable.components</groupId>
@@ -80,7 +79,8 @@
     </dependency>
     <dependency>
       <groupId>com.opentable.components</groupId>
-      <artifactId>otj-metrics</artifactId>
+      <artifactId>otj-metrics-core</artifactId>
+      <version>${dep.otj-metrics.version}</version>
     </dependency>
     <dependency>
       <groupId>com.opentable.components</groupId>

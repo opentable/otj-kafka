@@ -1,6 +1,10 @@
 otj-kafka changelog
 ===================
 
+3.1.0
+-----
+* Uses otj-metrics 3.0
+
 3.0.0
 -----
 * **Requires** and supports Kafka 2.0.0
