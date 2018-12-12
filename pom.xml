@@ -19,7 +19,7 @@
   <parent>
     <groupId>com.opentable</groupId>
     <artifactId>otj-parent-spring</artifactId>
-    <version>179</version>
+    <version>180</version>
   </parent>
 
 
@@ -31,7 +31,13 @@
   </scm>
 
   <properties>
-    <dep.otj-metrics.version>3.0.0</dep.otj-metrics.version>
+      <basepom.oss.skip-scala-doc>true</basepom.oss.skip-scala-doc>
+      <basepom.check.skip-javadoc>false</basepom.check.skip-javadoc>
+      <basepom.check.fail-javadoc>false</basepom.check.fail-javadoc>
+
+      <!-- Remove once parent updated -->
+      <dep.otj-metrics.version>4.0.0</dep.otj-metrics.version>
+      <dep.metrics.version>4.0.3</dep.metrics.version>
   </properties>
 
   <groupId>com.opentable.components</groupId>
@@ -39,9 +45,9 @@
   <version>3.1.1-SNAPSHOT</version>
   <description>Kafka integrations component</description>
 
+  <!--
   <dependencyManagement>
     <dependencies>
-      <!-- Remove as well -->
       <dependency>
         <groupId>org.apache.zookeeper</groupId>
         <artifactId>zookeeper</artifactId>
@@ -63,6 +69,7 @@
       </dependency>
     </dependencies>
   </dependencyManagement>
+-->
 
   <dependencies>
     <dependency>
@@ -80,7 +87,6 @@
     <dependency>
       <groupId>com.opentable.components</groupId>
       <artifactId>otj-metrics-core</artifactId>
-      <version>${dep.otj-metrics.version}</version>
     </dependency>
     <dependency>
       <groupId>com.opentable.components</groupId>
