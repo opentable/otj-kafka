@@ -19,7 +19,7 @@
   <parent>
     <groupId>com.opentable</groupId>
     <artifactId>otj-parent-spring</artifactId>
-    <version>183-SNAPSHOT</version>
+    <version>184</version>
   </parent>
 
 
@@ -34,14 +34,6 @@
       <basepom.oss.skip-scala-doc>true</basepom.oss.skip-scala-doc>
       <basepom.check.skip-javadoc>false</basepom.check.skip-javadoc>
       <basepom.check.fail-javadoc>false</basepom.check.fail-javadoc>
-
-      <dep.otj-core.version>1.6.1-SNAPSHOT</dep.otj-core.version>
-      <dep.otj-spring.version>1.3.3-SNAPSHOT</dep.otj-spring.version>
-      <dep.otj-scopes.version>2.0.3-SNAPSHOT</dep.otj-scopes.version>
-      <dep.otj-executors.version>2.1.2-SNAPSHOT</dep.otj-executors.version>
-      <dep.otj-conservedheaders.version>3.0.1-SNAPSHOT</dep.otj-conservedheaders.version>
-      <dep.otj-metrics.versin>4.0.1-SNAPSHOT</dep.otj-metrics.versin>
-
   </properties>
 
   <groupId>com.opentable.components</groupId>
