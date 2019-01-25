@@ -1,6 +1,13 @@
 otj-kafka changelog
 ===================
 
+3.1.2
+-----
+* Recompile for DAG
+
+3.1.1
+-----
+* Recompile for DW 4
 3.1.0
 -----
 * Uses otj-metrics 3.0
