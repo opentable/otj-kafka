@@ -25,6 +25,7 @@ import org.apache.kafka.common.Metric;
 import org.apache.kafka.common.MetricName;
 import org.apache.kafka.common.PartitionInfo;
 import org.apache.kafka.common.TopicPartition;
+import org.apache.kafka.common.errors.WakeupException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -122,6 +123,9 @@ public class DelegatingConsumer<K,V> implements Consumer<K,V> {
                 LOG.debug(builder.log(), "Response code {}, uri {}","blah", "blah");
             }
             return records;
+        } catch (WakeupException e) {
+            LOG.info("Kafka is interrupted, will shutdown");
+            throw e;
         }
     }
 
