@@ -27,18 +27,18 @@ import org.junit.rules.ExternalResource;
 import com.opentable.kafka.embedded.EmbeddedKafkaBroker;
 import com.opentable.kafka.embedded.EmbeddedKafkaBuilder;
 
-final class ReadWriteRule extends ExternalResource implements Closeable, AutoCloseable {
+public final class ReadWriteRule extends ExternalResource implements Closeable, AutoCloseable {
     private static final Duration POLL_TIME = Duration.ofSeconds(1);
     private static final String TOPIC_NAME = "topic-1";
     private static final String GROUP_ID = "group-1";
 
     private final EmbeddedKafkaBroker ekb;
 
-    ReadWriteRule() {
+    public ReadWriteRule() {
         this(1);
     }
 
-    ReadWriteRule(final int nPartitions) {
+    public ReadWriteRule(final int nPartitions) {
         ekb = new EmbeddedKafkaBuilder()
                 .withTopics(TOPIC_NAME)
                 .nPartitions(nPartitions)
@@ -57,19 +57,19 @@ final class ReadWriteRule extends ExternalResource implements Closeable, AutoClo
         ekb.close();
     }
 
-    EmbeddedKafkaBroker getBroker() {
+    public EmbeddedKafkaBroker getBroker() {
         return ekb;
     }
 
-    String getTopicName() {
+    public String getTopicName() {
         return TOPIC_NAME;
     }
 
-    String getGroupId() {
+    public String getGroupId() {
         return GROUP_ID;
     }
 
-    ProducerRecord<String, String> record(final int i) {
+    public ProducerRecord<String, String> record(final int i) {
         return new ProducerRecord<>(
                 TOPIC_NAME,
                 String.format("key-%d", i),
@@ -77,7 +77,7 @@ final class ReadWriteRule extends ExternalResource implements Closeable, AutoClo
         );
     }
 
-    void writeTestRecords(final int lo, final int hi) {
+    public void writeTestRecords(final int lo, final int hi) {
         try (KafkaProducer<String, String> producer = ekb.createProducer()) {
             for (int i = lo; i <= hi; ++i) {
                 producer.send(record(i));
@@ -86,8 +86,12 @@ final class ReadWriteRule extends ExternalResource implements Closeable, AutoClo
         }
     }
 
+    public EmbeddedKafkaBroker getEkb() {
+        return ekb;
+    }
+
     // Contains infinite loop.  Make sure to include a timeout for the test using this.
-    void readTestRecords(final int expect) {
+    public void readTestRecords(final int expect) {
         try (KafkaConsumer<String, String> consumer = ekb.createConsumer(GROUP_ID)) {
             consumer.subscribe(Collections.singleton(ReadWriteRule.TOPIC_NAME));
             ConsumerRecords<String, String> records;
@@ -103,7 +107,7 @@ final class ReadWriteRule extends ExternalResource implements Closeable, AutoClo
         }
     }
 
-    static void loopSleep() throws InterruptedException {
+    public static void loopSleep() throws InterruptedException {
         Thread.sleep(POLL_TIME.toMillis());
     }
 }

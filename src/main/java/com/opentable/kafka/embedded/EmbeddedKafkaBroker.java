@@ -320,7 +320,7 @@ public class EmbeddedKafkaBroker implements Closeable
         return new KafkaProducer<>(baseProducerProperties(), keySerializer, valueSerializer);
     }
 
-    private Properties baseConsumerProperties(String groupId) {
+    public Properties baseConsumerProperties(String groupId) {
         Properties props = new Properties();
         props.put("auto.offset.reset", "earliest");
         props.put("bootstrap.servers", getKafkaBrokerConnect());
@@ -328,7 +328,7 @@ public class EmbeddedKafkaBroker implements Closeable
         return props;
     }
 
-    private Properties baseProducerProperties() {
+    public Properties baseProducerProperties() {
         Properties props = new Properties();
         props.put("acks", "all");
         props.put("retries", "3");
