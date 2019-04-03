@@ -55,6 +55,7 @@ public class LoggingTest {
         props.put("key.serializer", keySer.getName());
         props.put("value.serializer", valueSer.getName());
         props.put(ProducerConfig.INTERCEPTOR_CLASSES_CONFIG, LoggingProducerInterceptor.class.getCanonicalName());
+        props.put(ProducerConfig.LINGER_MS_CONFIG, "200");
         //put logger here
         return new KafkaProducer<>(props);
     }
@@ -74,7 +75,7 @@ public class LoggingTest {
 
     @Test(timeout = 60_000)
     public void test() {
-        final int numTestRecords = 50;
+        final int numTestRecords = 100;
         writeTestRecords(1, numTestRecords);
         rw.readTestRecords(numTestRecords);
     }
