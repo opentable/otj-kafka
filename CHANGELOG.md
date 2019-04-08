@@ -89,7 +89,7 @@ If you want to use Kafka 1.x you need to use an older library version.
 2.2.0
 -----
 
-* added producer creator helper method for key serializer instance
+* added delegate creator helper method for key serializer instance
 
 2.1.0
 -----

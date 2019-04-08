@@ -17,6 +17,7 @@ import java.util.Properties;
 import java.util.UUID;
 
 import org.apache.kafka.clients.producer.KafkaProducer;
+import org.apache.kafka.clients.producer.Producer;
 import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.common.serialization.Serializer;
@@ -50,19 +51,19 @@ public class LoggingTest {
     @Rule
     public final ReadWriteRule rw = new ReadWriteRule();
 
-    public <K, V> KafkaProducer<K, V> createProducer(Class<? extends Serializer<K>> keySer, Class<? extends Serializer<V>> valueSer) {
+    public <K, V> Producer<K, V> createProducer(Class<? extends Serializer<K>> keySer, Class<? extends Serializer<V>> valueSer) {
         Properties props = rw.getEkb().baseProducerProperties();
         props.put("key.serializer", keySer.getName());
         props.put("value.serializer", valueSer.getName());
         props.put(ProducerConfig.INTERCEPTOR_CLASSES_CONFIG, LoggingProducerInterceptor.class.getCanonicalName());
         props.put(ProducerConfig.LINGER_MS_CONFIG, "200");
         //put logger here
-        return new KafkaProducer<>(props);
+        return new LoggingKafkaProducer<>(new KafkaProducer<>(props));
     }
 
     public void writeTestRecords(final int lo, final int hi) {
         MDC.put(REQUEST_ID_KEY, UUID.randomUUID().toString());
-        try (KafkaProducer<String, String> producer = createProducer(StringSerializer.class, StringSerializer.class)) {
+        try (Producer<String, String> producer = createProducer(StringSerializer.class, StringSerializer.class)) {
             for (int i = lo; i <= hi; ++i) {
                 producer.send(new ProducerRecord<String, String>(
                     rw.getTopicName(),
