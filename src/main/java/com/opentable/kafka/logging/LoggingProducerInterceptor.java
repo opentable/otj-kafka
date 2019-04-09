@@ -14,29 +14,17 @@
 package com.opentable.kafka.logging;
 
 import java.nio.charset.Charset;
-import java.time.Instant;
-import java.util.Arrays;
 import java.util.Map;
-import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.stream.Collectors;
-import java.util.stream.StreamSupport;
-
-import javax.annotation.Nonnull;
 
 import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.clients.producer.ProducerInterceptor;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.clients.producer.RecordMetadata;
-import org.apache.kafka.common.header.Headers;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.slf4j.MDC;
 
-import com.opentable.conservedheaders.ConservedHeader;
 import com.opentable.kafka.util.LogSamplerRandom;
-import com.opentable.logging.CommonLogHolder;
-import com.opentable.logging.otl.MsgV1;
 
 public class LoggingProducerInterceptor<K, V> implements ProducerInterceptor<K, V> {
 
@@ -45,15 +33,14 @@ public class LoggingProducerInterceptor<K, V> implements ProducerInterceptor<K, 
     public static final byte[] FALSE = "false".getBytes(CHARSET);
     public static final byte[] TRUE = "true".getBytes(CHARSET);
 
-    private String originalsClientId;
     private String interceptorClientId;
     private LogSamplerRandom sampler = new LogSamplerRandom(5.0);
 
     @Override
     public ProducerRecord<K, V> onSend(ProducerRecord<K, V> record) {
-        setupHeaders(record);
-        setupTracing(record);
-        //trace(record);
+        LoggingUtils.setupHeaders(record);
+        LoggingUtils.setupTracing(sampler, record);
+        LoggingUtils.trace(LOG, interceptorClientId, record);
         return record;
     }
 
@@ -72,67 +59,9 @@ public class LoggingProducerInterceptor<K, V> implements ProducerInterceptor<K, 
 
     @Override
     public void configure(Map<String, ?> config) {
-        this.originalsClientId = (String) config.get(ProducerConfig.CLIENT_ID_CONFIG);
+        String originalsClientId = (String) config.get(ProducerConfig.CLIENT_ID_CONFIG);
         this.interceptorClientId = (originalsClientId == null) ? "interceptor-producer-" + ClientIdGenerator.nextClientId() : originalsClientId;
         LOG.info("LoggingProducerInterceptor is configured for client: {}", interceptorClientId);
-    }
-
-    @Nonnull
-    protected MsgV1 createEvent(ProducerRecord<K, V> record) {
-        return MsgV1.builder()
-            .logName("kafka-producer")
-            .serviceType(CommonLogHolder.getServiceType())
-            .uuid(UUID.randomUUID())
-            .timestamp(Instant.now())
-            .build();
-    }
-
-    private String getHeaderValue(final ConservedHeader header) {
-        return MDC.get(header.getLogName());
-    }
-
-    private String toString(Headers headers) {
-        return Arrays.stream(headers.toArray())
-        .map(h -> String.format("%s=%s", h.key(), new String(h.value())))
-        .collect(Collectors.joining(", "));
-    }
-
-    private void setupHeaders(ProducerRecord<K, V> record) {
-        final Headers headers = record.headers();
-        Arrays.asList(ConservedHeader.values()).forEach((header) -> {
-            if (this.getHeaderValue(header) != null) {
-                headers.add(header.getLogName(), this.getHeaderValue(header).getBytes(CHARSET));
-            }
-        });
-        headers.add("ot-from-service", CommonLogHolder.getServiceType().getBytes(CHARSET));
-    }
-
-
-    private void setupTracing(ProducerRecord<K, V> record) {
-        final Headers headers = record.headers();
-        if (!headers.headers("ot-trace-message").iterator().hasNext()) {
-            // If header not present, make decision our self and set it
-            if (sampler.mark(record.topic())) {
-                headers.add("ot-trace-message", TRUE);
-            } else {
-                headers.add("ot-trace-message", FALSE);
-            }
-        }
-    }
-
-    private void trace(ProducerRecord<K, V> record) {
-        final Headers headers = record.headers();
-        final Boolean trace = StreamSupport.stream(headers.headers("ot-trace-message").spliterator(), false)
-            .map(h -> new String(h.value()))
-            .map("true"::equals)
-            .filter(v -> v)
-            .findFirst()
-            .orElse(false);
-        if (trace) {
-            LOG.info(createEvent(record).log(),
-                "[Producer clientId={}] To:{}@{}, Headers:[{}], Message: {}",
-                interceptorClientId, record.topic(), record.partition(), toString(record.headers()), record.value());
-        }
     }
 
     private static class ClientIdGenerator {

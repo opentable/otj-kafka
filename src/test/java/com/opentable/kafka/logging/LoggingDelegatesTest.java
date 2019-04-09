@@ -44,7 +44,7 @@ import com.opentable.service.ServiceInfo;
 @TestPropertySource(properties = {
     "info.component=test",
 })
-public class LoggingTest {
+public class LoggingDelegatesTest {
 
     public static final String REQUEST_ID_KEY = ConservedHeader.REQUEST_ID.getLogName();
 
@@ -55,7 +55,6 @@ public class LoggingTest {
         Properties props = rw.getEkb().baseProducerProperties();
         props.put("key.serializer", keySer.getName());
         props.put("value.serializer", valueSer.getName());
-        props.put(ProducerConfig.INTERCEPTOR_CLASSES_CONFIG, LoggingProducerInterceptor.class.getCanonicalName());
         props.put(ProducerConfig.LINGER_MS_CONFIG, "200");
         //put logger here
         return new LoggingKafkaProducer<>(new KafkaProducer<>(props));
@@ -75,7 +74,7 @@ public class LoggingTest {
     }
 
     @Test(timeout = 60_000)
-    public void test() {
+    public void producerTest() {
         final int numTestRecords = 100;
         writeTestRecords(1, numTestRecords);
         rw.readTestRecords(numTestRecords);

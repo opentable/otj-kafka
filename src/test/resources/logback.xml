@@ -44,6 +44,7 @@
 	<logger name="com.opentable.httpclient.factory" level="INFO" />
 	<!-- DefaultRedirectStrategy prints out a DEBUG for every redirect... -->
 	<logger name="com.opentable.etcd.AlwaysRedirectStrategy" level="INFO" />
+	<logger name="com.opentable.kafka.logging" level="TRACE" />
 
     <logger name="org.springframework" level="WARN"/>
     <logger name="org.eclipse" level="WARN"/>

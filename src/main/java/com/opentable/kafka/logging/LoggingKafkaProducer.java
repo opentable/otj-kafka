@@ -1,5 +1,6 @@
 package com.opentable.kafka.logging;
 
+import java.lang.reflect.Field;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Future;
@@ -7,6 +8,7 @@ import java.util.concurrent.TimeUnit;
 
 import org.apache.kafka.clients.consumer.OffsetAndMetadata;
 import org.apache.kafka.clients.producer.Callback;
+import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.Producer;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.clients.producer.RecordMetadata;
@@ -16,12 +18,17 @@ import org.apache.kafka.common.PartitionInfo;
 import org.apache.kafka.common.TopicPartition;
 import org.apache.kafka.common.errors.ProducerFencedException;
 
+import com.opentable.kafka.util.LogSamplerRandom;
+
 public class LoggingKafkaProducer<K, V> implements Producer<K, V> {
 
-    private final  Producer<K, V> delegate;
+    private final Producer<K, V> delegate;
+    private String clientId;
+    private LogSamplerRandom sampler = new LogSamplerRandom(5.0);
 
-    public LoggingKafkaProducer(Producer<K, V> delegate) {
+    public LoggingKafkaProducer(KafkaProducer<K, V> delegate) {
         this.delegate = delegate;
+        borrowConfiguration();
     }
 
     @Override
@@ -66,7 +73,9 @@ public class LoggingKafkaProducer<K, V> implements Producer<K, V> {
         record.value(),
         record.headers());
     */
-        return delegate.send(record, new LoggingCallback<>(callback, record));
+        LoggingUtils.setupHeaders(record);
+        LoggingUtils.setupTracing(sampler, record);
+        return delegate.send(record, new LoggingCallback<>(callback, record, clientId));
     }
 
     @Override
@@ -94,4 +103,19 @@ public class LoggingKafkaProducer<K, V> implements Producer<K, V> {
         delegate.close(timeout, timeUnit);
     }
 
+
+    private void borrowConfiguration() {
+        try {
+            clientId = (String) getField(delegate, "clientId");
+        } catch (IllegalAccessException | NoSuchFieldException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    private Object getField(Object obj, String name) throws IllegalAccessException, NoSuchFieldException {
+        Class clazz = obj.getClass();
+        Field field = clazz.getDeclaredField(name);
+        field.setAccessible(true);
+        return field.get(obj);
+    }
 }
