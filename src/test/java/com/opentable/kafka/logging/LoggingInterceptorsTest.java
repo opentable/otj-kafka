@@ -71,9 +71,9 @@ public class LoggingInterceptorsTest {
     }
 
     public void writeTestRecords(final int lo, final int hi) {
-        MDC.put(REQUEST_ID_KEY, UUID.randomUUID().toString());
         try (Producer<String, String> producer = createProducer(StringSerializer.class, StringSerializer.class)) {
             for (int i = lo; i <= hi; ++i) {
+                MDC.put(REQUEST_ID_KEY, UUID.randomUUID().toString());
                 producer.send(new ProducerRecord<String, String>(
                     rw.getTopicName(),
                     String.format("key-%d", i),
@@ -119,7 +119,7 @@ public class LoggingInterceptorsTest {
     @Test(timeout = 60_000)
     public void consumerTest() {
         final int numTestRecords = 100;
-        rw.writeTestRecords(1, numTestRecords);
+        writeTestRecords(1, numTestRecords);
         readTestRecords(numTestRecords);
     }
 
