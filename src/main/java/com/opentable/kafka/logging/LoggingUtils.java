@@ -3,9 +3,7 @@ package com.opentable.kafka.logging;
 import java.nio.charset.Charset;
 import java.time.Instant;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.EnumMap;
-import java.util.Enumeration;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.UUID;
@@ -13,7 +11,6 @@ import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
 import javax.annotation.Nonnull;
-import javax.servlet.http.HttpServletRequest;
 
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.producer.ProducerRecord;
