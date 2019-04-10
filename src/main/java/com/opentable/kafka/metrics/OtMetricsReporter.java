@@ -10,6 +10,7 @@ import org.apache.kafka.common.metrics.MetricsReporter;
 
 public class OtMetricsReporter implements MetricsReporter {
 
+    public static final String METRIC_REPORTER_OT_REGISTRY = "metric.reporter.ot.registry";
     private MetricRegistry metricRegistry;
 
     @Override
@@ -34,6 +35,6 @@ public class OtMetricsReporter implements MetricsReporter {
 
     @Override
     public void configure(Map<String, ?> configs) {
-        metricRegistry = (MetricRegistry) configs.get("metric.registry");
+        metricRegistry = (MetricRegistry) configs.get(METRIC_REPORTER_OT_REGISTRY);
     }
 }
