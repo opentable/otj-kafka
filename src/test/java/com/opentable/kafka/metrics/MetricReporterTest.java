@@ -81,8 +81,8 @@ public class MetricReporterTest {
         props.put("value.serializer", valueSer.getName());
         props.put(ProducerConfig.INTERCEPTOR_CLASSES_CONFIG, LoggingProducerInterceptor.class.getCanonicalName());
         props.put(ProducerConfig.METRIC_REPORTER_CLASSES_CONFIG, OtMetricsReporter.class.getCanonicalName());
-        props.put(ProducerConfig.LINGER_MS_CONFIG, "200");
         props.put(OtMetricsReporter.METRIC_REPORTER_OT_REGISTRY, metricRegistry);
+        props.put(ProducerConfig.LINGER_MS_CONFIG, "200");
         //put logger here
         return new KafkaProducer<>(props);
     }
@@ -105,6 +105,8 @@ public class MetricReporterTest {
         props.put("key.deserializer", keySer.getName());
         props.put("value.deserializer", valueSer.getName());
         props.put(ConsumerConfig.INTERCEPTOR_CLASSES_CONFIG, LoggingConsumerInterceptor.class.getCanonicalName());
+        props.put(ConsumerConfig.METRIC_REPORTER_CLASSES_CONFIG, OtMetricsReporter.class.getCanonicalName());
+        props.put(OtMetricsReporter.METRIC_REPORTER_OT_REGISTRY, metricRegistry);
         //put logger here
         return new KafkaConsumer<>(props);
     }
