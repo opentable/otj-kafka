@@ -61,13 +61,14 @@ public class LoggingDelegatesTest {
     }
 
     public void writeTestRecords(final int lo, final int hi) {
-        MDC.put(REQUEST_ID_KEY, UUID.randomUUID().toString());
         try (Producer<String, String> producer = createProducer(StringSerializer.class, StringSerializer.class)) {
             for (int i = lo; i <= hi; ++i) {
+                MDC.put(REQUEST_ID_KEY, UUID.randomUUID().toString());
                 producer.send(new ProducerRecord<String, String>(
                     rw.getTopicName(),
                     String.format("key-%d", i),
                     String.format("value-%d", i)));
+                MDC.put(REQUEST_ID_KEY, null);
             }
             producer.flush();
         }

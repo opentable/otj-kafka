@@ -6,6 +6,7 @@ import java.util.Arrays;
 import java.util.EnumMap;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.Objects;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
@@ -22,6 +23,7 @@ import org.slf4j.MDC;
 
 import com.opentable.conservedheaders.ConservedHeader;
 import com.opentable.kafka.util.LogSamplerRandom;
+import com.opentable.logging.CommonLogFields;
 import com.opentable.logging.CommonLogHolder;
 import com.opentable.logging.otl.MsgV1;
 
@@ -39,16 +41,22 @@ public class LoggingUtils {
             .serviceType(CommonLogHolder.getServiceType())
             .uuid(UUID.randomUUID())
             .timestamp(Instant.now())
+            .requestId(optUuid(new String(record.headers().lastHeader(CommonLogFields.REQUEST_ID_KEY).value())))
+            .referringService(new String(record.headers().lastHeader(OTKafkaHeaders.REFERRING_SERVICE).value()))
+            .referringHost(new String(record.headers().lastHeader(OTKafkaHeaders.REFERRING_HOST).value()))
             .build();
     }
 
     @Nonnull
     public static <K, V> MsgV1 createEvent(ConsumerRecord<K, V> record) {
         return MsgV1.builder()
-            .logName("kafka-producer")
+            .logName("kafka-consumer")
             .serviceType(CommonLogHolder.getServiceType())
             .uuid(UUID.randomUUID())
             .timestamp(Instant.now())
+            .requestId(optUuid(new String(record.headers().lastHeader(CommonLogFields.REQUEST_ID_KEY).value())))
+            .referringService(new String(record.headers().lastHeader(OTKafkaHeaders.REFERRING_SERVICE).value()))
+            .referringHost(new String(record.headers().lastHeader(OTKafkaHeaders.REFERRING_HOST).value()))
             .build();
     }
 
@@ -69,24 +77,40 @@ public class LoggingUtils {
                 headers.add(header.getLogName(), getHeaderValue(header).getBytes(CHARSET));
             }
         });
-        headers.add("ot-from-service", CommonLogHolder.getServiceType().getBytes(CHARSET));
+        setKafkaHeader(headers, OTKafkaHeaders.REFERRING_SERVICE, KafkaCommonLogHolder.getServiceType());
+        setKafkaHeader(headers, OTKafkaHeaders.REFERRING_HOST, KafkaCommonLogHolder.getHost());
+        setKafkaHeader(headers, OTKafkaHeaders.REFERRING_INSTANCE_NO, KafkaCommonLogHolder.getInstanceNo());
+        setKafkaHeader(headers, OTKafkaHeaders.ENV, KafkaCommonLogHolder.getOtEnv());
+        setKafkaHeader(headers, OTKafkaHeaders.ENV_FLAVOR, KafkaCommonLogHolder.getOtEnvFlavor());
+    }
+
+    private static void setKafkaHeader(Headers headers, String headerName, String value) {
+        if (value != null) {
+            headers.add(headerName, value.getBytes(CHARSET));
+        }
+    }
+
+    private static void setKafkaHeader(Headers headers, String headerName, Integer value) {
+        if (value != null) {
+            setKafkaHeader(headers, headerName, String.valueOf(value));
+        }
     }
 
     public static <K, V> void setupTracing(LogSamplerRandom sampler, ProducerRecord<K, V> record) {
         final Headers headers = record.headers();
-        if (!headers.headers("ot-trace-message").iterator().hasNext()) {
+        if (!headers.headers(OTKafkaHeaders.TRACE_FLAG).iterator().hasNext()) {
             // If header not present, make decision our self and set it
             if (sampler.mark(record.topic())) {
-                headers.add("ot-trace-message", TRUE);
+                headers.add(OTKafkaHeaders.TRACE_FLAG, TRUE);
             } else {
-                headers.add("ot-trace-message", FALSE);
+                headers.add(OTKafkaHeaders.TRACE_FLAG, FALSE);
             }
         }
     }
 
     public static <K, V> boolean isTraceNeeded(ProducerRecord<K, V> record) {
         final Headers headers = record.headers();
-        return StreamSupport.stream(headers.headers("ot-trace-message").spliterator(), false)
+        return StreamSupport.stream(headers.headers(OTKafkaHeaders.TRACE_FLAG).spliterator(), false)
             .map(h -> new String(h.value()))
             .map("true"::equals)
             .filter(v -> v)
@@ -96,9 +120,15 @@ public class LoggingUtils {
 
     public static <K, V> void trace(Logger log, String clientId, ProducerRecord<K, V> record) {
         if (isTraceNeeded(record)) {
-            log.trace(createEvent(record).log(),
-                "[Producer clientId={}] To:{}@{}, Headers:[{}], Message: {}",
-                clientId, record.topic(), record.partition(), toString(record.headers()), record.value());
+            final MsgV1 event = createEvent(record);
+            MDC.put(CommonLogFields.REQUEST_ID_KEY, Objects.toString(event.getRequestId(), null));
+            try {
+                log.trace(event.log(),
+                    "[Producer clientId={}] To:{}@{}, Headers:[{}], Message: {}",
+                    clientId, record.topic(), record.partition(), toString(record.headers()), record.value());
+            } finally {
+                MDC.remove(CommonLogFields.REQUEST_ID_KEY);
+            }
         }
     }
 
@@ -113,9 +143,15 @@ public class LoggingUtils {
 
     public static <K, V> void trace(Logger log, String clientId, String groupId, LogSamplerRandom sampler, ConsumerRecord<K, V> record) {
         if (isTraceNeeded(record, sampler)) {
-            log.trace(createEvent(record).log(),
-                "[Consumer clientId={}, groupId={}] From:{}@{}, Headers:[{}], Message: {}",
-                clientId, groupId, record.topic(), record.partition(), toString(record.headers()), record.value());
+            final MsgV1 event = createEvent(record);
+            MDC.put(CommonLogFields.REQUEST_ID_KEY, Objects.toString(event.getRequestId(), null));
+            try {
+                log.trace(event.log(),
+                    "[Consumer clientId={}, groupId={}] From:{}@{}, Headers:[{}], Message: {}",
+                    clientId, groupId, record.topic(), record.partition(), toString(record.headers()), record.value());
+            } finally {
+                MDC.remove(CommonLogFields.REQUEST_ID_KEY);
+            }
         }
     }
 
@@ -157,4 +193,14 @@ public class LoggingUtils {
             }
         });
     }
+
+    private static UUID optUuid(String uuid) {
+        try {
+            return uuid == null ? null : UUID.fromString(uuid);
+        } catch (IllegalArgumentException e) {
+            LOG.warn("Unable to parse purported request id '{}': {}", uuid, e.toString());
+            return null;
+        }
+    }
+
 }
