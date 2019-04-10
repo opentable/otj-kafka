@@ -38,7 +38,6 @@ public class OtMetricsReporter implements MetricsReporter {
                 metricRegistry.remove(metricName(metric));
             }
             metricRegistry.register(metricName(metric), (Gauge) metric::metricValue);
-            LOG.debug("Registering kafka metric: {}, tags: {}", metricName(metric), metric.metricName().tags());
         }
         kafkaMetrics.add(metric);
     }
@@ -68,7 +67,10 @@ public class OtMetricsReporter implements MetricsReporter {
 
     @Override
     public void close() {
-        kafkaMetrics.forEach(kafkaMetric -> metricRegistry.remove(metricName(kafkaMetric)));
+        kafkaMetrics.forEach(metric -> {
+            LOG.debug("Un-registering kafka metric: {}, tags: {}", metricName(metric), metric.metricName().tags());
+            metricRegistry.remove(metricName(metric));
+        });
         kafkaMetrics.clear();
     }
 
