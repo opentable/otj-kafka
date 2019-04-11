@@ -55,6 +55,7 @@ public class OtMetricsReporter implements MetricsReporter {
             .sorted(Comparator.comparing(Entry::getKey))
             .forEach(v -> stringBuilder.append(v.getValue()).append("."));
         stringBuilder.append(metric.metricName().group())
+            .append("-")
             .append(metric.metricName().name());
         return stringBuilder.toString();
     }

@@ -29,9 +29,6 @@ import com.opentable.kafka.util.LogSamplerRandom;
 public class LoggingProducerInterceptor<K, V> implements ProducerInterceptor<K, V> {
 
     private static final Logger LOG = LoggerFactory.getLogger(LoggingProducerInterceptor.class);
-    private static final Charset CHARSET = Charset.forName("UTF-8");
-    public static final byte[] FALSE = "false".getBytes(CHARSET);
-    public static final byte[] TRUE = "true".getBytes(CHARSET);
 
     private String interceptorClientId;
     private LogSamplerRandom sampler = new LogSamplerRandom(5.0);
@@ -46,7 +43,7 @@ public class LoggingProducerInterceptor<K, V> implements ProducerInterceptor<K, 
 
     @Override
     public void onAcknowledgement(RecordMetadata metadata, Exception e) {
-        LOG.info("metadata: {}", metadata);
+        //LOG.info("metadata: {}", metadata);
         if (e != null) {
             LOG.error("", e);
         }
