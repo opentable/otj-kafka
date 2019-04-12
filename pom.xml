@@ -34,6 +34,7 @@
       <basepom.oss.skip-scala-doc>true</basepom.oss.skip-scala-doc>
       <basepom.check.skip-javadoc>false</basepom.check.skip-javadoc>
       <basepom.check.fail-javadoc>false</basepom.check.fail-javadoc>
+      <dep.otj-otl.version>0.8.19-SNAPSHOT</dep.otj-otl.version>
   </properties>
 
   <groupId>com.opentable.components</groupId>

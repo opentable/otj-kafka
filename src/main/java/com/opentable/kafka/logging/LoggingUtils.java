@@ -1,5 +1,6 @@
 package com.opentable.kafka.logging;
 
+import java.io.IOException;
 import java.nio.charset.Charset;
 import java.time.Instant;
 import java.util.Arrays;
@@ -7,6 +8,7 @@ import java.util.EnumMap;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Properties;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
@@ -20,11 +22,16 @@ import org.apache.kafka.common.header.Headers;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
+import org.springframework.core.io.ClassPathResource;
+import org.springframework.core.io.Resource;
+import org.springframework.core.io.support.PropertiesLoaderUtils;
 
 import com.opentable.conservedheaders.ConservedHeader;
 import com.opentable.kafka.util.LogSamplerRandom;
 import com.opentable.logging.CommonLogFields;
 import com.opentable.logging.CommonLogHolder;
+import com.opentable.logging.otl.EdaMessageTraceV1;
+import com.opentable.logging.otl.EdaMessageTraceV1.EdaMessageTraceV1Builder;
 import com.opentable.logging.otl.MsgV1;
 
 public class LoggingUtils {
@@ -33,30 +40,79 @@ public class LoggingUtils {
     private static final byte[] FALSE = "false".getBytes(CHARSET);
     private static final byte[] TRUE = "true".getBytes(CHARSET);
     private static final Logger LOG = LoggerFactory.getLogger(LoggingUtils.class);
+    private static final String PROPERTIES_FILE_EXTENSION = ".properties";
+    private static final String DEFAULT_VERSION = "unknown";
+    private static final String ARTIFACT_ID = "otj-kafka";
+    private static final EdaMessageTraceV1Builder MESSAGE_TRACE_V_1_BUILDER;
+
+    static {
+        Resource resource = new ClassPathResource(ARTIFACT_ID + PROPERTIES_FILE_EXTENSION);
+        String clientVersion = DEFAULT_VERSION;
+        try {
+            Properties props = PropertiesLoaderUtils.loadProperties(resource);
+            clientVersion = props.getProperty("version", DEFAULT_VERSION);
+        } catch (IOException e) {
+            LOG.warn("Cannot get client version for logging.", e);
+        }
+        MESSAGE_TRACE_V_1_BUILDER = EdaMessageTraceV1.builder()
+            .edaClientName(ARTIFACT_ID)
+            .edaClientVersion(clientVersion)
+            .edaClientPlatform("Java: " + System.getProperty("java.version"))
+            .edaClientOs(System.getProperty("os.name"));
+    }
 
     @Nonnull
-    public static <K, V> MsgV1 createEvent(ProducerRecord<K, V> record) {
-        return MsgV1.builder()
+    public static <K, V> MsgV1 createEvent(ProducerRecord<K, V> record, String clientId) {
+        return MESSAGE_TRACE_V_1_BUILDER
+            // msg-v1
             .logName("kafka-producer")
+            .incoming(false)
             .serviceType(CommonLogHolder.getServiceType())
             .uuid(UUID.randomUUID())
             .timestamp(Instant.now())
             .requestId(optUuid(new String(record.headers().lastHeader(CommonLogFields.REQUEST_ID_KEY).value())))
             .referringService(new String(record.headers().lastHeader(OTKafkaHeaders.REFERRING_SERVICE).value()))
             .referringHost(new String(record.headers().lastHeader(OTKafkaHeaders.REFERRING_HOST).value()))
+
+            // eda-message-trace-v1
+            .topic(record.topic())
+            .partition(record.partition())
+            .clientId(clientId)
+            .recordKey(String.valueOf(record.key()))
+            .recordValue(String.valueOf(record.value()))
+            .recordTimestamp(record.timestamp())
+
+            // from committed metadata
+            //.recordKeySize(record.serializedKeySize())
+            //.recordValueSize((record.serializedValueSize())
+            //.offset(record.offset())
             .build();
     }
 
     @Nonnull
-    public static <K, V> MsgV1 createEvent(ConsumerRecord<K, V> record) {
-        return MsgV1.builder()
+    public static <K, V> MsgV1 createEvent(ConsumerRecord<K, V> record, String groupId, String clientId) {
+        return MESSAGE_TRACE_V_1_BUILDER
+            // msg-v1
             .logName("kafka-consumer")
+            .incoming(true)
             .serviceType(CommonLogHolder.getServiceType())
             .uuid(UUID.randomUUID())
             .timestamp(Instant.now())
             .requestId(optUuid(new String(record.headers().lastHeader(CommonLogFields.REQUEST_ID_KEY).value())))
             .referringService(new String(record.headers().lastHeader(OTKafkaHeaders.REFERRING_SERVICE).value()))
             .referringHost(new String(record.headers().lastHeader(OTKafkaHeaders.REFERRING_HOST).value()))
+
+            // eda-message-trace-v1
+            .topic(record.topic())
+            .offset(record.offset())
+            .partition(record.partition())
+            .groupId(groupId)
+            .clientId(clientId)
+            .recordKeySize(record.serializedKeySize())
+            .recordKey(String.valueOf(record.key()))
+            .recordValueSize(record.serializedValueSize())
+            .recordValue(String.valueOf(record.value()))
+            .recordTimestamp(record.timestamp())
             .build();
     }
 
@@ -120,7 +176,7 @@ public class LoggingUtils {
 
     public static <K, V> void trace(Logger log, String clientId, ProducerRecord<K, V> record) {
         if (isTraceNeeded(record)) {
-            final MsgV1 event = createEvent(record);
+            final MsgV1 event = createEvent(record, clientId);
             MDC.put(CommonLogFields.REQUEST_ID_KEY, Objects.toString(event.getRequestId(), null));
             try {
                 log.trace(event.log(),
@@ -143,7 +199,7 @@ public class LoggingUtils {
 
     public static <K, V> void trace(Logger log, String clientId, String groupId, LogSamplerRandom sampler, ConsumerRecord<K, V> record) {
         if (isTraceNeeded(record, sampler)) {
-            final MsgV1 event = createEvent(record);
+            final MsgV1 event = createEvent(record, groupId, clientId);
             MDC.put(CommonLogFields.REQUEST_ID_KEY, Objects.toString(event.getRequestId(), null));
             try {
                 log.trace(event.log(),
