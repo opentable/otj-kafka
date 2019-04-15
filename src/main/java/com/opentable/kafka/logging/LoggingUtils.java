@@ -8,6 +8,7 @@ import java.util.EnumMap;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Properties;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -91,6 +92,7 @@ public class LoggingUtils {
 
     @Nonnull
     public static <K, V> MsgV1 createEvent(ConsumerRecord<K, V> record, String groupId, String clientId) {
+        final Optional<Headers> headers = Optional.ofNullable(record.headers());
         return MESSAGE_TRACE_V_1_BUILDER
             // msg-v1
             .logName("kafka-consumer")
@@ -98,9 +100,9 @@ public class LoggingUtils {
             .serviceType(CommonLogHolder.getServiceType())
             .uuid(UUID.randomUUID())
             .timestamp(Instant.now())
-            .requestId(optUuid(new String(record.headers().lastHeader(CommonLogFields.REQUEST_ID_KEY).value())))
-            .referringService(new String(record.headers().lastHeader(OTKafkaHeaders.REFERRING_SERVICE).value()))
-            .referringHost(new String(record.headers().lastHeader(OTKafkaHeaders.REFERRING_HOST).value()))
+            .requestId(optUuid(headers.map(h -> h.lastHeader((CommonLogFields.REQUEST_ID_KEY))).map(Header::value).map(String::new).orElse(null)))
+            .referringService(headers.map(h -> h.lastHeader((OTKafkaHeaders.REFERRING_SERVICE))).map(Header::value).map(String::new).orElse(null))
+            .referringHost(headers.map(h -> h.lastHeader((OTKafkaHeaders.REFERRING_HOST))).map(Header::value).map(String::new).orElse(null))
 
             // eda-message-trace-v1
             .topic(record.topic())
@@ -113,6 +115,7 @@ public class LoggingUtils {
             .recordValueSize(record.serializedValueSize())
             .recordValue(String.valueOf(record.value()))
             .recordTimestamp(record.timestamp())
+            .recordTimestampType(record.timestampType().name)
             .build();
     }
 

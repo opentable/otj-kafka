@@ -12,31 +12,23 @@ class KafkaCommonLogHolder {
     private KafkaCommonLogHolder() {
     }
 
-    public static String getHost() {
+    static String getHost() {
         return INSTANCE.getHost();
     }
 
-    public static  Integer getInstanceNo() {
+    static  Integer getInstanceNo() {
         return INSTANCE.getInstanceNo();
     }
 
-    public static  String getOtEnv() {
+    static  String getOtEnv() {
         return INSTANCE.getOtEnv();
     }
 
-    public static  String getOtEnvType() {
-        return INSTANCE.getOtEnvType();
-    }
-
-    public static  String getOtEnvLocation() {
-        return INSTANCE.getOtEnvLocation();
-    }
-
-    public static  String getOtEnvFlavor() {
+    static  String getOtEnvFlavor() {
         return INSTANCE.getOtEnvFlavor();
     }
 
-    public static String getServiceType() {
+    static String getServiceType() {
         return CommonLogHolder.getServiceType();
     }
 

@@ -13,7 +13,6 @@
  */
 package com.opentable.kafka.logging;
 
-import java.nio.charset.Charset;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -26,7 +25,7 @@ import org.slf4j.LoggerFactory;
 
 import com.opentable.kafka.util.LogSamplerRandom;
 
-public class LoggingProducerInterceptor<K, V> implements ProducerInterceptor<K, V> {
+public class LoggingProducerInterceptor implements ProducerInterceptor<Object, Object> {
 
     private static final Logger LOG = LoggerFactory.getLogger(LoggingProducerInterceptor.class);
 
@@ -34,7 +33,7 @@ public class LoggingProducerInterceptor<K, V> implements ProducerInterceptor<K, 
     private LogSamplerRandom sampler = new LogSamplerRandom(5.0);
 
     @Override
-    public ProducerRecord<K, V> onSend(ProducerRecord<K, V> record) {
+    public ProducerRecord<Object, Object> onSend(ProducerRecord<Object, Object> record) {
         LoggingUtils.setupHeaders(record);
         LoggingUtils.setupTracing(sampler, record);
         LoggingUtils.trace(LOG, interceptorClientId, record);
