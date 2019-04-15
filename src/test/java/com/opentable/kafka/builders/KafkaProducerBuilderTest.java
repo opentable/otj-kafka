@@ -33,16 +33,17 @@ public class KafkaProducerBuilderTest {
         KafkaProducerBuilder<Integer, String> builder = KafkaProducerBuilder.builder()
             .withBootstrapServers("localhost:8080")
             .withProp("blah", "blah")
+            .withoutProp("blah")
             .producer()
             .withProp("blah2", "blah2")
-            .withAcks(AckType.all)
+            .withoutProp("blah2")
+            .withAcks(AckType.none)
             .withRetries(5)
             .withSerializers(IntegerSerializer.class, StringSerializer.class);
         LOG.debug("Props: {}", builder.buildProps());
         KafkaProducer<Integer, String> p = builder
             .build();
     }
-
 
     @Configuration
     public static class Config {

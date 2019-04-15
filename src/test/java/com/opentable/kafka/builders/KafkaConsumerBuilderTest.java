@@ -33,9 +33,11 @@ public class KafkaConsumerBuilderTest {
         KafkaConsumerBuilder<Integer, String> builder = KafkaConsumerBuilder.builder()
             .withBootstrapServers("localhost:8080")
             .withProp("blah", "blah")
+            .withoutProp("blah")
             .withClientId("test-consomer-01")
             .consumer()
             .withProp("blah2", "blah2")
+            .withoutProp("blah2")
             .withGroupId("test")
             .withDeserializers(IntegerDeserializer.class, StringDeserializer.class)
             .withOffsetReset(AutoOffsetResetType.latest);
