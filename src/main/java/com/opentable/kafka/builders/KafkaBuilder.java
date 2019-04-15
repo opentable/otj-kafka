@@ -16,14 +16,14 @@ import com.opentable.kafka.metrics.OtMetricsReporter;
 
 public class KafkaBuilder {
 
-    protected final Properties prop;
+    final Properties prop;
 
     KafkaBuilder(Properties prop) {
         this.prop = prop;
     }
 
     public Properties buildProps() {
-        return prop;
+        return new Properties(prop);
     }
 
     public static KafkaBuilder builder() {
@@ -46,10 +46,6 @@ public class KafkaBuilder {
 
     public KafkaBuilder withClientId(String val) {
         return withProp(CommonClientConfigs.CLIENT_ID_CONFIG, val);
-    }
-
-    public KafkaBuilder withRetries(int val) {
-        return withProp(CommonClientConfigs.RETRIES_CONFIG, val);
     }
 
     public KafkaBuilder withSecurityProtocol(String val) {

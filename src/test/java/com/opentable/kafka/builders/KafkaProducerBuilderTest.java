@@ -15,6 +15,7 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.junit4.SpringRunner;
 
+import com.opentable.kafka.builders.KafkaProducerBuilder.AckType;
 import com.opentable.service.ServiceInfo;
 
 @RunWith(SpringRunner.class)
@@ -32,10 +33,10 @@ public class KafkaProducerBuilderTest {
         KafkaProducerBuilder<Integer, String> builder = KafkaProducerBuilder.builder()
             .withBootstrapServers("localhost:8080")
             .withProp("blah", "blah")
-            .withRetries(5)
             .producer()
             .withProp("blah2", "blah2")
-            .withAcks("all")
+            .withAcks(AckType.all)
+            .withRetries(5)
             .withSerializers(IntegerSerializer.class, StringSerializer.class);
         LOG.debug("Props: {}", builder.buildProps());
         KafkaProducer<Integer, String> p = builder

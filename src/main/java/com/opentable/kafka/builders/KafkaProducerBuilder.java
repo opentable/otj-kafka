@@ -2,6 +2,7 @@ package com.opentable.kafka.builders;
 
 import java.util.Properties;
 
+import org.apache.kafka.clients.CommonClientConfigs;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.clients.producer.ProducerInterceptor;
@@ -38,8 +39,12 @@ public class KafkaProducerBuilder<K, V> extends KafkaBuilder {
         return this;
     }
 
-    public KafkaProducerBuilder<K, V> withAcks(String val) {
-        return withProp(ProducerConfig.ACKS_CONFIG, val);
+    public KafkaProducerBuilder<K, V> withAcks(AckType val) {
+        return withProp(ProducerConfig.ACKS_CONFIG, val.value);
+    }
+
+    public KafkaProducerBuilder<K, V> withRetries(int val) {
+        return withProp(CommonClientConfigs.RETRIES_CONFIG, val);
     }
 
     public <K2, V2> KafkaProducerBuilder<K2, V2> withSerializers(Class<? extends Serializer<K2>> keySer, Class<? extends Serializer<V2>> valSer) {
@@ -51,6 +56,18 @@ public class KafkaProducerBuilder<K, V> extends KafkaBuilder {
     public  KafkaProducer<K, V> build() {
         // TODO: add checks here
         return new KafkaProducer<>(prop);
+    }
+
+    public enum AckType {
+        all("all"),
+        none("0"),
+        atleastOne("1");
+
+        final String value;
+
+        AckType(String value) {
+            this.value = value;
+        }
     }
 
 }

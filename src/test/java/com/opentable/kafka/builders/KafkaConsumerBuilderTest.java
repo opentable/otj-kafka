@@ -1,11 +1,8 @@
 package com.opentable.kafka.builders;
 
 import org.apache.kafka.clients.consumer.KafkaConsumer;
-import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.common.serialization.IntegerDeserializer;
-import org.apache.kafka.common.serialization.IntegerSerializer;
 import org.apache.kafka.common.serialization.StringDeserializer;
-import org.apache.kafka.common.serialization.StringSerializer;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.slf4j.Logger;
@@ -36,7 +33,6 @@ public class KafkaConsumerBuilderTest {
         KafkaConsumerBuilder<Integer, String> builder = KafkaConsumerBuilder.builder()
             .withBootstrapServers("localhost:8080")
             .withProp("blah", "blah")
-            .withRetries(5)
             .withClientId("test-consomer-01")
             .consumer()
             .withProp("blah2", "blah2")
