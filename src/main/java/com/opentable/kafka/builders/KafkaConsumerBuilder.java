@@ -8,6 +8,7 @@ import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.common.serialization.Deserializer;
 
 import com.opentable.kafka.logging.LoggingConsumerInterceptor;
+import com.opentable.kafka.logging.LoggingInterceptorConfig;
 
 public class KafkaConsumerBuilder <K, V> extends KafkaBuilder {
 
@@ -31,6 +32,10 @@ public class KafkaConsumerBuilder <K, V> extends KafkaBuilder {
     public KafkaConsumerBuilder<K, V> withLogging() {
         setCsvProp(ConsumerConfig.INTERCEPTOR_CLASSES_CONFIG, LoggingConsumerInterceptor.class.getName());
         return this;
+    }
+
+    public KafkaConsumerBuilder<K, V> withLoggingSampleRate(Double rate) {
+        return withProp(LoggingInterceptorConfig.SAMPLE_RATE_PCT_CONFIG, rate);
     }
 
     public KafkaConsumerBuilder<K, V> withInterceptor(Class<? extends ConsumerInterceptor<K, V>> clazz) {

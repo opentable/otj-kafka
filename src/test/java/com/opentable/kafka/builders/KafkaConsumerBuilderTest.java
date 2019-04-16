@@ -53,7 +53,8 @@ public class KafkaConsumerBuilderTest {
             .withoutProp("blah2")
             .withGroupId("test")
             .withDeserializers(IntegerDeserializer.class, StringDeserializer.class)
-            .withOffsetReset(AutoOffsetResetType.latest);
+            .withOffsetReset(AutoOffsetResetType.latest)
+            .withLoggingSampleRate(10.0);
         LOG.debug("Props: {}", builder.buildProps());
         KafkaConsumer<Integer, String> c = builder
             .build();

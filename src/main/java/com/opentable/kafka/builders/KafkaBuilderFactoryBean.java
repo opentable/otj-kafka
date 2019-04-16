@@ -33,12 +33,11 @@ public class KafkaBuilderFactoryBean {
     }
 
     public KafkaBuilder builder(String name) {
-        return KafkaBuilder.builder(getProperties(name))
+        return KafkaBuilder.builder((getProperties(name, getProperties(DEFAULT, new Properties()))))
             .withMetricReporter(metricRegistry);
     }
 
-    private Properties getProperties(final String nameSpace) {
-        final Properties res = new Properties();
+    private Properties getProperties(final String nameSpace, final Properties res) {
         res.putAll(
             PropertySourceUtil.getProperties(env, PREFIX + nameSpace)
                 .entrySet()

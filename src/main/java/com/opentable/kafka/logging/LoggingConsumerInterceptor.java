@@ -32,7 +32,8 @@ public class LoggingConsumerInterceptor<K, V> implements ConsumerInterceptor<K, 
 
     private String interceptorClientId;
     private String groupId;
-    private LogSamplerRandom sampler = new LogSamplerRandom(5.0);
+    private LoggingInterceptorConfig conf;
+    private LogSamplerRandom sampler;
 
     @Override
     public ConsumerRecords<K, V> onConsume(ConsumerRecords<K, V> records) {
@@ -52,6 +53,8 @@ public class LoggingConsumerInterceptor<K, V> implements ConsumerInterceptor<K, 
 
     @Override
     public void configure(Map<String, ?> config) {
+        conf = new LoggingInterceptorConfig(config);
+        this.sampler = new LogSamplerRandom(conf.getDouble(LoggingInterceptorConfig.SAMPLE_RATE_PCT_CONFIG));
         String originalsClientId = (String) config.get(ConsumerConfig.CLIENT_ID_CONFIG);
         groupId  = (String) config.get(ConsumerConfig.GROUP_ID_CONFIG);
         interceptorClientId = (originalsClientId == null) ? "interceptor-consumer-" + ClientIdGenerator.nextClientId() : originalsClientId;

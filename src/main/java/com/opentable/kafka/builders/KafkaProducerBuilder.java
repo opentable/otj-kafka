@@ -8,6 +8,7 @@ import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.clients.producer.ProducerInterceptor;
 import org.apache.kafka.common.serialization.Serializer;
 
+import com.opentable.kafka.logging.LoggingInterceptorConfig;
 import com.opentable.kafka.logging.LoggingProducerInterceptor;
 
 public class KafkaProducerBuilder<K, V> extends KafkaBuilder {
@@ -32,6 +33,10 @@ public class KafkaProducerBuilder<K, V> extends KafkaBuilder {
     public KafkaProducerBuilder<K, V> withLogging() {
         setCsvProp(ProducerConfig.INTERCEPTOR_CLASSES_CONFIG, LoggingProducerInterceptor.class.getName());
         return this;
+    }
+
+    public KafkaProducerBuilder<K, V> withLoggingSampleRate(Double rate) {
+        return withProp(LoggingInterceptorConfig.SAMPLE_RATE_PCT_CONFIG, rate);
     }
 
     public KafkaProducerBuilder<K, V> withInterceptor(Class<? extends ProducerInterceptor<K, V>> clazz) {

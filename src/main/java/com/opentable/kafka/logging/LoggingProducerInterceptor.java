@@ -30,7 +30,8 @@ public class LoggingProducerInterceptor implements ProducerInterceptor<Object, O
     private static final Logger LOG = LoggerFactory.getLogger(LoggingProducerInterceptor.class);
 
     private String interceptorClientId;
-    private LogSamplerRandom sampler = new LogSamplerRandom(5.0);
+    private LoggingInterceptorConfig conf;
+    private LogSamplerRandom sampler;
 
     @Override
     public ProducerRecord<Object, Object> onSend(ProducerRecord<Object, Object> record) {
@@ -55,6 +56,8 @@ public class LoggingProducerInterceptor implements ProducerInterceptor<Object, O
 
     @Override
     public void configure(Map<String, ?> config) {
+        conf = new LoggingInterceptorConfig(config);
+        this.sampler = new LogSamplerRandom(conf.getDouble(LoggingInterceptorConfig.SAMPLE_RATE_PCT_CONFIG));
         String originalsClientId = (String) config.get(ProducerConfig.CLIENT_ID_CONFIG);
         this.interceptorClientId = (originalsClientId == null) ? "interceptor-producer-" + ClientIdGenerator.nextClientId() : originalsClientId;
         LOG.info("LoggingProducerInterceptor is configured for client: {}", interceptorClientId);

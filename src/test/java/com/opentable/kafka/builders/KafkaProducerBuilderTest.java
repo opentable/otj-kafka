@@ -32,7 +32,8 @@ import com.opentable.service.ServiceInfo;
 @ActiveProfiles(profiles = "test")
 @TestPropertySource(properties = {
     "info.component=test",
-    "ot.kafka.producer.linger.ms=10"
+    "ot.kafka.default.linger.ms=10",
+    "ot.kafka.producer.linger.ms=20",
 })
 public class KafkaProducerBuilderTest {
 
@@ -47,12 +48,14 @@ public class KafkaProducerBuilderTest {
             .withBootstrapServers("localhost:8080")
             .withProp("blah", "blah")
             .withoutProp("blah")
+            .withClientId("test-producer-01")
             .producer()
             .withProp("blah2", "blah2")
             .withoutProp("blah2")
             .withAcks(AckType.none)
             .withRetries(5)
-            .withSerializers(IntegerSerializer.class, StringSerializer.class);
+            .withSerializers(IntegerSerializer.class, StringSerializer.class)
+            .withLoggingSampleRate(10.0);
         LOG.debug("Props: {}", builder.buildProps());
         KafkaProducer<Integer, String> p = builder
             .build();
