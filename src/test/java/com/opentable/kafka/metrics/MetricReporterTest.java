@@ -94,7 +94,7 @@ public class MetricReporterTest {
         try (Producer<String, String> producer = createProducer(StringSerializer.class, StringSerializer.class)) {
             for (int i = lo; i <= hi; ++i) {
                 MDC.put(REQUEST_ID_KEY, UUID.randomUUID().toString());
-                producer.send(new ProducerRecord<String, String>(
+                producer.send(new ProducerRecord<>(
                     rw.getTopicName(),
                     String.format("key-%d", i),
                     String.format("value-%d", i)));
@@ -152,7 +152,8 @@ public class MetricReporterTest {
             }
         }
         consumer.commitSync();
-        waitForMetric(rw, "kafka.consumer-metrics-01.test.0.topic-1.consumer-fetch-manager-metrics-records-lag-max", Double.valueOf(numTestRecords - 1));
+        waitForMetric(rw, "kafka.consumer-metrics-01.test.0.topic-1.consumer-fetch-manager-metrics-records-lag-max",
+            (double) (numTestRecords - 1));
         consumer.close();
     }
 
