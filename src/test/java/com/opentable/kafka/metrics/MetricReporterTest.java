@@ -21,6 +21,8 @@ import java.util.UUID;
 
 import javax.management.MBeanServer;
 
+import com.codahale.metrics.Counting;
+import com.codahale.metrics.Gauge;
 import com.codahale.metrics.MetricRegistry;
 
 import org.apache.kafka.clients.consumer.Consumer;
@@ -31,6 +33,7 @@ import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.Producer;
 import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.clients.producer.ProducerRecord;
+import org.apache.kafka.common.metrics.MetricsReporter;
 import org.apache.kafka.common.serialization.Deserializer;
 import org.apache.kafka.common.serialization.Serializer;
 import org.apache.kafka.common.serialization.StringDeserializer;
@@ -51,8 +54,10 @@ import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.junit4.SpringRunner;
 
 import com.opentable.conservedheaders.ConservedHeader;
+import com.opentable.kafka.builders.KafkaBuilder;
 import com.opentable.kafka.logging.LoggingConsumerInterceptor;
 import com.opentable.kafka.logging.LoggingProducerInterceptor;
+import com.opentable.kafka.util.OffsetMetrics;
 import com.opentable.kafka.util.ReadWriteRule;
 import com.opentable.metrics.DefaultMetricsConfiguration;
 import com.opentable.service.AppInfo;
@@ -76,15 +81,13 @@ public class MetricReporterTest {
     private MetricRegistry metricRegistry;
 
     public <K, V> Producer<K, V> createProducer(Class<? extends Serializer<K>> keySer, Class<? extends Serializer<V>> valueSer) {
-        Properties props = rw.getEkb().baseProducerProperties();
-        props.put("key.serializer", keySer.getName());
-        props.put("value.serializer", valueSer.getName());
-        props.put(ProducerConfig.INTERCEPTOR_CLASSES_CONFIG, LoggingProducerInterceptor.class.getCanonicalName());
-        props.put(ProducerConfig.METRIC_REPORTER_CLASSES_CONFIG, OtMetricsReporter.class.getCanonicalName());
-        props.put(OtMetricsReporter.METRIC_REPORTER_OT_REGISTRY, metricRegistry);
-        props.put(ProducerConfig.LINGER_MS_CONFIG, "200");
-        //put logger here
-        return new KafkaProducer<>(props);
+        return KafkaBuilder.builder(rw.getEkb().baseProducerProperties())
+            .withClientId("producer-metrics-01")
+            .withMetricReporter(metricRegistry)
+            .producer()
+            .withSerializers(keySer, valueSer)
+            .withProp(ProducerConfig.LINGER_MS_CONFIG, "200")
+            .build();
     }
 
     public void writeTestRecords(final int lo, final int hi) {
@@ -101,15 +104,15 @@ public class MetricReporterTest {
     }
 
     public <K, V> Consumer<K, V> createConsumer(String groupId, Class<? extends Deserializer<K>> keySer, Class<? extends Deserializer<V>> valueSer) {
-        Properties props = rw.getEkb().baseConsumerProperties(groupId);
-        props.put("key.deserializer", keySer.getName());
-        props.put("value.deserializer", valueSer.getName());
-        props.put(ConsumerConfig.INTERCEPTOR_CLASSES_CONFIG, LoggingConsumerInterceptor.class.getCanonicalName());
-        props.put(ConsumerConfig.METRIC_REPORTER_CLASSES_CONFIG, OtMetricsReporter.class.getCanonicalName());
-        props.put(OtMetricsReporter.METRIC_REPORTER_OT_REGISTRY, metricRegistry);
-        //put logger here
-        return new KafkaConsumer<>(props);
-    }
+        return KafkaBuilder.builder(rw.getEkb().baseConsumerProperties(groupId))
+            .withClientId("consumer-metrics-01")
+            .withMetricReporter(metricRegistry)
+            .consumer()
+            .withGroupId(groupId)
+            .withMaxPollRecords(1)
+            .withDeserializers(keySer, valueSer)
+            .build();
+   }
 
     public void readTestRecords(final int expect) {
         try (Consumer<String, String> consumer = createConsumer("test", StringDeserializer.class, StringDeserializer.class)) {
@@ -136,10 +139,35 @@ public class MetricReporterTest {
     }
 
     @Test(timeout = 60_000)
-    public void consumerTest() {
+    public void consumerTest() throws InterruptedException {
         final int numTestRecords = 100;
         writeTestRecords(1, numTestRecords);
-        readTestRecords(numTestRecords);
+        Consumer<String, String> consumer = createConsumer("test", StringDeserializer.class, StringDeserializer.class);
+        consumer.subscribe(Collections.singleton(rw.getTopicName()));
+        ConsumerRecords<String, String> records;
+        while (true) {
+            records = consumer.poll(Duration.ofSeconds(1));
+            if (!records.isEmpty()) {
+                break;
+            }
+        }
+        consumer.commitSync();
+        waitForMetric(rw, "kafka.consumer-metrics-01.test.0.topic-1.consumer-fetch-manager-metrics-records-lag-max", Double.valueOf(numTestRecords - 1));
+        consumer.close();
+    }
+
+    private void waitForMetric(
+        final ReadWriteRule rw,
+        final String metricName,
+        final Double value)
+        throws InterruptedException {
+        while (true) {
+            Gauge gauge = metricRegistry.getGauges().get(metricName);
+            if ((gauge != null) && (gauge.getValue().equals(value))) {
+                break;
+            }
+            ReadWriteRule.loopSleep();
+        }
     }
 
     @Configuration

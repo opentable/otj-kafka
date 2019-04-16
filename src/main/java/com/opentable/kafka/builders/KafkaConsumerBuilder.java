@@ -46,6 +46,10 @@ public class KafkaConsumerBuilder <K, V> extends KafkaBuilder {
         return withProp(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, val.name());
     }
 
+    public KafkaConsumerBuilder<K, V> withMaxPollRecords(int val) {
+        return withProp(ConsumerConfig.MAX_POLL_RECORDS_CONFIG, val);
+    }
+
     public <K2, V2> KafkaConsumerBuilder<K2, V2> withDeserializers(Class<? extends Deserializer<K2>> keyDeSer, Class<? extends Deserializer<V2>> valDeSer) {
         prop.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, keyDeSer.getName());
         prop.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, valDeSer.getName());

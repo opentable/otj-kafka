@@ -9,6 +9,7 @@ import java.util.Set;
 
 import com.codahale.metrics.Gauge;
 import com.codahale.metrics.MetricRegistry;
+import com.codahale.metrics.SharedMetricRegistries;
 
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.common.metrics.KafkaMetric;
@@ -20,11 +21,11 @@ public class OtMetricsReporter implements MetricsReporter {
 
     private static final Logger LOG = LoggerFactory.getLogger(OtMetricsReporter.class);
 
-    public static final String METRIC_REPORTER_OT_REGISTRY = "metric.reporter.ot.registry";
-
-    private final Set<KafkaMetric> kafkaMetrics = new HashSet<>();
+    private OtMetricsReporterConfig config;
+    private Set<String> metricNames = new HashSet<>();
     private MetricRegistry metricRegistry;
     private String groupId;
+    private String prefix;
 
     @Override
     public void init(List<KafkaMetric> metrics) {
@@ -33,17 +34,17 @@ public class OtMetricsReporter implements MetricsReporter {
 
     @Override
     public void metricChange(KafkaMetric metric) {
-        synchronized (kafkaMetrics) {
-            if (metricRegistry.getGauges().get(metricName(metric)) != null) {
-                metricRegistry.remove(metricName(metric));
-            }
-            metricRegistry.register(metricName(metric), (Gauge) metric::metricValue);
+        final String name = metricName(metric);
+        try {
+            metricRegistry.register(name, (Gauge) metric::metricValue);
+            metricNames.add(name);
+        } catch (IllegalArgumentException e) {
+            LOG.warn("metricChange called for `{}' which was already registered, ignoring.", name);
         }
-        kafkaMetrics.add(metric);
     }
 
     private String metricName(KafkaMetric metric) {
-        final StringBuilder stringBuilder = new StringBuilder();
+        final StringBuilder stringBuilder = new StringBuilder(prefix);
         stringBuilder.append(metric.metricName().tags().get("client-id"))
             .append(".");
         if (groupId != null) {
@@ -62,24 +63,31 @@ public class OtMetricsReporter implements MetricsReporter {
 
     @Override
     public void metricRemoval(KafkaMetric metric) {
-        metricRegistry.remove(metricName(metric));
-        kafkaMetrics.remove(metric);
+        final String name = metricName(metric);
+        metricRegistry.remove(name);
+        metricNames.remove(name);
     }
 
     @Override
     public void close() {
-        kafkaMetrics.forEach(metric -> {
-            LOG.debug("Un-registering kafka metric: {}, tags: {}", metricName(metric), metric.metricName().tags());
-            metricRegistry.remove(metricName(metric));
+        metricNames.forEach(name -> {
+            LOG.trace("Un-registering kafka metric: {}", name);
+            metricRegistry.remove(name);
         });
-        kafkaMetrics.clear();
+        metricNames.clear();
     }
 
     @Override
     public void configure(Map<String, ?> config) {
-        metricRegistry = (MetricRegistry) config.get(METRIC_REPORTER_OT_REGISTRY);
-        groupId  = (String) config.get(ConsumerConfig.GROUP_ID_CONFIG);
-        LOG.info("OtMetricsReporter is configured with metric registry: {}", metricRegistry);
+        this.config = new OtMetricsReporterConfig(config);
+        this.metricRegistry  = (MetricRegistry) config.get(OtMetricsReporterConfig.METRIC_REGISTRY_REF_CONFIG);
+        if (this.metricRegistry == null) {
+            final String registryName = this.config.getString(OtMetricsReporterConfig.METRIC_REGISTRY_NAME_CONFIG);
+            this.metricRegistry = SharedMetricRegistries.getOrCreate(registryName);
+        }
+        this.prefix = this.config.getString(OtMetricsReporterConfig.METRIC_PREFIX_CONFIG);
+        groupId  = (String)config.get(ConsumerConfig.GROUP_ID_CONFIG);
+        LOG.info("OtMetricsReporter is configured with metric registry: {} and prefix: {}", metricRegistry, prefix);
     }
 
 }

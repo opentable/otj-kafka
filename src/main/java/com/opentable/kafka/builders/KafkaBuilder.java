@@ -13,6 +13,7 @@ import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.producer.ProducerConfig;
 
 import com.opentable.kafka.metrics.OtMetricsReporter;
+import com.opentable.kafka.metrics.OtMetricsReporterConfig;
 
 public class KafkaBuilder {
 
@@ -28,6 +29,10 @@ public class KafkaBuilder {
 
     public static KafkaBuilder builder() {
         return new KafkaBuilder(new Properties());
+    }
+
+    public static KafkaBuilder builder(Properties props) {
+        return new KafkaBuilder(props);
     }
 
     public KafkaBuilder withProp(Object key, Object value) {
@@ -54,7 +59,11 @@ public class KafkaBuilder {
 
     public KafkaBuilder withMetricReporter(MetricRegistry metricRegistry) {
         return withProp(ConsumerConfig.METRIC_REPORTER_CLASSES_CONFIG, OtMetricsReporter.class.getCanonicalName())
-            .withProp(OtMetricsReporter.METRIC_REPORTER_OT_REGISTRY, metricRegistry);
+            .withProp(OtMetricsReporterConfig.METRIC_REGISTRY_REF_CONFIG, metricRegistry);
+    }
+
+    public KafkaBuilder withMetricReporter() {
+        return withProp(ConsumerConfig.METRIC_REPORTER_CLASSES_CONFIG, OtMetricsReporter.class.getCanonicalName());
     }
 
     protected void setCsvProp(String key, String val) {
