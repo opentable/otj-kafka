@@ -16,6 +16,7 @@ import org.apache.kafka.common.metrics.KafkaMetric;
 import org.apache.kafka.common.metrics.MetricsReporter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.util.AntPathMatcher;
 
 public class OtMetricsReporter implements MetricsReporter {
 
@@ -23,9 +24,13 @@ public class OtMetricsReporter implements MetricsReporter {
 
     private OtMetricsReporterConfig config;
     private Set<String> metricNames = new HashSet<>();
+    private Set<String> metricGroups = new HashSet<>();
     private MetricRegistry metricRegistry;
     private String groupId;
     private String prefix;
+    private final HashSet<String> groups = new HashSet<>();
+    private final HashSet<String> metricMatchers = new HashSet<>();
+    private final AntPathMatcher matcher = new AntPathMatcher("-");
 
     @Override
     public void init(List<KafkaMetric> metrics) {
@@ -34,13 +39,35 @@ public class OtMetricsReporter implements MetricsReporter {
 
     @Override
     public void metricChange(KafkaMetric metric) {
-        final String name = metricName(metric);
-        try {
-            metricRegistry.register(name, (Gauge) metric::metricValue);
-            metricNames.add(name);
-        } catch (IllegalArgumentException e) {
-            LOG.warn("metricChange called for `{}' which was already registered, ignoring.", name);
+        if (filterMetric(metric)) {
+            final String name = metricName(metric);
+            try {
+                metricRegistry.register(name, (Gauge) metric::metricValue);
+                metricNames.add(name);
+                metricGroups.add(metric.metricName().group());
+            } catch (IllegalArgumentException e) {
+                LOG.warn("metricChange called for `{}' which was already registered, ignoring.", name);
+            }
         }
+    }
+
+    private boolean filterMetric(KafkaMetric metric) {
+        return filterGroup(metric) && filterName(metric);
+    }
+
+    private boolean filterGroup(KafkaMetric metric) {
+        if (groups.isEmpty()) {
+            return true;
+        }
+        return groups.contains(metric.metricName().group());
+    }
+
+    private boolean filterName(KafkaMetric metric) {
+        if (metricMatchers.isEmpty()) {
+            return true;
+        }
+        return metricMatchers.stream()
+            .anyMatch(m -> matcher.match(m, metric.metricName().name()));
     }
 
     private String metricName(KafkaMetric metric) {
@@ -75,6 +102,8 @@ public class OtMetricsReporter implements MetricsReporter {
             metricRegistry.remove(name);
         });
         metricNames.clear();
+        LOG.debug("Metric groups: {}", metricGroups);
+        metricGroups.clear();
     }
 
     @Override
@@ -86,6 +115,8 @@ public class OtMetricsReporter implements MetricsReporter {
             this.metricRegistry = SharedMetricRegistries.getOrCreate(registryName);
         }
         this.prefix = this.config.getString(OtMetricsReporterConfig.METRIC_PREFIX_CONFIG);
+        groups.addAll(this.config.getList(OtMetricsReporterConfig.METRIC_GROUPS_CONFIG));
+        metricMatchers.addAll(this.config.getList(OtMetricsReporterConfig.METRIC_NAME_MATCHERS_CONFIG));
         groupId  = (String)config.get(ConsumerConfig.GROUP_ID_CONFIG);
         LOG.info("OtMetricsReporter is configured with metric registry: {} and prefix: {}", metricRegistry, prefix);
     }
