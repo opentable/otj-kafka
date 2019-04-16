@@ -24,7 +24,7 @@ public class KafkaBuilder {
     }
 
     public Properties buildProps() {
-        return new Properties(prop);
+        return prop;
     }
 
     public static KafkaBuilder builder() {
