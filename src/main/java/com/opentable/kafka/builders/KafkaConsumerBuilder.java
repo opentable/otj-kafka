@@ -18,19 +18,19 @@ public class KafkaConsumerBuilder <K, V> extends KafkaBuilder {
     }
 
     @Override
-    public KafkaConsumerBuilder<K, V> withProp(Object key, Object value) {
+    public KafkaConsumerBuilder<K, V> withProp(String key, Object value) {
         super.withProp(key, value);
         return this;
     }
 
     @Override
-    public KafkaConsumerBuilder<K, V> withoutProp(Object key) {
+    public KafkaConsumerBuilder<K, V> withoutProp(String key) {
         super.withoutProp(key);
         return this;
     }
 
     public KafkaConsumerBuilder<K, V> withLogging() {
-        setCsvProp(ConsumerConfig.INTERCEPTOR_CLASSES_CONFIG, LoggingConsumerInterceptor.class.getName());
+        setListProp(ConsumerConfig.INTERCEPTOR_CLASSES_CONFIG, LoggingConsumerInterceptor.class.getName());
         return this;
     }
 
@@ -39,7 +39,7 @@ public class KafkaConsumerBuilder <K, V> extends KafkaBuilder {
     }
 
     public KafkaConsumerBuilder<K, V> withInterceptor(Class<? extends ConsumerInterceptor<K, V>> clazz) {
-        setCsvProp(ConsumerConfig.INTERCEPTOR_CLASSES_CONFIG, clazz.getName());
+        setListProp(ConsumerConfig.INTERCEPTOR_CLASSES_CONFIG, clazz.getName());
         return this;
     }
 
@@ -48,7 +48,7 @@ public class KafkaConsumerBuilder <K, V> extends KafkaBuilder {
     }
 
     public KafkaConsumerBuilder<K, V> withOffsetReset(AutoOffsetResetType val) {
-        return withProp(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, val.name());
+        return withProp(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, val.value);
     }
 
     public KafkaConsumerBuilder<K, V> withMaxPollRecords(int val) {
@@ -67,6 +67,13 @@ public class KafkaConsumerBuilder <K, V> extends KafkaBuilder {
     }
 
     public enum AutoOffsetResetType {
-        latest, earliest, none
+        Latest("latest"), Earliest("earliest"), None("none");
+
+        final String value;
+        
+        AutoOffsetResetType(String value) {
+            this.value = value;
+        }
+
     }
 }

@@ -23,7 +23,7 @@ public class KafkaBuilderFactoryBean {
     private final MetricRegistry metricRegistry;
 
     @Inject
-    public KafkaBuilderFactoryBean(ConfigurableEnvironment env, MetricRegistry metricRegistry) {
+    public KafkaBuilderFactoryBean(ConfigurableEnvironment env, /*Optional*/ MetricRegistry metricRegistry) {
         this.env = env;
         this.metricRegistry = metricRegistry;
     }

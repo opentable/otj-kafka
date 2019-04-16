@@ -35,12 +35,12 @@ public class KafkaBuilder {
         return new KafkaBuilder(props);
     }
 
-    public KafkaBuilder withProp(Object key, Object value) {
+    public KafkaBuilder withProp(String key, Object value) {
         prop.put(key, value);
         return this;
     }
 
-    public KafkaBuilder withoutProp(Object key) {
+    public KafkaBuilder withoutProp(String key) {
         prop.remove(key);
         return this;
     }
@@ -66,9 +66,9 @@ public class KafkaBuilder {
         return withProp(ConsumerConfig.METRIC_REPORTER_CLASSES_CONFIG, OtMetricsReporter.class.getCanonicalName());
     }
 
-    protected void setCsvProp(String key, String val) {
+    protected void setListProp(String key, String val) {
         prop.put(key,
-            Streams.concat(Arrays.stream(prop.getProperty(ProducerConfig.INTERCEPTOR_CLASSES_CONFIG, "").split(",")),
+            Streams.concat(Arrays.stream(prop.getProperty(key, "").split(",")),
                 Stream.of(val))
                 .filter(s -> !s.equals(""))
                 .distinct()

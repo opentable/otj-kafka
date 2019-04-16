@@ -19,19 +19,19 @@ public class KafkaProducerBuilder<K, V> extends KafkaBuilder {
     }
 
     @Override
-    public KafkaProducerBuilder<K, V> withProp(Object key, Object value) {
+    public KafkaProducerBuilder<K, V> withProp(String key, Object value) {
         super.withProp(key, value);
         return this;
     }
 
     @Override
-    public KafkaProducerBuilder<K, V> withoutProp(Object key) {
+    public KafkaProducerBuilder<K, V> withoutProp(String key) {
         super.withoutProp(key);
         return this;
     }
 
     public KafkaProducerBuilder<K, V> withLogging() {
-        setCsvProp(ProducerConfig.INTERCEPTOR_CLASSES_CONFIG, LoggingProducerInterceptor.class.getName());
+        setListProp(ProducerConfig.INTERCEPTOR_CLASSES_CONFIG, LoggingProducerInterceptor.class.getName());
         return this;
     }
 
@@ -40,7 +40,7 @@ public class KafkaProducerBuilder<K, V> extends KafkaBuilder {
     }
 
     public KafkaProducerBuilder<K, V> withInterceptor(Class<? extends ProducerInterceptor<K, V>> clazz) {
-        setCsvProp(ProducerConfig.INTERCEPTOR_CLASSES_CONFIG, clazz.getName());
+        setListProp(ProducerConfig.INTERCEPTOR_CLASSES_CONFIG, clazz.getName());
         return this;
     }
 
