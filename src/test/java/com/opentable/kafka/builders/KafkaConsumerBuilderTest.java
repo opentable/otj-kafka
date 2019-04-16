@@ -32,6 +32,7 @@ import com.opentable.service.ServiceInfo;
 @ActiveProfiles(profiles = "test")
 @TestPropertySource(properties = {
     "info.component=test",
+    "ot.kafka.consumer.check.crcs=false"
 })
 public class KafkaConsumerBuilderTest {
 
@@ -42,7 +43,7 @@ public class KafkaConsumerBuilderTest {
 
     @Test
     public void builderTest() {
-        KafkaConsumerBuilder<Integer, String> builder = builderFactoryBean.builder()
+        KafkaConsumerBuilder<Integer, String> builder = builderFactoryBean.builder("consumer")
             .withBootstrapServers("localhost:8080")
             .withProp("blah", "blah")
             .withoutProp("blah")

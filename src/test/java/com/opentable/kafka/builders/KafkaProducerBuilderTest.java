@@ -32,6 +32,7 @@ import com.opentable.service.ServiceInfo;
 @ActiveProfiles(profiles = "test")
 @TestPropertySource(properties = {
     "info.component=test",
+    "ot.kafka.producer.linger.ms=10"
 })
 public class KafkaProducerBuilderTest {
 
@@ -42,7 +43,7 @@ public class KafkaProducerBuilderTest {
 
     @Test
     public void builderTest() {
-        KafkaProducerBuilder<Integer, String> builder = builderFactoryBean.builder()
+        KafkaProducerBuilder<Integer, String> builder = builderFactoryBean.builder("producer")
             .withBootstrapServers("localhost:8080")
             .withProp("blah", "blah")
             .withoutProp("blah")
