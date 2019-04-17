@@ -73,12 +73,9 @@ public class KafkaConsumerBuilder <K, V> extends KafkaBuilder {
 
     public enum AutoOffsetResetType {
         Latest("latest"), Earliest("earliest"), None("none");
-
         final String value;
-        
         AutoOffsetResetType(String value) {
             this.value = value;
         }
-
     }
 }

@@ -1,6 +1,7 @@
 package com.opentable.kafka.builders;
 
 import java.util.Map.Entry;
+import java.util.Optional;
 import java.util.Properties;
 import java.util.stream.Collectors;
 
@@ -20,10 +21,10 @@ public class KafkaBuilderFactoryBean {
     private static final String DEFAULT = "default";
 
     private final ConfigurableEnvironment env;
-    private final MetricRegistry metricRegistry;
+    private final Optional<MetricRegistry> metricRegistry;
 
     @Inject
-    public KafkaBuilderFactoryBean(ConfigurableEnvironment env, /*Optional*/ MetricRegistry metricRegistry) {
+    public KafkaBuilderFactoryBean(ConfigurableEnvironment env, Optional<MetricRegistry> metricRegistry) {
         this.env = env;
         this.metricRegistry = metricRegistry;
     }
@@ -33,8 +34,8 @@ public class KafkaBuilderFactoryBean {
     }
 
     public KafkaBuilder builder(String name) {
-        return KafkaBuilder.builder((getProperties(name, getProperties(DEFAULT, new Properties()))))
-            .withMetricReporter(metricRegistry);
+        final KafkaBuilder res = KafkaBuilder.builder((getProperties(name, getProperties(DEFAULT, new Properties()))));
+        return metricRegistry.map(res::withMetricReporter).orElse(res);
     }
 
     private Properties getProperties(final String nameSpace, final Properties res) {
