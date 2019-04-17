@@ -61,12 +61,18 @@ public class KafkaBuilder {
     }
 
     public KafkaBuilder withMetricReporter(MetricRegistry metricRegistry) {
-        return withProp(ConsumerConfig.METRIC_REPORTER_CLASSES_CONFIG, OtMetricsReporter.class.getCanonicalName())
-            .withProp(OtMetricsReporterConfig.METRIC_REGISTRY_REF_CONFIG, metricRegistry);
+        setListPropItem(ConsumerConfig.METRIC_REPORTER_CLASSES_CONFIG, OtMetricsReporter.class.getCanonicalName());
+        return withProp(OtMetricsReporterConfig.METRIC_REGISTRY_REF_CONFIG, metricRegistry);
     }
 
     public KafkaBuilder withMetricReporter() {
-        return withProp(ConsumerConfig.METRIC_REPORTER_CLASSES_CONFIG, OtMetricsReporter.class.getCanonicalName());
+        setListPropItem(ConsumerConfig.METRIC_REPORTER_CLASSES_CONFIG, OtMetricsReporter.class.getCanonicalName());
+        return this;
+    }
+
+    public KafkaBuilder withoutMetricReporter() {
+        removeListPropItem(ConsumerConfig.METRIC_REPORTER_CLASSES_CONFIG, OtMetricsReporter.class.getCanonicalName());
+        return this;
     }
 
     protected void setListPropItem(String key, String val) {
