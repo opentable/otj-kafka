@@ -10,7 +10,6 @@ import com.google.common.collect.Streams;
 
 import org.apache.kafka.clients.CommonClientConfigs;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
-import org.apache.kafka.clients.producer.ProducerConfig;
 
 import com.opentable.kafka.metrics.OtMetricsReporter;
 import com.opentable.kafka.metrics.OtMetricsReporterConfig;
@@ -49,6 +48,10 @@ public class KafkaBuilder {
         return withProp(CommonClientConfigs.BOOTSTRAP_SERVERS_CONFIG, val);
     }
 
+    public KafkaBuilder withBootstrapServer(String val) {
+        setListPropItem(CommonClientConfigs.BOOTSTRAP_SERVERS_CONFIG, val);
+        return this;
+    }
     public KafkaBuilder withClientId(String val) {
         return withProp(CommonClientConfigs.CLIENT_ID_CONFIG, val);
     }
@@ -66,7 +69,7 @@ public class KafkaBuilder {
         return withProp(ConsumerConfig.METRIC_REPORTER_CLASSES_CONFIG, OtMetricsReporter.class.getCanonicalName());
     }
 
-    protected void setListProp(String key, String val) {
+    protected void setListPropItem(String key, String val) {
         prop.put(key,
             Streams.concat(Arrays.stream(prop.getProperty(key, "").split(",")),
                 Stream.of(val))
@@ -74,6 +77,16 @@ public class KafkaBuilder {
                 .distinct()
                 .collect(Collectors.joining(",")));
     }
+
+    protected void removeListPropItem(String key, String val) {
+        prop.put(key,
+            Arrays.stream(prop.getProperty(key, "").split(","))
+                .filter(s -> !s.equals(""))
+                .filter(s -> !s.equals(val))
+                .distinct()
+                .collect(Collectors.joining(",")));
+    }
+
 
     public KafkaProducerBuilder<?, ?> producer() {
         return new KafkaProducerBuilder<>(prop);

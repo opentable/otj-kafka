@@ -30,7 +30,12 @@ public class KafkaConsumerBuilder <K, V> extends KafkaBuilder {
     }
 
     public KafkaConsumerBuilder<K, V> withLogging() {
-        setListProp(ConsumerConfig.INTERCEPTOR_CLASSES_CONFIG, LoggingConsumerInterceptor.class.getName());
+        setListPropItem(ConsumerConfig.INTERCEPTOR_CLASSES_CONFIG, LoggingConsumerInterceptor.class.getName());
+        return this;
+    }
+
+    public KafkaConsumerBuilder<K, V> withoutLogging() {
+        removeListPropItem(ConsumerConfig.INTERCEPTOR_CLASSES_CONFIG, LoggingConsumerInterceptor.class.getName());
         return this;
     }
 
@@ -39,7 +44,7 @@ public class KafkaConsumerBuilder <K, V> extends KafkaBuilder {
     }
 
     public KafkaConsumerBuilder<K, V> withInterceptor(Class<? extends ConsumerInterceptor<K, V>> clazz) {
-        setListProp(ConsumerConfig.INTERCEPTOR_CLASSES_CONFIG, clazz.getName());
+        setListPropItem(ConsumerConfig.INTERCEPTOR_CLASSES_CONFIG, clazz.getName());
         return this;
     }
 

@@ -31,7 +31,12 @@ public class KafkaProducerBuilder<K, V> extends KafkaBuilder {
     }
 
     public KafkaProducerBuilder<K, V> withLogging() {
-        setListProp(ProducerConfig.INTERCEPTOR_CLASSES_CONFIG, LoggingProducerInterceptor.class.getName());
+        setListPropItem(ProducerConfig.INTERCEPTOR_CLASSES_CONFIG, LoggingProducerInterceptor.class.getName());
+        return this;
+    }
+
+    public KafkaProducerBuilder<K, V> withoutLogging() {
+        removeListPropItem(ProducerConfig.INTERCEPTOR_CLASSES_CONFIG, LoggingProducerInterceptor.class.getName());
         return this;
     }
 
@@ -40,7 +45,7 @@ public class KafkaProducerBuilder<K, V> extends KafkaBuilder {
     }
 
     public KafkaProducerBuilder<K, V> withInterceptor(Class<? extends ProducerInterceptor<K, V>> clazz) {
-        setListProp(ProducerConfig.INTERCEPTOR_CLASSES_CONFIG, clazz.getName());
+        setListPropItem(ProducerConfig.INTERCEPTOR_CLASSES_CONFIG, clazz.getName());
         return this;
     }
 
