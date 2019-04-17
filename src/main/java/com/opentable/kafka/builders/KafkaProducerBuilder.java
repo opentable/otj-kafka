@@ -58,8 +58,8 @@ public class KafkaProducerBuilder<K, V> extends KafkaBuilder {
     }
 
     public <K2, V2> KafkaProducerBuilder<K2, V2> withSerializers(Class<? extends Serializer<K2>> keySer, Class<? extends Serializer<V2>> valSer) {
-        prop.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, keySer.getName());
-        prop.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, valSer.getName());
+        prop.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, keySer);
+        prop.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, valSer);
         return new KafkaProducerBuilder<>(prop);
     }
 

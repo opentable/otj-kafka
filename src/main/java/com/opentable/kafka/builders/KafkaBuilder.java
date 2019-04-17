@@ -61,17 +61,17 @@ public class KafkaBuilder {
     }
 
     public KafkaBuilder withMetricReporter(MetricRegistry metricRegistry) {
-        setListPropItem(ConsumerConfig.METRIC_REPORTER_CLASSES_CONFIG, OtMetricsReporter.class.getCanonicalName());
+        setListPropItem(ConsumerConfig.METRIC_REPORTER_CLASSES_CONFIG, OtMetricsReporter.class.getName());
         return withProp(OtMetricsReporterConfig.METRIC_REGISTRY_REF_CONFIG, metricRegistry);
     }
 
     public KafkaBuilder withMetricReporter() {
-        setListPropItem(ConsumerConfig.METRIC_REPORTER_CLASSES_CONFIG, OtMetricsReporter.class.getCanonicalName());
+        setListPropItem(ConsumerConfig.METRIC_REPORTER_CLASSES_CONFIG, OtMetricsReporter.class.getName());
         return this;
     }
 
     public KafkaBuilder withoutMetricReporter() {
-        removeListPropItem(ConsumerConfig.METRIC_REPORTER_CLASSES_CONFIG, OtMetricsReporter.class.getCanonicalName());
+        removeListPropItem(ConsumerConfig.METRIC_REPORTER_CLASSES_CONFIG, OtMetricsReporter.class.getName());
         return this;
     }
 
@@ -92,7 +92,6 @@ public class KafkaBuilder {
                 .distinct()
                 .collect(Collectors.joining(",")));
     }
-
 
     public KafkaProducerBuilder<?, ?> producer() {
         return new KafkaProducerBuilder<>(prop);
