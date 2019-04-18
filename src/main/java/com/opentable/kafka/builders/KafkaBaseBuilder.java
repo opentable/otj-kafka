@@ -32,46 +32,36 @@ public class KafkaBaseBuilder {
         this.loggingUtils = new LoggingUtils(appInfo);
     }
 
-    protected Properties buildProps() {
-        return prop;
-    }
 
-    protected KafkaBaseBuilder addProperty(String key, Object value) {
+    void addProperty(String key, Object value) {
         prop.put(key, value);
-        return this;
     }
 
-    protected KafkaBaseBuilder removeProperty(String key) {
+    void removeProperty(String key) {
         prop.remove(key);
-        return this;
     }
 
-    protected KafkaBaseBuilder withBootstrapServer(String bootStrapServer) {
+    void withBootstrapServer(String bootStrapServer) {
         this.bootStrapServers.add(bootStrapServer);
-        return this;
     }
 
-    protected KafkaBaseBuilder withBootstrapServers(List<String> bootStrapServers) {
+    void withBootstrapServers(List<String> bootStrapServers) {
         this.bootStrapServers.addAll(bootStrapServers);
-        return this;
     }
 
-    protected KafkaBaseBuilder withClientId(String val) {
+    void withClientId(String val) {
         clientId = Optional.ofNullable(val);
-        return this;
     }
 
-    protected KafkaBaseBuilder withSecurityProtocol(String protocol) {
+    void withSecurityProtocol(String protocol) {
         this.securityProtocol = Optional.ofNullable(protocol);
-        return this;
     }
 
-    protected KafkaBaseBuilder withMetricRegistry(MetricRegistry metricRegistry) {
+    void withMetricRegistry(MetricRegistry metricRegistry) {
         this.metricRegistry = Optional.ofNullable(metricRegistry);
-        return this;
     }
 
-    protected void baseBuild() {
+    void baseBuild() {
         if (bootStrapServers.isEmpty()) {
             throw new IllegalStateException("No bootstrap servers specified");
         }

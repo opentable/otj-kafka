@@ -17,8 +17,9 @@ import com.opentable.kafka.logging.LoggingInterceptorConfig;
 import com.opentable.kafka.logging.LoggingProducerInterceptor;
 import com.opentable.service.AppInfo;
 
-public class KafkaProducerBuilder<K,V> extends KafkaBaseBuilder {
+public class KafkaProducerBuilder<K,V>  {
 
+    private final KafkaBaseBuilder kafkaBaseBuilder;
     private Optional<AckType> ackType = Optional.empty();
     private Optional<Integer> retries = Optional.empty();
 
@@ -27,33 +28,33 @@ public class KafkaProducerBuilder<K,V> extends KafkaBaseBuilder {
 
 
     public KafkaProducerBuilder(Properties prop, AppInfo appInfo) {
-        super(prop, appInfo);
-        interceptors.add(LoggingProducerInterceptor.class.getName());
+        kafkaBaseBuilder = new KafkaBaseBuilder(prop, appInfo);
+        kafkaBaseBuilder.interceptors.add(LoggingProducerInterceptor.class.getName());
     }
 
     public KafkaProducerBuilder<K, V> withProperty(String key, Object value) {
-        super.addProperty(key, value);
+        kafkaBaseBuilder.addProperty(key, value);
         return this;
     }
 
     public KafkaProducerBuilder<K, V> removeProperty(String key) {
-        super.removeProperty(key);
+        kafkaBaseBuilder.removeProperty(key);
         return this;
     }
 
 
     public KafkaProducerBuilder<K, V> disableLogging() {
-        interceptors.remove(LoggingProducerInterceptor.class.getName());
+        kafkaBaseBuilder.interceptors.remove(LoggingProducerInterceptor.class.getName());
         return this;
     }
 
     public KafkaProducerBuilder<K, V> withLoggingSampleRate(double rate) {
-        loggingSampleRate = rate;
+        kafkaBaseBuilder.loggingSampleRate = rate;
         return this;
     }
 
     public KafkaProducerBuilder<K, V> withInterceptor(Class<? extends ProducerInterceptor<K, V>> clazz) {
-        interceptors.add(clazz.getName());
+        kafkaBaseBuilder.interceptors.add(clazz.getName());
         return this;
     }
 
@@ -70,53 +71,51 @@ public class KafkaProducerBuilder<K,V> extends KafkaBaseBuilder {
     public KafkaProducerBuilder<K, V> withSerializers(Class<? extends Serializer<K>> keySer, Class<? extends Serializer<V>> valSer) {
         this.keySe = keySer;
         this.valueSe = valSer;
-        prop.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, keySer);
-        prop.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, valSer);
         return this;
     }
 
     public KafkaProducerBuilder<K, V> withBootstrapServer(String bootStrapServer) {
-        super.withBootstrapServer(bootStrapServer);
+        kafkaBaseBuilder.withBootstrapServer(bootStrapServer);
         return this;
     }
 
     public KafkaProducerBuilder<K, V> withBootstrapServers(List<String> bootStrapServers) {
-        super.withBootstrapServers(bootStrapServers);
+        kafkaBaseBuilder.withBootstrapServers(bootStrapServers);
         return this;
     }
 
     public KafkaProducerBuilder<K, V> withClientId(String val) {
-        super.withClientId(val);
+        kafkaBaseBuilder.withClientId(val);
         return this;
     }
 
     public KafkaProducerBuilder<K, V> withSecurityProtocol(String protocol) {
-        super.withSecurityProtocol(protocol);
+        kafkaBaseBuilder.withSecurityProtocol(protocol);
         return this;
     }
 
     public KafkaProducerBuilder<K, V> withMetricRegistry(MetricRegistry metricRegistry) {
-        super.withMetricRegistry(metricRegistry);
+        kafkaBaseBuilder.withMetricRegistry(metricRegistry);
         return this;
     }
 
     public  KafkaProducer<K, V> build() {
-        baseBuild();
-        if (!interceptors.isEmpty()) {
-            addProperty(ProducerConfig.INTERCEPTOR_CLASSES_CONFIG, interceptors.stream().distinct().collect(Collectors.joining(",")));
-            if (interceptors.contains(LoggingProducerInterceptor.class.getName())) {
-                addProperty("opentable.logging",  loggingUtils);
+        kafkaBaseBuilder.baseBuild();
+        if (!kafkaBaseBuilder.interceptors.isEmpty()) {
+            kafkaBaseBuilder.addProperty(ProducerConfig.INTERCEPTOR_CLASSES_CONFIG, kafkaBaseBuilder.interceptors.stream().distinct().collect(Collectors.joining(",")));
+            if (kafkaBaseBuilder.interceptors.contains(LoggingProducerInterceptor.class.getName())) {
+                kafkaBaseBuilder.addProperty("opentable.logging",  kafkaBaseBuilder.loggingUtils);
             }
         }
-        addProperty(LoggingInterceptorConfig.SAMPLE_RATE_PCT_CONFIG, loggingSampleRate);
-        ackType.ifPresent(ack -> addProperty(ProducerConfig.ACKS_CONFIG, ack.value));
-        retries.ifPresent(retries -> addProperty(CommonClientConfigs.RETRIES_CONFIG, retries));
+        kafkaBaseBuilder.addProperty(LoggingInterceptorConfig.SAMPLE_RATE_PCT_CONFIG, kafkaBaseBuilder.loggingSampleRate);
+        ackType.ifPresent(ack -> kafkaBaseBuilder.addProperty(ProducerConfig.ACKS_CONFIG, ack.value));
+        retries.ifPresent(retries -> kafkaBaseBuilder.addProperty(CommonClientConfigs.RETRIES_CONFIG, retries));
         if (keySe == null || valueSe == null) {
             throw new IllegalStateException("Either keySerializer or valueSerializer is missing");
         }
-        addProperty(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, keySe);
-        addProperty(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, valueSe);
-        return new KafkaProducer<>(prop);
+        kafkaBaseBuilder.addProperty(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, keySe);
+        kafkaBaseBuilder.addProperty(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, valueSe);
+        return new KafkaProducer<>(kafkaBaseBuilder.prop);
     }
 
     public enum AckType {

@@ -16,7 +16,8 @@ import com.opentable.kafka.logging.LoggingConsumerInterceptor;
 import com.opentable.kafka.logging.LoggingInterceptorConfig;
 import com.opentable.service.AppInfo;
 
-public class KafkaConsumerBuilder<K, V> extends KafkaBaseBuilder {
+public class KafkaConsumerBuilder<K, V>  {
+    private final KafkaBaseBuilder kafkaBaseBuilder;
     private Optional<String> groupId = Optional.empty();
     private Optional<Integer> maxPollRecords = Optional.empty();
     private AutoOffsetResetType autoOffsetResetType = AutoOffsetResetType.Latest;
@@ -24,32 +25,32 @@ public class KafkaConsumerBuilder<K, V> extends KafkaBaseBuilder {
     private Class<? extends Deserializer<V>> valueDe;
 
     public KafkaConsumerBuilder(Properties prop, AppInfo appInfo) {
-        super(prop, appInfo);
-        interceptors.add(LoggingConsumerInterceptor.class.getName());
+        kafkaBaseBuilder = new KafkaBaseBuilder(prop, appInfo);
+        kafkaBaseBuilder.interceptors.add(LoggingConsumerInterceptor.class.getName());
     }
 
     public KafkaConsumerBuilder<K, V> withProperty(String key, Object value) {
-        super.addProperty(key, value);
+        kafkaBaseBuilder.addProperty(key, value);
         return this;
     }
 
     public KafkaConsumerBuilder<K, V> removeProperty(String key) {
-        super.removeProperty(key);
+        kafkaBaseBuilder.removeProperty(key);
         return this;
     }
 
     public KafkaConsumerBuilder<K, V> disableLogging() {
-        interceptors.remove(LoggingConsumerInterceptor.class.getName());
+        kafkaBaseBuilder.interceptors.remove(LoggingConsumerInterceptor.class.getName());
         return this;
     }
 
     public KafkaConsumerBuilder<K, V> withLoggingSampleRate(double rate) {
-        loggingSampleRate = rate;
+        kafkaBaseBuilder.loggingSampleRate = rate;
         return this;
     }
 
     public KafkaConsumerBuilder<K, V> withInterceptor(Class<? extends ConsumerInterceptor<K, V>> clazz) {
-        interceptors.add(clazz.getName());
+        kafkaBaseBuilder.interceptors.add(clazz.getName());
         return this;
     }
 
@@ -75,49 +76,49 @@ public class KafkaConsumerBuilder<K, V> extends KafkaBaseBuilder {
     }
 
     public KafkaConsumerBuilder<K, V> withBootstrapServer(String bootStrapServer) {
-        super.withBootstrapServer(bootStrapServer);
+        kafkaBaseBuilder.withBootstrapServer(bootStrapServer);
         return this;
     }
 
     public KafkaConsumerBuilder<K, V> withBootstrapServers(List<String> bootStrapServers) {
-        super.withBootstrapServers(bootStrapServers);
+        kafkaBaseBuilder.withBootstrapServers(bootStrapServers);
         return this;
     }
 
     public KafkaConsumerBuilder<K, V> withClientId(String val) {
-        super.withClientId(val);
+        kafkaBaseBuilder.withClientId(val);
         return this;
     }
 
     public KafkaConsumerBuilder<K, V> withSecurityProtocol(String protocol) {
-        super.withSecurityProtocol(protocol);
+        kafkaBaseBuilder.withSecurityProtocol(protocol);
         return this;
     }
 
     public KafkaConsumerBuilder<K, V> withMetricRegistry(MetricRegistry metricRegistry) {
-        super.withMetricRegistry(metricRegistry);
+        kafkaBaseBuilder.withMetricRegistry(metricRegistry);
         return this;
     }
 
 
     public KafkaConsumer<K, V> build() {
-        baseBuild();
-        if (!interceptors.isEmpty()) {
-            addProperty(ConsumerConfig.INTERCEPTOR_CLASSES_CONFIG, interceptors.stream().distinct().collect(Collectors.joining(",")));
-            if (interceptors.contains(LoggingConsumerInterceptor.class.getName())) {
-                addProperty("opentable.logging",  loggingUtils);
+        kafkaBaseBuilder.baseBuild();
+        if (!kafkaBaseBuilder.interceptors.isEmpty()) {
+            kafkaBaseBuilder.addProperty(ConsumerConfig.INTERCEPTOR_CLASSES_CONFIG, kafkaBaseBuilder.interceptors.stream().distinct().collect(Collectors.joining(",")));
+            if (kafkaBaseBuilder.interceptors.contains(LoggingConsumerInterceptor.class.getName())) {
+                kafkaBaseBuilder.addProperty("opentable.logging",  kafkaBaseBuilder.loggingUtils);
             }
         }
-        addProperty(LoggingInterceptorConfig.SAMPLE_RATE_PCT_CONFIG, loggingSampleRate);
-        groupId.ifPresent(gid -> addProperty(ConsumerConfig.GROUP_ID_CONFIG, gid));
-        addProperty(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, autoOffsetResetType.value);
-        maxPollRecords.ifPresent(mpr -> addProperty(ConsumerConfig.MAX_POLL_RECORDS_CONFIG, mpr));
+        kafkaBaseBuilder.addProperty(LoggingInterceptorConfig.SAMPLE_RATE_PCT_CONFIG, kafkaBaseBuilder.loggingSampleRate);
+        groupId.ifPresent(gid -> kafkaBaseBuilder.addProperty(ConsumerConfig.GROUP_ID_CONFIG, gid));
+        kafkaBaseBuilder.addProperty(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, autoOffsetResetType.value);
+        maxPollRecords.ifPresent(mpr -> kafkaBaseBuilder.addProperty(ConsumerConfig.MAX_POLL_RECORDS_CONFIG, mpr));
         if (keyDe == null || valueDe == null) {
             throw new IllegalStateException("Either keyDeserializer or ValueDeserializer is missing");
         }
-        addProperty(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, keyDe);
-        addProperty(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, valueDe);
-        return new KafkaConsumer<>(prop);
+        kafkaBaseBuilder.addProperty(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, keyDe);
+        kafkaBaseBuilder.addProperty(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, valueDe);
+        return new KafkaConsumer<>(kafkaBaseBuilder.prop);
     }
 
     public enum AutoOffsetResetType {
