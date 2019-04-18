@@ -13,37 +13,32 @@
  */
 package com.opentable.logging;
 
+import static org.junit.Assert.assertEquals;
+
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
-import java.time.Duration;
 import java.util.Collections;
 import java.util.Iterator;
+
+import org.apache.kafka.clients.consumer.ConsumerRecord;
+import org.apache.kafka.clients.consumer.KafkaConsumer;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
 
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.module.mrbean.MrBeanModule;
 import com.google.common.base.Charsets;
 import com.google.common.io.Resources;
-
-import org.apache.kafka.clients.consumer.ConsumerRecord;
-import org.apache.kafka.clients.consumer.KafkaConsumer;
-import org.junit.After;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
+import com.opentable.kafka.embedded.EmbeddedKafkaBuilder;
+import com.opentable.kafka.embedded.EmbeddedKafkaRule;
 
 import ch.qos.logback.classic.LoggerContext;
 import ch.qos.logback.classic.joran.JoranConfigurator;
 import ch.qos.logback.core.status.OnConsoleStatusListener;
 
-import com.opentable.kafka.embedded.EmbeddedKafkaBuilder;
-import com.opentable.kafka.embedded.EmbeddedKafkaRule;
-
-/**
- * Technically this is a otj-logging test, moved here to avoid the following cycle:
- * otj-kafka depends on otj-logging, but this test depends on otj-kafka.
- */
 public class KafkaAppenderTest
 {
     @Rule
@@ -89,19 +84,19 @@ public class KafkaAppenderTest
 
         try (KafkaConsumer<String, String> consumer = kafka.getBroker().createConsumer("test")) {
             consumer.subscribe(Collections.singletonList("logs"));
-            final Iterator<ConsumerRecord<String, String>> iterator = consumer.poll(Duration.ofSeconds(10)).iterator();
+            final Iterator<ConsumerRecord<String, String>> iterator = consumer.poll(10000).iterator();
 
             log1 = read(iterator.next().value());
             log2 = read(iterator.next().value());
         }
 
-        Assert.assertEquals("Herro!", log1.getMessage());
-        Assert.assertEquals("test", log1.getLogClass());
-        Assert.assertEquals("INFO", log1.getSeverity());
+        assertEquals("Herro!", log1.getMessage());
+        assertEquals("test", log1.getLogClass());
+        assertEquals("INFO", log1.getSeverity());
 
-        Assert.assertEquals("flop", log2.getMessage());
-        Assert.assertEquals("womp", log2.getLogClass());
-        Assert.assertEquals("WARN", log2.getSeverity());
+        assertEquals("flop", log2.getMessage());
+        assertEquals("womp", log2.getLogClass());
+        assertEquals("WARN", log2.getSeverity());
     }
 
     private CommonLogFields read(String data) throws IOException
