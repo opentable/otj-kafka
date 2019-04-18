@@ -1,6 +1,8 @@
 package com.opentable.kafka.builders;
 
+import java.util.Optional;
 import java.util.Properties;
+import java.util.stream.Collectors;
 
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.consumer.ConsumerInterceptor;
@@ -9,68 +11,83 @@ import org.apache.kafka.common.serialization.Deserializer;
 
 import com.opentable.kafka.logging.LoggingConsumerInterceptor;
 import com.opentable.kafka.logging.LoggingInterceptorConfig;
-import com.opentable.kafka.logging.LoggingUtils;
 import com.opentable.service.AppInfo;
 
-public class KafkaConsumerBuilder <K, V> extends KafkaBuilder {
+public class KafkaConsumerBuilder<K, V> extends KafkaBaseBuilder {
+    private Optional<String> groupId = Optional.empty();
+    private Optional<Integer> maxPollRecords = Optional.empty();
+    private AutoOffsetResetType autoOffsetResetType = AutoOffsetResetType.Latest;
+    private Class<? extends Deserializer<K>> keyDe;
+    private Class<? extends Deserializer<V>> valueDe;
 
-    KafkaConsumerBuilder(Properties prop, AppInfo appInfo) {
+    public KafkaConsumerBuilder(Properties prop, AppInfo appInfo) {
         super(prop, appInfo);
-        withLogging();
-        withProp("opentable.logging", new LoggingUtils(appInfo));
+        interceptors.add(LoggingConsumerInterceptor.class.getName());
     }
 
-    @Override
-    public KafkaConsumerBuilder<K, V> withProp(String key, Object value) {
-        super.withProp(key, value);
+    public KafkaConsumerBuilder<K, V> withProperty(String key, Object value) {
+        super.addProperty(key, value);
         return this;
     }
 
-    @Override
-    public KafkaConsumerBuilder<K, V> withoutProp(String key) {
-        super.withoutProp(key);
+    public KafkaConsumerBuilder<K, V> removeProperty(String key) {
+        super.removeProperty(key);
         return this;
     }
 
-    public KafkaConsumerBuilder<K, V> withLogging() {
-        setListPropItem(ConsumerConfig.INTERCEPTOR_CLASSES_CONFIG, LoggingConsumerInterceptor.class.getName());
+    public KafkaConsumerBuilder<K, V> disableLogging() {
+        interceptors.remove(LoggingConsumerInterceptor.class.getName());
         return this;
     }
 
-    public KafkaConsumerBuilder<K, V> withoutLogging() {
-        removeListPropItem(ConsumerConfig.INTERCEPTOR_CLASSES_CONFIG, LoggingConsumerInterceptor.class.getName());
+    public KafkaConsumerBuilder<K, V> withLoggingSampleRate(double rate) {
+        loggingSampleRate = rate;
         return this;
-    }
-
-    public KafkaConsumerBuilder<K, V> withLoggingSampleRate(Double rate) {
-        return withProp(LoggingInterceptorConfig.SAMPLE_RATE_PCT_CONFIG, rate);
     }
 
     public KafkaConsumerBuilder<K, V> withInterceptor(Class<? extends ConsumerInterceptor<K, V>> clazz) {
-        setListPropItem(ConsumerConfig.INTERCEPTOR_CLASSES_CONFIG, clazz.getName());
+        interceptors.add(clazz.getName());
         return this;
     }
 
     public KafkaConsumerBuilder<K, V> withGroupId(String val) {
-        return withProp(ConsumerConfig.GROUP_ID_CONFIG, val);
+        groupId = Optional.ofNullable(val);
+        return this;
     }
 
     public KafkaConsumerBuilder<K, V> withOffsetReset(AutoOffsetResetType val) {
-        return withProp(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, val.value);
+        autoOffsetResetType = val == null ? AutoOffsetResetType.None : autoOffsetResetType;
+        return this;
     }
 
     public KafkaConsumerBuilder<K, V> withMaxPollRecords(int val) {
-        return withProp(ConsumerConfig.MAX_POLL_RECORDS_CONFIG, val);
+        maxPollRecords = Optional.of(val);
+        return this;
     }
 
-    public <K2, V2> KafkaConsumerBuilder<K2, V2> withDeserializers(Class<? extends Deserializer<K2>> keyDeSer, Class<? extends Deserializer<V2>> valDeSer) {
-        prop.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, keyDeSer);
-        prop.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, valDeSer);
-        return new KafkaConsumerBuilder<>(prop, appInfo);
+    public KafkaConsumerBuilder<K, V> withDeserializers(Class<? extends Deserializer<K>> keyDeSer, Class<? extends Deserializer<V>> valDeSer) {
+        this.keyDe = keyDeSer;
+        this.valueDe = valDeSer;
+        return this;
     }
 
     public KafkaConsumer<K, V> build() {
-        // TODO: add checks here
+        baseBuild();
+        if (!interceptors.isEmpty()) {
+            addProperty(ConsumerConfig.INTERCEPTOR_CLASSES_CONFIG, interceptors.stream().distinct().collect(Collectors.joining(",")));
+            if (interceptors.contains(LoggingConsumerInterceptor.class.getName())) {
+                addProperty("opentable.logging",  loggingUtils);
+            }
+        }
+        addProperty(LoggingInterceptorConfig.SAMPLE_RATE_PCT_CONFIG, loggingSampleRate);
+        groupId.ifPresent(gid -> addProperty(ConsumerConfig.GROUP_ID_CONFIG, gid));
+        addProperty(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, autoOffsetResetType.value);
+        maxPollRecords.ifPresent(mpr -> addProperty(ConsumerConfig.MAX_POLL_RECORDS_CONFIG, mpr));
+        if (keyDe == null || valueDe == null) {
+            throw new IllegalStateException("Either keyDeserializer or ValueDeserializer is missing");
+        }
+        addProperty(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, keyDe);
+        addProperty(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, valueDe);
         return new KafkaConsumer<>(prop);
     }
 

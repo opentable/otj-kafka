@@ -8,7 +8,7 @@ import org.apache.kafka.common.config.ConfigDef.Type;
 
 public class LoggingInterceptorConfig extends AbstractConfig {
 
-    public static final String DEFAULT_SAMPLE_RATE_PCT = "0.1";
+    public static final Double DEFAULT_SAMPLE_RATE_PCT = .1;
     public static final String SAMPLE_RATE_PCT_CONFIG = "logging.ot.sample-rate";
 
     private static final ConfigDef CONFIG = new ConfigDef()
