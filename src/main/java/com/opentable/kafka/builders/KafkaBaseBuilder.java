@@ -51,12 +51,12 @@ public class KafkaBaseBuilder {
         return this;
     }
 
-    protected KafkaBaseBuilder withBootstrapServers(List<String> bootStrapServers) {
+    public KafkaBaseBuilder withBootstrapServers(List<String> bootStrapServers) {
         this.bootStrapServers.addAll(bootStrapServers);
         return this;
     }
 
-    protected KafkaBaseBuilder withClientId(String val) {
+    public KafkaBaseBuilder withClientId(String val) {
         clientId = Optional.ofNullable(val);
         return this;
     }
