@@ -18,18 +18,19 @@ import com.opentable.kafka.metrics.OtMetricsReporterConfig;
 import com.opentable.service.AppInfo;
 
 public class KafkaBaseBuilder {
-    final protected LoggingUtils loggingUtils;
-    protected Double loggingSampleRate = LoggingInterceptorConfig.DEFAULT_SAMPLE_RATE_PCT;
-    final protected List<String> interceptors = new ArrayList<>();
-    final protected Properties prop;
-    final protected List<String> bootStrapServers = new ArrayList<>();
-    protected Optional<String> clientId = Optional.empty();
-    protected Optional<String> securityProtocol = Optional.empty();
-    protected Optional<MetricRegistry> metricRegistry = Optional.empty();
+    final LoggingUtils loggingUtils;
+    Double loggingSampleRate = LoggingInterceptorConfig.DEFAULT_SAMPLE_RATE_PCT;
+    final List<String> interceptors = new ArrayList<>();
+    final Properties prop;
+    private final List<String> bootStrapServers = new ArrayList<>();
+    private Optional<String> clientId = Optional.empty();
+    private Optional<String> securityProtocol = Optional.empty();
+    protected Optional<MetricRegistry> metricRegistry;
 
     KafkaBaseBuilder(Properties prop, AppInfo appInfo) {
         this.prop = prop;
         this.loggingUtils = new LoggingUtils(appInfo);
+        metricRegistry = Optional.empty();
     }
 
 
