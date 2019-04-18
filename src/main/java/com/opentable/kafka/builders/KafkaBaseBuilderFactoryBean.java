@@ -33,6 +33,8 @@ public class KafkaBaseBuilderFactoryBean {
         this.metricRegistry = metricRegistry;
     }
 
+    // One flaw in my approach is that validation won't work correctly against these. We can talk about this
+
     protected Properties getProperties(final String nameSpace, final Properties res) {
         res.putAll(
                 PropertySourceUtil.getProperties(env, PREFIX + nameSpace)
