@@ -52,6 +52,15 @@
     </dependency>
     <dependency>
       <groupId>com.opentable.components</groupId>
+      <artifactId>otj-logging</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>com.opentable.components</groupId>
+      <artifactId>otj-logging-kafka</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>com.opentable.components</groupId>
       <artifactId>otj-core</artifactId>
     </dependency>
     <dependency>
@@ -121,6 +130,12 @@
     <dependency>
       <groupId>org.apache.commons</groupId>
       <artifactId>commons-lang3</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>com.fasterxml.jackson.module</groupId>
+      <artifactId>jackson-module-mrbean</artifactId>
+      <scope>test</scope>
     </dependency>
 
     <dependency>
