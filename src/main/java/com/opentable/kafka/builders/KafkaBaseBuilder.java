@@ -51,22 +51,22 @@ public class KafkaBaseBuilder {
         return this;
     }
 
-    public KafkaBaseBuilder withBootstrapServers(List<String> bootStrapServers) {
+    protected KafkaBaseBuilder withBootstrapServers(List<String> bootStrapServers) {
         this.bootStrapServers.addAll(bootStrapServers);
         return this;
     }
 
-    public KafkaBaseBuilder withClientId(String val) {
+    protected KafkaBaseBuilder withClientId(String val) {
         clientId = Optional.ofNullable(val);
         return this;
     }
 
-    public KafkaBaseBuilder withSecurityProtocol(String protocol) {
+    protected KafkaBaseBuilder withSecurityProtocol(String protocol) {
         this.securityProtocol = Optional.ofNullable(protocol);
         return this;
     }
 
-    public KafkaBaseBuilder withMetricRegistry(MetricRegistry metricRegistry) {
+    protected KafkaBaseBuilder withMetricRegistry(MetricRegistry metricRegistry) {
         this.metricRegistry = Optional.ofNullable(metricRegistry);
         return this;
     }

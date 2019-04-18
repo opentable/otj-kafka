@@ -1,8 +1,11 @@
 package com.opentable.kafka.builders;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.Properties;
 import java.util.stream.Collectors;
+
+import com.codahale.metrics.MetricRegistry;
 
 import org.apache.kafka.clients.CommonClientConfigs;
 import org.apache.kafka.clients.producer.KafkaProducer;
@@ -69,6 +72,31 @@ public class KafkaProducerBuilder<K,V> extends KafkaBaseBuilder {
         this.valueSe = valSer;
         prop.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, keySer);
         prop.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, valSer);
+        return this;
+    }
+
+    public KafkaProducerBuilder<K, V> withBootstrapServer(String bootStrapServer) {
+        super.withBootstrapServer(bootStrapServer);
+        return this;
+    }
+
+    public KafkaProducerBuilder<K, V> withBootstrapServers(List<String> bootStrapServers) {
+        super.withBootstrapServers(bootStrapServers);
+        return this;
+    }
+
+    public KafkaProducerBuilder<K, V> withClientId(String val) {
+        super.withClientId(val);
+        return this;
+    }
+
+    public KafkaProducerBuilder<K, V> withSecurityProtocol(String protocol) {
+        super.withSecurityProtocol(protocol);
+        return this;
+    }
+
+    public KafkaProducerBuilder<K, V> withMetricRegistry(MetricRegistry metricRegistry) {
+        super.withMetricRegistry(metricRegistry);
         return this;
     }
 

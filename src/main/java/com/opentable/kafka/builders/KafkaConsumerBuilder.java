@@ -1,8 +1,11 @@
 package com.opentable.kafka.builders;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.Properties;
 import java.util.stream.Collectors;
+
+import com.codahale.metrics.MetricRegistry;
 
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.consumer.ConsumerInterceptor;
@@ -70,6 +73,32 @@ public class KafkaConsumerBuilder<K, V> extends KafkaBaseBuilder {
         this.valueDe = valDeSer;
         return this;
     }
+
+    public KafkaConsumerBuilder<K, V> withBootstrapServer(String bootStrapServer) {
+        super.withBootstrapServer(bootStrapServer);
+        return this;
+    }
+
+    public KafkaConsumerBuilder<K, V> withBootstrapServers(List<String> bootStrapServers) {
+        super.withBootstrapServers(bootStrapServers);
+        return this;
+    }
+
+    public KafkaConsumerBuilder<K, V> withClientId(String val) {
+        super.withClientId(val);
+        return this;
+    }
+
+    public KafkaConsumerBuilder<K, V> withSecurityProtocol(String protocol) {
+        super.withSecurityProtocol(protocol);
+        return this;
+    }
+
+    public KafkaConsumerBuilder<K, V> withMetricRegistry(MetricRegistry metricRegistry) {
+        super.withMetricRegistry(metricRegistry);
+        return this;
+    }
+
 
     public KafkaConsumer<K, V> build() {
         baseBuild();
