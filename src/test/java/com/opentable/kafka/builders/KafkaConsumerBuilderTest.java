@@ -31,47 +31,46 @@ import com.opentable.service.ServiceInfo;
 @SpringBootTest
 @ActiveProfiles(profiles = "test")
 @TestPropertySource(properties = {
-    "info.component=test",
-    "ot.kafka.consumer.check.crcs=false"
+        "info.component=test",
+        "ot.kafka.consumer.check.crcs=false"
 })
 public class KafkaConsumerBuilderTest {
 
     private static final Logger LOG = LoggerFactory.getLogger(KafkaConsumerBuilderTest.class);
 
     @Autowired
-    private KafkaBuilderFactoryBean builderFactoryBean;
+    private KafkaConsumerBuilderFactoryBean<Integer, String> builderFactoryBean;
 
     @Test
     public void builderTest() {
         KafkaConsumerBuilder<Integer, String> builder = builderFactoryBean.builder("consumer")
-            .withBootstrapServers("localhost:8080")
-            .withProp("blah", "blah")
-            .withoutProp("blah")
-            .withClientId("test-consomer-01")
-            .consumer()
-            .withProp("blah2", "blah2")
-            .withoutProp("blah2")
-            .withGroupId("test")
-            .withDeserializers(IntegerDeserializer.class, StringDeserializer.class)
-            .withOffsetReset(AutoOffsetResetType.Latest)
-            .withLoggingSampleRate(10.0);
-        LOG.debug("Props: {}", builder.buildProps());
+                .withBootstrapServer("localhost:8080")
+                .withProperty("blah", "blah")
+                .removeProperty("blah")
+                .withClientId("test-consomer-01")
+                .withProperty("blah2", "blah2")
+                .removeProperty("blah2")
+                .withGroupId("test")
+                .withDeserializers(IntegerDeserializer.class, StringDeserializer.class)
+                .withOffsetReset(AutoOffsetResetType.Latest)
+                .withLoggingSampleRate(10.0);
         KafkaConsumer<Integer, String> c = builder
-            .build();
+                .build();
     }
 
     @Configuration
     @Import({
-        AppInfo.class,
-        EnvInfo.class,
-        DefaultMetricsConfiguration.class,
-        KafkaBuilderFactoryBean.class
+            AppInfo.class,
+            EnvInfo.class,
+            DefaultMetricsConfiguration.class,
+            KafkaConsumerBuilderFactoryBean.class
     })
     public static class Config {
         @Bean
         ServiceInfo serviceInfo(@Value("${info.component:test-service}") final String serviceType) {
             return () -> serviceType;
         }
+
         @Bean
         public MBeanServer getMBeanServer() {
             return ManagementFactory.getPlatformMBeanServer();

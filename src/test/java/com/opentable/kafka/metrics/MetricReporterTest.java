@@ -48,7 +48,8 @@ import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.junit4.SpringRunner;
 
 import com.opentable.conservedheaders.ConservedHeader;
-import com.opentable.kafka.builders.KafkaBaseBuilder;
+import com.opentable.kafka.builders.KafkaConsumerBuilder;
+import com.opentable.kafka.builders.KafkaProducerBuilder;
 import com.opentable.kafka.util.ReadWriteRule;
 import com.opentable.metrics.DefaultMetricsConfiguration;
 import com.opentable.service.AppInfo;
@@ -71,13 +72,15 @@ public class MetricReporterTest {
     @Autowired
     private MetricRegistry metricRegistry;
 
+    @Autowired
+    private AppInfo appInfo;
+
     public <K, V> Producer<K, V> createProducer(Class<? extends Serializer<K>> keySer, Class<? extends Serializer<V>> valueSer) {
-        return KafkaBaseBuilder.builder(rw.getEkb().baseProducerProperties())
+        return new KafkaProducerBuilder<K,V>(rw.getEkb().baseProducerProperties(), appInfo)
             .withClientId("producer-metrics-01")
-            .withMetricReporter(metricRegistry)
-            .producer()
+            .withMetricRegistry(metricRegistry)
             .withSerializers(keySer, valueSer)
-            .withProp(ProducerConfig.LINGER_MS_CONFIG, "200")
+            .withProperty(ProducerConfig.LINGER_MS_CONFIG, "200")
             .build();
     }
 
@@ -95,10 +98,9 @@ public class MetricReporterTest {
     }
 
     public <K, V> Consumer<K, V> createConsumer(String groupId, Class<? extends Deserializer<K>> keySer, Class<? extends Deserializer<V>> valueSer) {
-        return KafkaBaseBuilder.builder(rw.getEkb().baseConsumerProperties(groupId))
+        return new KafkaConsumerBuilder<K,V>(rw.getEkb().baseConsumerProperties(groupId), appInfo)
             .withClientId("consumer-metrics-01")
-            .withMetricReporter(metricRegistry)
-            .consumer()
+            .withMetricRegistry(metricRegistry)
             .withGroupId(groupId)
             .withMaxPollRecords(1)
             .withDeserializers(keySer, valueSer)

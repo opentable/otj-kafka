@@ -40,23 +40,21 @@ public class KafkaProducerBuilderTest {
     private static final Logger LOG = LoggerFactory.getLogger(KafkaProducerBuilderTest.class);
 
     @Autowired
-    private KafkaBuilderFactoryBean builderFactoryBean;
+    private KafkaProducerBuilderFactoryBean<Integer,String> builderFactoryBean;
 
     @Test
     public void builderTest() {
         KafkaProducerBuilder<Integer, String> builder = builderFactoryBean.builder("producer")
-            .withBootstrapServers("localhost:8080")
-            .withProp("blah", "blah")
-            .withoutProp("blah")
+            .withBootstrapServer("localhost:8080")
+            .withProperty("blah", "blah")
+            .removeProperty("blah")
             .withClientId("test-producer-01")
-            .producer()
-            .withProp("blah2", "blah2")
-            .withoutProp("blah2")
+            .withProperty("blah2", "blah2")
+            .removeProperty("blah2")
             .withAcks(AckType.none)
             .withRetries(5)
             .withSerializers(IntegerSerializer.class, StringSerializer.class)
             .withLoggingSampleRate(10.0);
-        LOG.debug("Props: {}", builder.buildProps());
         KafkaProducer<Integer, String> p = builder
             .build();
     }
@@ -66,7 +64,7 @@ public class KafkaProducerBuilderTest {
         AppInfo.class,
         EnvInfo.class,
         DefaultMetricsConfiguration.class,
-        KafkaBuilderFactoryBean.class
+        KafkaProducerBuilderFactoryBean.class
     })
     public static class Config {
         @Bean
