@@ -12,12 +12,15 @@ import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.clients.producer.ProducerInterceptor;
 import org.apache.kafka.common.serialization.Serializer;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.opentable.kafka.logging.LoggingInterceptorConfig;
 import com.opentable.kafka.logging.LoggingProducerInterceptor;
 import com.opentable.service.AppInfo;
 
 public class KafkaProducerBuilder<K,V>  {
+    private static final Logger LOG = LoggerFactory.getLogger(KafkaProducerBuilder.class);
 
     private final KafkaBaseBuilder kafkaBaseBuilder;
     private Optional<AckType> ackType = Optional.empty();
@@ -115,6 +118,7 @@ public class KafkaProducerBuilder<K,V>  {
         }
         kafkaBaseBuilder.addProperty(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, keySe);
         kafkaBaseBuilder.addProperty(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, valueSe);
+        LOG.trace("Building KafkaProducer with props {}", kafkaBaseBuilder.prop);
         return new KafkaProducer<>(kafkaBaseBuilder.prop);
     }
 

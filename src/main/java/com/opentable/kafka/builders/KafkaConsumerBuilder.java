@@ -11,12 +11,16 @@ import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.consumer.ConsumerInterceptor;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.common.serialization.Deserializer;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.opentable.kafka.logging.LoggingConsumerInterceptor;
 import com.opentable.kafka.logging.LoggingInterceptorConfig;
 import com.opentable.service.AppInfo;
 
 public class KafkaConsumerBuilder<K, V>  {
+    private static final Logger LOG = LoggerFactory.getLogger(KafkaConsumerBuilder.class);
+
     private final KafkaBaseBuilder kafkaBaseBuilder;
     private Optional<String> groupId = Optional.empty();
     private Optional<Integer> maxPollRecords = Optional.empty();
@@ -118,6 +122,7 @@ public class KafkaConsumerBuilder<K, V>  {
         }
         kafkaBaseBuilder.addProperty(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, keyDe);
         kafkaBaseBuilder.addProperty(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, valueDe);
+        LOG.trace("Building KafkaConsumer with props {}", kafkaBaseBuilder.prop);
         return new KafkaConsumer<>(kafkaBaseBuilder.prop);
     }
 
