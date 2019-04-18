@@ -14,6 +14,7 @@
 package com.opentable.kafka.util;
 
 public class LogSamplerRandom {
+// Instead of this ceonpt use bucket4j
 
     private final double mark;
 

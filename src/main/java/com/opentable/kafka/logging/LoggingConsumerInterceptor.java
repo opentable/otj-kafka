@@ -32,12 +32,13 @@ public class LoggingConsumerInterceptor<K, V> implements ConsumerInterceptor<K, 
 
     private String interceptorClientId;
     private String groupId;
+    private volatile LoggingUtils loggingUtils;
     private LoggingInterceptorConfig conf;
     private LogSamplerRandom sampler;
 
     @Override
     public ConsumerRecords<K, V> onConsume(ConsumerRecords<K, V> records) {
-        records.forEach(record -> LoggingUtils.trace(LOG, interceptorClientId, groupId, sampler, record));
+        records.forEach(record -> loggingUtils.trace(LOG, interceptorClientId, groupId, sampler, record));
         return records;
     }
 
@@ -54,9 +55,11 @@ public class LoggingConsumerInterceptor<K, V> implements ConsumerInterceptor<K, 
     @Override
     public void configure(Map<String, ?> config) {
         conf = new LoggingInterceptorConfig(config);
+        // Dmitry - consider using bucket4j instead
         this.sampler = new LogSamplerRandom(conf.getDouble(LoggingInterceptorConfig.SAMPLE_RATE_PCT_CONFIG));
         String originalsClientId = (String) config.get(ConsumerConfig.CLIENT_ID_CONFIG);
         groupId  = (String) config.get(ConsumerConfig.GROUP_ID_CONFIG);
+        loggingUtils = (LoggingUtils) config.get("opentable.logging");
         interceptorClientId = (originalsClientId == null) ? "interceptor-consumer-" + ClientIdGenerator.nextClientId() : originalsClientId;
         LOG.info("LoggingConsumerInterceptor is configured for client: {}, group-id: {}", interceptorClientId, groupId);
     }

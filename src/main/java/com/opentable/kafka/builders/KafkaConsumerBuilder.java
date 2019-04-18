@@ -9,12 +9,15 @@ import org.apache.kafka.common.serialization.Deserializer;
 
 import com.opentable.kafka.logging.LoggingConsumerInterceptor;
 import com.opentable.kafka.logging.LoggingInterceptorConfig;
+import com.opentable.kafka.logging.LoggingUtils;
+import com.opentable.service.AppInfo;
 
 public class KafkaConsumerBuilder <K, V> extends KafkaBuilder {
 
-    KafkaConsumerBuilder(Properties prop) {
-        super(prop);
+    KafkaConsumerBuilder(Properties prop, AppInfo appInfo) {
+        super(prop, appInfo);
         withLogging();
+        withProp("opentable.logging", new LoggingUtils(appInfo));
     }
 
     @Override
@@ -63,7 +66,7 @@ public class KafkaConsumerBuilder <K, V> extends KafkaBuilder {
     public <K2, V2> KafkaConsumerBuilder<K2, V2> withDeserializers(Class<? extends Deserializer<K2>> keyDeSer, Class<? extends Deserializer<V2>> valDeSer) {
         prop.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, keyDeSer);
         prop.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, valDeSer);
-        return new KafkaConsumerBuilder<>(prop);
+        return new KafkaConsumerBuilder<>(prop, appInfo);
     }
 
     public KafkaConsumer<K, V> build() {

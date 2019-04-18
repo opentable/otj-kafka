@@ -10,11 +10,12 @@ import org.apache.kafka.common.serialization.Serializer;
 
 import com.opentable.kafka.logging.LoggingInterceptorConfig;
 import com.opentable.kafka.logging.LoggingProducerInterceptor;
+import com.opentable.service.AppInfo;
 
 public class KafkaProducerBuilder<K, V> extends KafkaBuilder {
 
-    KafkaProducerBuilder(Properties prop) {
-        super(prop);
+    KafkaProducerBuilder(Properties prop, AppInfo appInfo) {
+        super(prop, appInfo);
         withLogging();
     }
 
@@ -60,7 +61,7 @@ public class KafkaProducerBuilder<K, V> extends KafkaBuilder {
     public <K2, V2> KafkaProducerBuilder<K2, V2> withSerializers(Class<? extends Serializer<K2>> keySer, Class<? extends Serializer<V2>> valSer) {
         prop.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, keySer);
         prop.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, valSer);
-        return new KafkaProducerBuilder<>(prop);
+        return new KafkaProducerBuilder<>(prop, appInfo);
     }
 
     public  KafkaProducer<K, V> build() {

@@ -12,6 +12,7 @@ import com.codahale.metrics.MetricRegistry;
 import org.springframework.core.env.ConfigurableEnvironment;
 import org.springframework.stereotype.Component;
 
+import com.opentable.service.AppInfo;
 import com.opentable.spring.PropertySourceUtil;
 
 @Component
@@ -22,10 +23,12 @@ public class KafkaBuilderFactoryBean {
 
     private final ConfigurableEnvironment env;
     private final Optional<MetricRegistry> metricRegistry;
+    private final AppInfo appInfo;
 
     @Inject
-    public KafkaBuilderFactoryBean(ConfigurableEnvironment env, Optional<MetricRegistry> metricRegistry) {
+    public KafkaBuilderFactoryBean(AppInfo appInfo, ConfigurableEnvironment env, Optional<MetricRegistry> metricRegistry) {
         this.env = env;
+        this.appInfo = appInfo;
         this.metricRegistry = metricRegistry;
     }
 
@@ -34,7 +37,8 @@ public class KafkaBuilderFactoryBean {
     }
 
     public KafkaBuilder builder(String name) {
-        final KafkaBuilder res = KafkaBuilder.builder((getProperties(name, getProperties(DEFAULT, new Properties()))));
+        final KafkaBuilder res = KafkaBuilder.builder(
+                getProperties(name, getProperties(DEFAULT, new Properties())), appInfo);
         return metricRegistry.map(res::withMetricReporter).orElse(res);
     }
 

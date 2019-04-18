@@ -31,13 +31,14 @@ public class LoggingProducerInterceptor implements ProducerInterceptor<Object, O
 
     private String interceptorClientId;
     private LoggingInterceptorConfig conf;
+    private LoggingUtils loggingUtils;
     private LogSamplerRandom sampler;
 
     @Override
     public ProducerRecord<Object, Object> onSend(ProducerRecord<Object, Object> record) {
-        LoggingUtils.setupHeaders(record);
-        LoggingUtils.setupTracing(sampler, record);
-        LoggingUtils.trace(LOG, interceptorClientId, record);
+        loggingUtils.setupHeaders(record);
+        loggingUtils.setupTracing(sampler, record);
+        loggingUtils.trace(LOG, interceptorClientId, record);
         return record;
     }
 
@@ -45,7 +46,7 @@ public class LoggingProducerInterceptor implements ProducerInterceptor<Object, O
     public void onAcknowledgement(RecordMetadata metadata, Exception e) {
         //LOG.info("metadata: {}", metadata);
         if (e != null) {
-            LOG.error("", e);
+            LOG.error("Error occurred during acknowledgement {}", metadata, e);
         }
     }
 
@@ -58,7 +59,9 @@ public class LoggingProducerInterceptor implements ProducerInterceptor<Object, O
     public void configure(Map<String, ?> config) {
         conf = new LoggingInterceptorConfig(config);
         this.sampler = new LogSamplerRandom(conf.getDouble(LoggingInterceptorConfig.SAMPLE_RATE_PCT_CONFIG));
-        String originalsClientId = (String) config.get(ProducerConfig.CLIENT_ID_CONFIG);
+        final String originalsClientId = (String) config.get(ProducerConfig.CLIENT_ID_CONFIG);
+        loggingUtils = (LoggingUtils) config.get("opentable.logging");
+        //MJB: Dmitry why is this done?
         this.interceptorClientId = (originalsClientId == null) ? "interceptor-producer-" + ClientIdGenerator.nextClientId() : originalsClientId;
         LOG.info("LoggingProducerInterceptor is configured for client: {}", interceptorClientId);
     }

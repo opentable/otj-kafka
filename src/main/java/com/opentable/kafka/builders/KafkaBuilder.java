@@ -6,32 +6,36 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import com.codahale.metrics.MetricRegistry;
-import com.google.common.collect.Streams;
 
 import org.apache.kafka.clients.CommonClientConfigs;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 
+import com.opentable.kafka.logging.LoggingUtils;
 import com.opentable.kafka.metrics.OtMetricsReporter;
 import com.opentable.kafka.metrics.OtMetricsReporterConfig;
+import com.opentable.service.AppInfo;
 
 public class KafkaBuilder {
 
     final Properties prop;
+    final AppInfo appInfo;
 
-    KafkaBuilder(Properties prop) {
+    KafkaBuilder(Properties prop, AppInfo appInfo) {
         this.prop = prop;
+        this.appInfo = appInfo;
+        withProp("opentable.logging", new LoggingUtils(appInfo));
     }
 
     public Properties buildProps() {
         return prop;
     }
 
-    public static KafkaBuilder builder() {
-        return new KafkaBuilder(new Properties());
+    public static KafkaBuilder builder(AppInfo appInfo) {
+        return new KafkaBuilder(new Properties(), appInfo);
     }
 
-    public static KafkaBuilder builder(Properties props) {
-        return new KafkaBuilder(props);
+    public static KafkaBuilder builder(Properties prop, AppInfo appInfo) {
+        return new KafkaBuilder(prop, appInfo);
     }
 
     public KafkaBuilder withProp(String key, Object value) {
@@ -77,7 +81,7 @@ public class KafkaBuilder {
 
     protected void setListPropItem(String key, String val) {
         prop.put(key,
-            Streams.concat(Arrays.stream(prop.getProperty(key, "").split(",")),
+            Stream.concat(Arrays.stream(prop.getProperty(key, "").split(",")),
                 Stream.of(val))
                 .filter(s -> !s.equals(""))
                 .distinct()
@@ -93,12 +97,12 @@ public class KafkaBuilder {
                 .collect(Collectors.joining(",")));
     }
 
-    public KafkaProducerBuilder<?, ?> producer() {
-        return new KafkaProducerBuilder<>(prop);
+    public <K,V> KafkaProducerBuilder<K, V> producer() {
+        return new KafkaProducerBuilder<>(prop, appInfo);
     }
 
-    public KafkaConsumerBuilder<?, ?> consumer() {
-        return new KafkaConsumerBuilder<>(prop);
+    public <K,V> KafkaConsumerBuilder<K, V> consumer() {
+        return new KafkaConsumerBuilder<>(prop, appInfo);
     }
 
 }

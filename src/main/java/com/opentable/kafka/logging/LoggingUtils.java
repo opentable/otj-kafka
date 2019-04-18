@@ -2,6 +2,7 @@ package com.opentable.kafka.logging;
 
 import java.io.IOException;
 import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.Arrays;
 import java.util.EnumMap;
@@ -34,37 +35,50 @@ import com.opentable.logging.CommonLogHolder;
 import com.opentable.logging.otl.EdaMessageTraceV1;
 import com.opentable.logging.otl.EdaMessageTraceV1.EdaMessageTraceV1Builder;
 import com.opentable.logging.otl.MsgV1;
+import com.opentable.service.AppInfo;
 
 public class LoggingUtils {
 
-    private static final Charset CHARSET = Charset.forName("UTF-8");
+    private static final Charset CHARSET = StandardCharsets.UTF_8;
     private static final byte[] FALSE = "false".getBytes(CHARSET);
     private static final byte[] TRUE = "true".getBytes(CHARSET);
+
+    private static final String CLIENT_VERSION;
+
     private static final Logger LOG = LoggerFactory.getLogger(LoggingUtils.class);
     private static final String PROPERTIES_FILE_EXTENSION = ".properties";
     private static final String DEFAULT_VERSION = "unknown";
     private static final String ARTIFACT_ID = "otj-kafka";
-    private static final EdaMessageTraceV1Builder MESSAGE_TRACE_V_1_BUILDER;
+
+    private final AppInfo appInfo;
 
     static {
         Resource resource = new ClassPathResource(ARTIFACT_ID + PROPERTIES_FILE_EXTENSION);
         String clientVersion = DEFAULT_VERSION;
         try {
-            Properties props = PropertiesLoaderUtils.loadProperties(resource);
+            final Properties props = PropertiesLoaderUtils.loadProperties(resource);
             clientVersion = props.getProperty("version", DEFAULT_VERSION);
         } catch (IOException e) {
             LOG.warn("Cannot get client version for logging.", e);
         }
-        MESSAGE_TRACE_V_1_BUILDER = EdaMessageTraceV1.builder()
-            .edaClientName(ARTIFACT_ID)
-            .edaClientVersion(clientVersion)
-            .edaClientPlatform("Java: " + System.getProperty("java.version"))
-            .edaClientOs(System.getProperty("os.name"));
+        CLIENT_VERSION = clientVersion;
+    }
+
+    public LoggingUtils(AppInfo appInfo) {
+        this.appInfo = appInfo;
+    }
+
+    private EdaMessageTraceV1Builder builder() {
+        return EdaMessageTraceV1.builder()
+                .edaClientName(ARTIFACT_ID)
+                .edaClientVersion(CLIENT_VERSION)
+                .edaClientPlatform("Java: " + System.getProperty("java.version"))
+                .edaClientOs(System.getProperty("os.name"));
     }
 
     @Nonnull
-    public static <K, V> MsgV1 createEvent(ProducerRecord<K, V> record, String clientId) {
-        return MESSAGE_TRACE_V_1_BUILDER
+    public <K, V> MsgV1 producerEvent(ProducerRecord<K, V> record, String clientId) {
+        return builder()
             // msg-v1
             .logName("kafka-producer")
             .incoming(false)
@@ -91,9 +105,9 @@ public class LoggingUtils {
     }
 
     @Nonnull
-    public static <K, V> MsgV1 createEvent(ConsumerRecord<K, V> record, String groupId, String clientId) {
+    public <K, V> MsgV1 consumerEvent(ConsumerRecord<K, V> record, String groupId, String clientId) {
         final Optional<Headers> headers = Optional.ofNullable(record.headers());
-        return MESSAGE_TRACE_V_1_BUILDER
+        return builder()
             // msg-v1
             .logName("kafka-consumer")
             .incoming(true)
@@ -119,43 +133,44 @@ public class LoggingUtils {
             .build();
     }
 
-    public static String getHeaderValue(final ConservedHeader header) {
+    public String getHeaderValue(final ConservedHeader header) {
         return MDC.get(header.getLogName());
     }
 
-    public static String toString(Headers headers) {
+    public String toString(Headers headers) {
         return Arrays.stream(headers.toArray())
             .map(h -> String.format("%s=%s", h.key(), new String(h.value())))
             .collect(Collectors.joining(", "));
     }
 
-    public static <K, V> void setupHeaders(ProducerRecord<K, V> record) {
+    public <K, V> void setupHeaders(ProducerRecord<K, V> record) {
         final Headers headers = record.headers();
         Arrays.asList(ConservedHeader.values()).forEach((header) -> {
             if (getHeaderValue(header) != null) {
                 headers.add(header.getLogName(), getHeaderValue(header).getBytes(CHARSET));
             }
         });
-        setKafkaHeader(headers, OTKafkaHeaders.REFERRING_SERVICE, KafkaCommonLogHolder.getServiceType());
-        setKafkaHeader(headers, OTKafkaHeaders.REFERRING_HOST, KafkaCommonLogHolder.getHost());
-        setKafkaHeader(headers, OTKafkaHeaders.REFERRING_INSTANCE_NO, KafkaCommonLogHolder.getInstanceNo());
-        setKafkaHeader(headers, OTKafkaHeaders.ENV, KafkaCommonLogHolder.getOtEnv());
-        setKafkaHeader(headers, OTKafkaHeaders.ENV_FLAVOR, KafkaCommonLogHolder.getOtEnvFlavor());
+        setKafkaHeader(headers, OTKafkaHeaders.REFERRING_SERVICE, CommonLogHolder.getServiceType());
+        setKafkaHeader(headers, OTKafkaHeaders.REFERRING_HOST, appInfo.getTaskHost());
+        setKafkaHeader(headers, OTKafkaHeaders.REFERRING_INSTANCE_NO, appInfo.getInstanceNumber());
+        setKafkaHeader(headers, OTKafkaHeaders.ENV, appInfo.getEnvInfo().getEnvironment());
+        setKafkaHeader(headers, OTKafkaHeaders.ENV_FLAVOR, appInfo.getEnvInfo().getFlavor());
     }
 
-    private static void setKafkaHeader(Headers headers, String headerName, String value) {
+
+    private void setKafkaHeader(Headers headers, String headerName, String value) {
         if (value != null) {
             headers.add(headerName, value.getBytes(CHARSET));
         }
     }
 
-    private static void setKafkaHeader(Headers headers, String headerName, Integer value) {
+    private void setKafkaHeader(Headers headers, String headerName, Integer value) {
         if (value != null) {
             setKafkaHeader(headers, headerName, String.valueOf(value));
         }
     }
 
-    public static <K, V> void setupTracing(LogSamplerRandom sampler, ProducerRecord<K, V> record) {
+    public <K, V> void setupTracing(LogSamplerRandom sampler, ProducerRecord<K, V> record) {
         final Headers headers = record.headers();
         if (!headers.headers(OTKafkaHeaders.TRACE_FLAG).iterator().hasNext()) {
             // If header not present, make decision our self and set it
@@ -167,7 +182,7 @@ public class LoggingUtils {
         }
     }
 
-    public static <K, V> boolean isTraceNeeded(ProducerRecord<K, V> record) {
+    public <K, V> boolean isTraceNeeded(ProducerRecord<K, V> record) {
         final Headers headers = record.headers();
         return StreamSupport.stream(headers.headers(OTKafkaHeaders.TRACE_FLAG).spliterator(), false)
             .map(h -> new String(h.value()))
@@ -177,9 +192,9 @@ public class LoggingUtils {
             .orElse(false);
     }
 
-    public static <K, V> void trace(Logger log, String clientId, ProducerRecord<K, V> record) {
+    public <K, V> void trace(Logger log, String clientId, ProducerRecord<K, V> record) {
         if (isTraceNeeded(record)) {
-            final MsgV1 event = createEvent(record, clientId);
+            final MsgV1 event = producerEvent(record, clientId);
             MDC.put(CommonLogFields.REQUEST_ID_KEY, Objects.toString(event.getRequestId(), null));
             try {
                 log.trace(event.log(),
@@ -200,9 +215,9 @@ public class LoggingUtils {
             .orElse(sampler.mark(record.topic()));
     }
 
-    public static <K, V> void trace(Logger log, String clientId, String groupId, LogSamplerRandom sampler, ConsumerRecord<K, V> record) {
+    public <K, V> void trace(Logger log, String clientId, String groupId, LogSamplerRandom sampler, ConsumerRecord<K, V> record) {
         if (isTraceNeeded(record, sampler)) {
-            final MsgV1 event = createEvent(record, groupId, clientId);
+            final MsgV1 event = consumerEvent(record, groupId, clientId);
             MDC.put(CommonLogFields.REQUEST_ID_KEY, Objects.toString(event.getRequestId(), null));
             try {
                 log.trace(event.log(),
@@ -215,7 +230,7 @@ public class LoggingUtils {
     }
 
     @Nonnull
-    public static Map<ConservedHeader, String> extractHeaders(final Headers h) {
+    public Map<ConservedHeader, String> extractHeaders(final Headers h) {
         final Map<ConservedHeader, String> headers = new EnumMap<>(ConservedHeader.class);
         for (final ConservedHeader header : ConservedHeader.values()) {
             final Iterator<Header> values = h.headers(header.getHeaderName()).iterator();
@@ -243,7 +258,7 @@ public class LoggingUtils {
         return headers;
     }
 
-    public static <K, V> void setupMDC(ConsumerRecord<K, V> record) {
+    public <K, V> void setupMDC(ConsumerRecord<K, V> record) {
         final Headers headers = record.headers();
         final Map<ConservedHeader, String> values = extractHeaders(headers);
         Arrays.asList(ConservedHeader.values()).forEach((header) -> {

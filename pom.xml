@@ -63,6 +63,7 @@
       <groupId>com.opentable.components</groupId>
       <artifactId>otj-executors</artifactId>
     </dependency>
+    <!-- We need to discuss, because this and additional deps will cause problems, sigh -->
     <dependency>
       <groupId>com.opentable.components</groupId>
       <artifactId>otj-logging</artifactId>
