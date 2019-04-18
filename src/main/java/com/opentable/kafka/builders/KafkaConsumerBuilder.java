@@ -3,7 +3,6 @@ package com.opentable.kafka.builders;
 import java.util.List;
 import java.util.Optional;
 import java.util.Properties;
-import java.util.stream.Collectors;
 
 import com.codahale.metrics.MetricRegistry;
 
@@ -11,15 +10,16 @@ import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.consumer.ConsumerInterceptor;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.common.serialization.Deserializer;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import com.opentable.kafka.logging.LoggingConsumerInterceptor;
-import com.opentable.kafka.logging.LoggingInterceptorConfig;
 import com.opentable.service.AppInfo;
 
+/**
+ * Main builder for KafkaConsumer. This is usually entered via a KafkaConsumerBuilderFactoryBean so some "sugar" is injected.
+ * @param <K>
+ * @param <V>
+ */
 public class KafkaConsumerBuilder<K, V>  {
-    private static final Logger LOG = LoggerFactory.getLogger(KafkaConsumerBuilder.class);
 
     private final KafkaBaseBuilder kafkaBaseBuilder;
     private Optional<String> groupId = Optional.empty();
@@ -104,16 +104,10 @@ public class KafkaConsumerBuilder<K, V>  {
         return this;
     }
 
-
     public KafkaConsumer<K, V> build() {
         kafkaBaseBuilder.baseBuild();
-        if (!kafkaBaseBuilder.interceptors.isEmpty()) {
-            kafkaBaseBuilder.addProperty(ConsumerConfig.INTERCEPTOR_CLASSES_CONFIG, kafkaBaseBuilder.interceptors.stream().distinct().collect(Collectors.joining(",")));
-            if (kafkaBaseBuilder.interceptors.contains(LoggingConsumerInterceptor.class.getName())) {
-                kafkaBaseBuilder.addProperty("opentable.logging",  kafkaBaseBuilder.loggingUtils);
-            }
-        }
-        kafkaBaseBuilder.addProperty(LoggingInterceptorConfig.SAMPLE_RATE_PCT_CONFIG, kafkaBaseBuilder.loggingSampleRate);
+        kafkaBaseBuilder.addLoggingUtilsRef(ConsumerConfig.INTERCEPTOR_CLASSES_CONFIG, LoggingConsumerInterceptor.class.getName());
+        // Isn't this mandatory?
         groupId.ifPresent(gid -> kafkaBaseBuilder.addProperty(ConsumerConfig.GROUP_ID_CONFIG, gid));
         kafkaBaseBuilder.addProperty(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, autoOffsetResetType.value);
         maxPollRecords.ifPresent(mpr -> kafkaBaseBuilder.addProperty(ConsumerConfig.MAX_POLL_RECORDS_CONFIG, mpr));
@@ -122,8 +116,8 @@ public class KafkaConsumerBuilder<K, V>  {
         }
         kafkaBaseBuilder.addProperty(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, keyDe);
         kafkaBaseBuilder.addProperty(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, valueDe);
-        LOG.trace("Building KafkaConsumer with props {}", kafkaBaseBuilder.prop);
-        return new KafkaConsumer<>(kafkaBaseBuilder.prop);
+
+        return kafkaBaseBuilder.consumer();
     }
 
     public enum AutoOffsetResetType {

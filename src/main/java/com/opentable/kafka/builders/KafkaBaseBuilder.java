@@ -10,6 +10,10 @@ import com.codahale.metrics.MetricRegistry;
 
 import org.apache.kafka.clients.CommonClientConfigs;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
+import org.apache.kafka.clients.consumer.KafkaConsumer;
+import org.apache.kafka.clients.producer.KafkaProducer;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.opentable.kafka.logging.LoggingInterceptorConfig;
 import com.opentable.kafka.logging.LoggingUtils;
@@ -17,29 +21,44 @@ import com.opentable.kafka.metrics.OtMetricsReporter;
 import com.opentable.kafka.metrics.OtMetricsReporterConfig;
 import com.opentable.service.AppInfo;
 
+/**
+ * Some common configuration options + the main properties builder is here.
+ */
 public class KafkaBaseBuilder {
+    private static final Logger LOG = LoggerFactory.getLogger(KafkaBaseBuilder.class);
+
     final LoggingUtils loggingUtils;
     Double loggingSampleRate = LoggingInterceptorConfig.DEFAULT_SAMPLE_RATE_PCT;
     final List<String> interceptors = new ArrayList<>();
-    final Properties prop;
+    final Properties properties;
     private final List<String> bootStrapServers = new ArrayList<>();
     private Optional<String> clientId = Optional.empty();
     private Optional<String> securityProtocol = Optional.empty();
     protected Optional<MetricRegistry> metricRegistry;
 
-    KafkaBaseBuilder(Properties prop, AppInfo appInfo) {
-        this.prop = prop;
+    KafkaBaseBuilder(Properties props, AppInfo appInfo) {
+        this.properties = props;
         this.loggingUtils = new LoggingUtils(appInfo);
         metricRegistry = Optional.empty();
     }
 
 
     void addProperty(String key, Object value) {
-        prop.put(key, value);
+        properties.put(key, value);
+    }
+
+    void addLoggingUtilsRef(String interceptorConfigName, String loggingInterceptorName) {
+        if (!interceptors.isEmpty()) {
+            addProperty(interceptorConfigName, interceptors.stream().distinct().collect(Collectors.joining(",")));
+            if (interceptors.contains(loggingInterceptorName)) {
+                addProperty("opentable.logging",  loggingUtils);
+                addProperty(LoggingInterceptorConfig.SAMPLE_RATE_PCT_CONFIG, loggingSampleRate);
+            }
+        }
     }
 
     void removeProperty(String key) {
-        prop.remove(key);
+        properties.remove(key);
     }
 
     void withBootstrapServer(String bootStrapServer) {
@@ -61,6 +80,17 @@ public class KafkaBaseBuilder {
     void withMetricRegistry(MetricRegistry metricRegistry) {
         this.metricRegistry = Optional.ofNullable(metricRegistry);
     }
+
+    <CK,CV> KafkaConsumer<CK,CV> consumer() {
+        LOG.trace("Building KafkaConsumer with props {}", properties);
+        return new KafkaConsumer<CK, CV>(properties);
+    }
+
+    <PK,PV> KafkaProducer<PK,PV> producer() {
+        LOG.trace("Building KafkaProducer with props {}", properties);
+        return new KafkaProducer<PK,PV>(properties);
+    }
+
 
     void baseBuild() {
         if (bootStrapServers.isEmpty()) {

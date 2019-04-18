@@ -3,7 +3,6 @@ package com.opentable.kafka.builders;
 import java.util.List;
 import java.util.Optional;
 import java.util.Properties;
-import java.util.stream.Collectors;
 
 import com.codahale.metrics.MetricRegistry;
 
@@ -12,15 +11,11 @@ import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.clients.producer.ProducerInterceptor;
 import org.apache.kafka.common.serialization.Serializer;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
-import com.opentable.kafka.logging.LoggingInterceptorConfig;
 import com.opentable.kafka.logging.LoggingProducerInterceptor;
 import com.opentable.service.AppInfo;
 
 public class KafkaProducerBuilder<K,V>  {
-    private static final Logger LOG = LoggerFactory.getLogger(KafkaProducerBuilder.class);
 
     private final KafkaBaseBuilder kafkaBaseBuilder;
     private Optional<AckType> ackType = Optional.empty();
@@ -104,13 +99,7 @@ public class KafkaProducerBuilder<K,V>  {
 
     public  KafkaProducer<K, V> build() {
         kafkaBaseBuilder.baseBuild();
-        if (!kafkaBaseBuilder.interceptors.isEmpty()) {
-            kafkaBaseBuilder.addProperty(ProducerConfig.INTERCEPTOR_CLASSES_CONFIG, kafkaBaseBuilder.interceptors.stream().distinct().collect(Collectors.joining(",")));
-            if (kafkaBaseBuilder.interceptors.contains(LoggingProducerInterceptor.class.getName())) {
-                kafkaBaseBuilder.addProperty("opentable.logging",  kafkaBaseBuilder.loggingUtils);
-            }
-        }
-        kafkaBaseBuilder.addProperty(LoggingInterceptorConfig.SAMPLE_RATE_PCT_CONFIG, kafkaBaseBuilder.loggingSampleRate);
+        kafkaBaseBuilder.addLoggingUtilsRef(ProducerConfig.INTERCEPTOR_CLASSES_CONFIG, LoggingProducerInterceptor.class.getName());
         ackType.ifPresent(ack -> kafkaBaseBuilder.addProperty(ProducerConfig.ACKS_CONFIG, ack.value));
         retries.ifPresent(retries -> kafkaBaseBuilder.addProperty(CommonClientConfigs.RETRIES_CONFIG, retries));
         if (keySe == null || valueSe == null) {
@@ -118,8 +107,7 @@ public class KafkaProducerBuilder<K,V>  {
         }
         kafkaBaseBuilder.addProperty(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, keySe);
         kafkaBaseBuilder.addProperty(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, valueSe);
-        LOG.trace("Building KafkaProducer with props {}", kafkaBaseBuilder.prop);
-        return new KafkaProducer<>(kafkaBaseBuilder.prop);
+        return kafkaBaseBuilder.producer();
     }
 
     public enum AckType {
