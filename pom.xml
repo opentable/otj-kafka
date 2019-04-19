@@ -39,7 +39,7 @@
 
   <groupId>com.opentable.components</groupId>
   <artifactId>otj-kafka</artifactId>
-  <version>3.1.3-SNAPSHOT</version>
+  <version>3.1.4-SNAPSHOT</version>
   <description>Kafka integrations component</description>
 
   <dependencies>
@@ -53,8 +53,18 @@
     </dependency>
     <dependency>
       <groupId>com.opentable.components</groupId>
+      <artifactId>otj-logging</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>com.opentable.components</groupId>
+      <artifactId>otj-logging-kafka</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>com.opentable.components</groupId>
       <artifactId>otj-core</artifactId>
     </dependency>
+    <!-- We need to discuss, because this and additional deps will cause problems, sigh -->
     <dependency>
       <groupId>com.opentable.components</groupId>
       <artifactId>otj-metrics-core</artifactId>
@@ -62,11 +72,6 @@
     <dependency>
       <groupId>com.opentable.components</groupId>
       <artifactId>otj-executors</artifactId>
-    </dependency>
-    <!-- We need to discuss, because this and additional deps will cause problems, sigh -->
-    <dependency>
-      <groupId>com.opentable.components</groupId>
-      <artifactId>otj-logging</artifactId>
     </dependency>
 
     <dependency>
@@ -135,6 +140,12 @@
     </dependency>
 
     <dependency>
+      <groupId>com.fasterxml.jackson.module</groupId>
+      <artifactId>jackson-module-mrbean</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
       <groupId>com.github.vladimir-bukhtoyarov</groupId>
       <artifactId>bucket4j-core</artifactId>
       <version>3.1.0</version>
@@ -146,19 +157,14 @@
       <optional>true</optional>
     </dependency>
 
+
     <dependency>
-      <groupId>org.slf4j</groupId>
-      <artifactId>slf4j-api</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.slf4j</groupId>
-      <artifactId>log4j-over-slf4j</artifactId>
-      <scope>runtime</scope>
+      <groupId>ch.qos.logback</groupId>
+      <artifactId>logback-core</artifactId>
     </dependency>
     <dependency>
       <groupId>ch.qos.logback</groupId>
       <artifactId>logback-classic</artifactId>
-      <scope>runtime</scope>
     </dependency>
     <dependency>
       <groupId>org.codehaus.janino</groupId>

@@ -1,6 +1,10 @@
 otj-kafka changelog
 ===================
 
+3.1.3
+-----
+* Move test from otj-logging. This breaks a cyclic dependency.
+
 3.1.2
 -----
 * Recompile for DAG
