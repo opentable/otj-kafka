@@ -30,7 +30,6 @@ public class LoggingProducerInterceptor implements ProducerInterceptor<Object, O
     private static final Logger LOG = LoggerFactory.getLogger(LoggingProducerInterceptor.class);
 
     private String interceptorClientId;
-    private LoggingInterceptorConfig conf;
     private LoggingUtils loggingUtils;
     private LogSamplerRandom sampler;
 
@@ -57,18 +56,19 @@ public class LoggingProducerInterceptor implements ProducerInterceptor<Object, O
 
     @Override
     public void configure(Map<String, ?> config) {
-        conf = new LoggingInterceptorConfig(config);
+        final LoggingInterceptorConfig conf = new LoggingInterceptorConfig(config);
         this.sampler = new LogSamplerRandom(conf.getDouble(LoggingInterceptorConfig.SAMPLE_RATE_PCT_CONFIG));
         final String originalsClientId = (String) config.get(ProducerConfig.CLIENT_ID_CONFIG);
         loggingUtils = (LoggingUtils) config.get("opentable.logging");
         //MJB: Dmitry why is this done?
-        this.interceptorClientId = (originalsClientId == null) ? "interceptor-producer-" + ClientIdGenerator.nextClientId() : originalsClientId;
+        this.interceptorClientId = (originalsClientId == null) ? "interceptor-producer-" + ClientIdGenerator.INSTANCE.nextClientId() : originalsClientId;
         LOG.info("LoggingProducerInterceptor is configured for client: {}", interceptorClientId);
     }
 
     private static class ClientIdGenerator {
-        private static final AtomicInteger IDS = new AtomicInteger(0);
-        static int nextClientId() {
+        public static ClientIdGenerator INSTANCE = new ClientIdGenerator();
+        private final AtomicInteger IDS = new AtomicInteger(0);
+        int nextClientId() {
             return IDS.getAndIncrement();
         }
     }

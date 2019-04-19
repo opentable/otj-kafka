@@ -33,7 +33,6 @@ public class LoggingConsumerInterceptor<K, V> implements ConsumerInterceptor<K, 
     private String interceptorClientId;
     private String groupId;
     private volatile LoggingUtils loggingUtils;
-    private LoggingInterceptorConfig conf;
     private LogSamplerRandom sampler;
 
     @Override
@@ -54,19 +53,20 @@ public class LoggingConsumerInterceptor<K, V> implements ConsumerInterceptor<K, 
 
     @Override
     public void configure(Map<String, ?> config) {
-        conf = new LoggingInterceptorConfig(config);
+        final LoggingInterceptorConfig conf = new LoggingInterceptorConfig(config);
         // Dmitry - consider using bucket4j instead
         this.sampler = new LogSamplerRandom(conf.getDouble(LoggingInterceptorConfig.SAMPLE_RATE_PCT_CONFIG));
         String originalsClientId = (String) config.get(ConsumerConfig.CLIENT_ID_CONFIG);
         groupId  = (String) config.get(ConsumerConfig.GROUP_ID_CONFIG);
         loggingUtils = (LoggingUtils) config.get("opentable.logging");
-        interceptorClientId = (originalsClientId == null) ? "interceptor-consumer-" + ClientIdGenerator.nextClientId() : originalsClientId;
+        interceptorClientId = (originalsClientId == null) ? "interceptor-consumer-" + ClientIdGenerator.INSTANCE.nextClientId() : originalsClientId;
         LOG.info("LoggingConsumerInterceptor is configured for client: {}, group-id: {}", interceptorClientId, groupId);
     }
 
     private static class ClientIdGenerator {
-        private static final AtomicInteger IDS = new AtomicInteger(0);
-        static int nextClientId() {
+        public static ClientIdGenerator INSTANCE = new ClientIdGenerator();
+        private final AtomicInteger IDS = new AtomicInteger(0);
+        int nextClientId() {
             return IDS.getAndIncrement();
         }
     }

@@ -35,9 +35,8 @@ public class OtMetricsReporter implements MetricsReporter {
 
     private static final Logger LOG = LoggerFactory.getLogger(OtMetricsReporter.class);
 
-    private OtMetricsReporterConfig config;
-    private Set<String> metricNames = new HashSet<>();
-    private Set<String> metricGroups = new HashSet<>();
+    private final Set<String> metricNames = new HashSet<>();
+    private final Set<String> metricGroups = new HashSet<>();
     private MetricRegistry metricRegistry;
     private String groupId;
     private String prefix;
@@ -86,17 +85,17 @@ public class OtMetricsReporter implements MetricsReporter {
     private String metricName(KafkaMetric metric) {
         final StringBuilder stringBuilder = new StringBuilder(prefix);
         stringBuilder.append(metric.metricName().tags().get("client-id"))
-            .append(".");
+            .append('.');
         if (groupId != null) {
             stringBuilder.append(groupId)
-                .append(".");
+                .append('.');
         }
         metric.metricName().tags().entrySet().stream()
             .filter(v -> !"client-id".equals(v.getKey()))
             .sorted(Comparator.comparing(Entry::getKey))
-            .forEach(v -> stringBuilder.append(v.getValue()).append("."));
+            .forEach(v -> stringBuilder.append(v.getValue()).append('.'));
         stringBuilder.append(metric.metricName().group())
-            .append("-")
+            .append('-')
             .append(metric.metricName().name());
         return stringBuilder.toString();
     }
@@ -121,15 +120,15 @@ public class OtMetricsReporter implements MetricsReporter {
 
     @Override
     public void configure(Map<String, ?> config) {
-        this.config = new OtMetricsReporterConfig(config);
+        final OtMetricsReporterConfig config1 = new OtMetricsReporterConfig(config);
         this.metricRegistry  = (MetricRegistry) config.get(OtMetricsReporterConfig.METRIC_REGISTRY_REF_CONFIG);
         if (this.metricRegistry == null) {
-            final String registryName = this.config.getString(OtMetricsReporterConfig.METRIC_REGISTRY_NAME_CONFIG);
+            final String registryName = config1.getString(OtMetricsReporterConfig.METRIC_REGISTRY_NAME_CONFIG);
             this.metricRegistry = SharedMetricRegistries.getOrCreate(registryName);
         }
-        this.prefix = this.config.getString(OtMetricsReporterConfig.METRIC_PREFIX_CONFIG);
-        groups.addAll(this.config.getList(OtMetricsReporterConfig.METRIC_GROUPS_CONFIG));
-        metricMatchers.addAll(this.config.getList(OtMetricsReporterConfig.METRIC_NAME_MATCHERS_CONFIG));
+        this.prefix = config1.getString(OtMetricsReporterConfig.METRIC_PREFIX_CONFIG);
+        groups.addAll(config1.getList(OtMetricsReporterConfig.METRIC_GROUPS_CONFIG));
+        metricMatchers.addAll(config1.getList(OtMetricsReporterConfig.METRIC_NAME_MATCHERS_CONFIG));
         groupId  = (String)config.get(ConsumerConfig.GROUP_ID_CONFIG);
         LOG.info("OtMetricsReporter is configured with metric registry: {} and prefix: {}", metricRegistry, prefix);
     }

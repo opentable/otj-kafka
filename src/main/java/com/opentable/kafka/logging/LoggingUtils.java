@@ -98,9 +98,9 @@ public class LoggingUtils {
             .serviceType(CommonLogHolder.getServiceType())
             .uuid(UUID.randomUUID())
             .timestamp(Instant.now())
-            .requestId(optUuid(new String(record.headers().lastHeader(CommonLogFields.REQUEST_ID_KEY).value())))
-            .referringService(new String(record.headers().lastHeader(OTKafkaHeaders.REFERRING_SERVICE).value()))
-            .referringHost(new String(record.headers().lastHeader(OTKafkaHeaders.REFERRING_HOST).value()))
+            .requestId(optUuid(new String(record.headers().lastHeader(CommonLogFields.REQUEST_ID_KEY).value(), CHARSET)))
+            .referringService(new String(record.headers().lastHeader(OTKafkaHeaders.REFERRING_SERVICE).value(), CHARSET))
+            .referringHost(new String(record.headers().lastHeader(OTKafkaHeaders.REFERRING_HOST).value(), CHARSET))
 
             // eda-message-trace-v1
             .topic(record.topic())
@@ -152,7 +152,7 @@ public class LoggingUtils {
 
     public String toString(Headers headers) {
         return Arrays.stream(headers.toArray())
-            .map(h -> String.format("%s=%s", h.key(), new String(h.value())))
+            .map(h -> String.format("%s=%s", h.key(), new String(h.value(), CHARSET)))
             .collect(Collectors.joining(", "));
     }
 
@@ -198,7 +198,7 @@ public class LoggingUtils {
     public <K, V> boolean isTraceNeeded(ProducerRecord<K, V> record) {
         final Headers headers = record.headers();
         return StreamSupport.stream(headers.headers(OTKafkaHeaders.TRACE_FLAG).spliterator(), false)
-            .map(h -> new String(h.value()))
+            .map(h -> new String(h.value(), CHARSET))
             .map("true"::equals)
             .filter(v -> v)
             .findFirst()
@@ -222,7 +222,7 @@ public class LoggingUtils {
     public static <K, V> boolean isTraceNeeded(ConsumerRecord<K, V> record, LogSamplerRandom sampler) {
         final Headers headers = record.headers();
         return StreamSupport.stream(headers.headers("ot-trace-message").spliterator(), false)
-            .map(h -> new String(h.value()))
+            .map(h -> new String(h.value(), CHARSET))
             .map("true"::equals)
             .findFirst()
             .orElse(sampler.mark(record.topic()));
@@ -248,7 +248,8 @@ public class LoggingUtils {
         for (final ConservedHeader header : ConservedHeader.values()) {
             final Iterator<Header> values = h.headers(header.getHeaderName()).iterator();
             if (values.hasNext()) {
-                headers.put(header, new String(values.next().value()));
+
+                headers.put(header, new String(values.next().value(), CHARSET));
             }
             if (values.hasNext()) {
                 LOG.warn("Request has '{}' header specified multiple times: {}", header,
