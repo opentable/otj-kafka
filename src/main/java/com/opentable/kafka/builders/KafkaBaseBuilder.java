@@ -136,7 +136,7 @@ class KafkaBaseBuilder {
         }
         requestTimeout.ifPresent(i -> addProperty(CommonClientConfigs.REQUEST_TIMEOUT_MS_CONFIG, String.valueOf(i)));
         retryBackoff.ifPresent(i -> addProperty(CommonClientConfigs.RETRY_BACKOFF_MS_CONFIG, String.valueOf(i)));
-        clientId.ifPresent(cid -> addProperty(CommonClientConfigs.SECURITY_PROTOCOL_CONFIG, cid));
+        clientId.ifPresent(cid -> addProperty(CommonClientConfigs.CLIENT_ID_CONFIG, cid));
         securityProtocol.ifPresent(sp -> addProperty(CommonClientConfigs.SECURITY_PROTOCOL_CONFIG, sp));
         metricRegistry.ifPresent(mr -> {
             addProperty(CommonClientConfigs.METRIC_REPORTER_CLASSES_CONFIG, OtMetricsReporter.class.getName());
