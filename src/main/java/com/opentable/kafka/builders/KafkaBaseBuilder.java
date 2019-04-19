@@ -14,9 +14,10 @@
 package com.opentable.kafka.builders;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
-import java.util.Properties;
 import java.util.stream.Collectors;
 
 import com.codahale.metrics.MetricRegistry;
@@ -43,21 +44,22 @@ public class KafkaBaseBuilder {
     final LoggingUtils loggingUtils;
     Double loggingSampleRate = LoggingInterceptorConfig.DEFAULT_SAMPLE_RATE_PCT;
     final List<String> interceptors = new ArrayList<>();
-    final Properties properties;
+    final Map<String, Object> seedProperties; // what the user initialized with. This will take priority
+    final Map<String, Object> finalProperties = new HashMap<>(); // what we'll build the final version of
     private final List<String> bootStrapServers = new ArrayList<>();
     private Optional<String> clientId = Optional.empty();
     private Optional<String> securityProtocol = Optional.empty();
     protected Optional<MetricRegistry> metricRegistry;
 
-    KafkaBaseBuilder(Properties props, AppInfo appInfo) {
-        this.properties = props;
+    KafkaBaseBuilder(Map<String, Object> props, AppInfo appInfo) {
+        this.seedProperties = props;
         this.loggingUtils = new LoggingUtils(appInfo);
         metricRegistry = Optional.empty();
     }
 
 
     void addProperty(String key, Object value) {
-        properties.put(key, value);
+        finalProperties.put(key, value);
     }
 
     void addLoggingUtilsRef(String interceptorConfigName, String loggingInterceptorName) {
@@ -71,7 +73,7 @@ public class KafkaBaseBuilder {
     }
 
     void removeProperty(String key) {
-        properties.remove(key);
+        finalProperties.remove(key);
     }
 
     void withBootstrapServer(String bootStrapServer) {
@@ -95,26 +97,41 @@ public class KafkaBaseBuilder {
     }
 
     <CK,CV> KafkaConsumer<CK,CV> consumer() {
-        LOG.trace("Building KafkaConsumer with props {}", properties);
-        return new KafkaConsumer<CK, CV>(properties);
+        LOG.trace("Building KafkaConsumer with props {}", finalProperties);
+        return new KafkaConsumer<CK, CV>(finalProperties);
     }
 
     <PK,PV> KafkaProducer<PK,PV> producer() {
-        LOG.trace("Building KafkaProducer with props {}", properties);
-        return new KafkaProducer<PK,PV>(properties);
+        LOG.trace("Building KafkaProducer with props {}", finalProperties);
+        return new KafkaProducer<PK,PV>(finalProperties);
     }
 
 
-    void baseBuild() {
-        if (bootStrapServers.isEmpty()) {
-            throw new IllegalStateException("No bootstrap servers specified");
+    void finishBuild() {
+
+        if (!bootStrapServers.isEmpty()) {
+            addProperty(CommonClientConfigs.BOOTSTRAP_SERVERS_CONFIG, bootStrapServers.stream().distinct().collect(Collectors.joining(",")));
         }
-        addProperty(CommonClientConfigs.BOOTSTRAP_SERVERS_CONFIG, bootStrapServers.stream().distinct().collect(Collectors.joining(",")));
         clientId.ifPresent(cid -> addProperty(CommonClientConfigs.SECURITY_PROTOCOL_CONFIG, cid));
         securityProtocol.ifPresent(sp -> addProperty(CommonClientConfigs.SECURITY_PROTOCOL_CONFIG, sp));
         metricRegistry.ifPresent(mr -> {
             addProperty(ConsumerConfig.METRIC_REPORTER_CLASSES_CONFIG, OtMetricsReporter.class.getName());
             addProperty(OtMetricsReporterConfig.METRIC_REGISTRY_REF_CONFIG, mr);
         });
+        mergeProperties();
+        cantBeNull(CommonClientConfigs.BOOTSTRAP_SERVERS_CONFIG, "No bootstrap servers specified");
+    }
+
+    void cantBeNull(String key, String message) {
+        if (finalProperties.get(key) == null) {
+            throw new IllegalStateException(message);
+        }
+    }
+
+    /**
+     * Merge the seedPropeties in. This gives preference to the seedProperties
+     */
+    private void mergeProperties() {
+        seedProperties.forEach(finalProperties::put);
     }
 }

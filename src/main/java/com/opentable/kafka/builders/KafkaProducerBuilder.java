@@ -14,8 +14,8 @@
 package com.opentable.kafka.builders;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
-import java.util.Properties;
 
 import com.codahale.metrics.MetricRegistry;
 
@@ -38,7 +38,7 @@ public class KafkaProducerBuilder<K,V>  {
     private Class<? extends Serializer<V>> valueSe;
 
 
-    public KafkaProducerBuilder(Properties prop, AppInfo appInfo) {
+    public KafkaProducerBuilder(Map<String, Object> prop, AppInfo appInfo) {
         kafkaBaseBuilder = new KafkaBaseBuilder(prop, appInfo);
         kafkaBaseBuilder.interceptors.add(LoggingProducerInterceptor.class.getName());
     }
@@ -111,15 +111,20 @@ public class KafkaProducerBuilder<K,V>  {
     }
 
     public  KafkaProducer<K, V> build() {
-        kafkaBaseBuilder.baseBuild();
         kafkaBaseBuilder.addLoggingUtilsRef(ProducerConfig.INTERCEPTOR_CLASSES_CONFIG, LoggingProducerInterceptor.class.getName());
         ackType.ifPresent(ack -> kafkaBaseBuilder.addProperty(ProducerConfig.ACKS_CONFIG, ack.value));
         retries.ifPresent(retries -> kafkaBaseBuilder.addProperty(CommonClientConfigs.RETRIES_CONFIG, retries));
-        if (keySe == null || valueSe == null) {
-            throw new IllegalStateException("Either keySerializer or valueSerializer is missing");
+        if (keySe != null) {
+            kafkaBaseBuilder.addProperty(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, keySe);
         }
-        kafkaBaseBuilder.addProperty(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, keySe);
-        kafkaBaseBuilder.addProperty(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, valueSe);
+        if (valueSe != null) {
+            kafkaBaseBuilder.addProperty(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, valueSe);
+        }
+
+        // merge in common and seed properties
+        kafkaBaseBuilder.finishBuild();
+        kafkaBaseBuilder.cantBeNull(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, "Key serializer is missing");
+        kafkaBaseBuilder.cantBeNull(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, "Value serializer is missing");
         return kafkaBaseBuilder.producer();
     }
 

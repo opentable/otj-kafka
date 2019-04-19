@@ -16,7 +16,6 @@ package com.opentable.kafka.logging;
 import com.opentable.logging.CommonLogFields;
 
 public final class OTKafkaHeaders {
-    //DMITRY Any reason
     public static final String REFERRING_HOST = "ot-referring-host";
     public static final String REFERRING_INSTANCE_NO = "ot-referring-instance_no";
     public static final String REFERRING_SERVICE = "ot-referring-service";

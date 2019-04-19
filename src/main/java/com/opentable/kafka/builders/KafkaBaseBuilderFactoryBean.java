@@ -13,9 +13,9 @@
  */
 package com.opentable.kafka.builders;
 
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Properties;
 import java.util.stream.Collectors;
 
 import com.codahale.metrics.MetricRegistry;
@@ -39,23 +39,31 @@ public class KafkaBaseBuilderFactoryBean {
     protected final AppInfo appInfo;
     protected final Optional<ServiceInfo> serviceInfo;
 
-    public KafkaBaseBuilderFactoryBean(Optional<ServiceInfo> serviceInfo, AppInfo appInfo, ConfigurableEnvironment env, Optional<MetricRegistry> metricRegistry) {
+    public KafkaBaseBuilderFactoryBean(
+            final AppInfo appInfo,
+            final ConfigurableEnvironment env,
+            final Optional<ServiceInfo> serviceInfo,
+            final Optional<MetricRegistry> metricRegistry) {
         this.env = env;
         this.appInfo = appInfo;
         this.serviceInfo = serviceInfo;
         this.metricRegistry = metricRegistry;
     }
 
-    // One flaw in my approach is that validation won't work correctly against these. We can talk about this
+    // These take precedence. One minor flaw is list properties are not currently combined, these replace all
+    protected Map<String, Object> getProperties(final String nameSpace) {
+        return PropertySourceUtil.getProperties(env, PREFIX + nameSpace)
+                .entrySet()
+                .stream()
+                .collect(Collectors.toMap(o -> (String) o.getKey(), Map.Entry::getValue));
 
-    protected Properties getProperties(final String nameSpace, final Properties res) {
-        res.putAll(
-                PropertySourceUtil.getProperties(env, PREFIX + nameSpace)
-                        .entrySet()
-                        .stream()
-                        .collect(Collectors.toMap(o -> (String)o.getKey(), Map.Entry::getValue))
-        );
-        return res;
+    }
+
+    protected Map<String, Object> mergeProperties(final Map<String, Object> originalProperties, final String namespace) {
+        final Map<String, Object> originalMap = new HashMap<>(originalProperties);
+        final Map<String, Object> mergeMap = getProperties(namespace);
+        originalMap.putAll(mergeMap);
+        return originalMap;
     }
 
 }

@@ -22,6 +22,7 @@ import java.nio.file.Path;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
@@ -322,6 +323,13 @@ public class EmbeddedKafkaBroker implements Closeable
 
     public Properties baseConsumerProperties(String groupId) {
         Properties props = new Properties();
+        Map<String, Object> map = baseConsumerMap(groupId);
+        map.forEach(props::put);
+        return props;
+    }
+
+    public Map<String, Object> baseConsumerMap(String groupId) {
+        Map<String, Object> props = new HashMap<>();
         props.put("auto.offset.reset", "earliest");
         props.put("bootstrap.servers", getKafkaBrokerConnect());
         props.put("group.id", groupId);
@@ -330,6 +338,13 @@ public class EmbeddedKafkaBroker implements Closeable
 
     public Properties baseProducerProperties() {
         Properties props = new Properties();
+        Map<String, Object> map = baseProducerMap();
+
+        return props;
+    }
+
+    public Map<String, Object> baseProducerMap() {
+        Map<String, Object> props = new HashMap<>();
         props.put("acks", "all");
         props.put("retries", "3");
         props.put("bootstrap.servers", getKafkaBrokerConnect());

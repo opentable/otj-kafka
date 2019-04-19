@@ -76,7 +76,7 @@ public class MetricReporterTest {
     private AppInfo appInfo;
 
     public <K, V> Producer<K, V> createProducer(Class<? extends Serializer<K>> keySer, Class<? extends Serializer<V>> valueSer) {
-        return new KafkaProducerBuilder<K,V>(rw.getEkb().baseProducerProperties(), appInfo)
+        return new KafkaProducerBuilder<K,V>(rw.getEkb().baseProducerMap(), appInfo)
             .withClientId("producer-metrics-01")
             .withMetricRegistry(metricRegistry)
             .withSerializers(keySer, valueSer)
@@ -98,7 +98,7 @@ public class MetricReporterTest {
     }
 
     public <K, V> Consumer<K, V> createConsumer(String groupId, Class<? extends Deserializer<K>> keySer, Class<? extends Deserializer<V>> valueSer) {
-        return new KafkaConsumerBuilder<K,V>(rw.getEkb().baseConsumerProperties(groupId), appInfo)
+        return new KafkaConsumerBuilder<K,V>(rw.getEkb().baseConsumerMap(groupId), appInfo)
             .withClientId("consumer-metrics-01")
             .withMetricRegistry(metricRegistry)
             .withGroupId(groupId)

@@ -14,8 +14,8 @@
 package com.opentable.kafka.builders;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
-import java.util.Properties;
 
 import com.codahale.metrics.MetricRegistry;
 
@@ -36,12 +36,12 @@ public class KafkaConsumerBuilder<K, V>  {
 
     private final KafkaBaseBuilder kafkaBaseBuilder;
     private Optional<String> groupId = Optional.empty();
-    private Optional<Integer> maxPollRecords = Optional.empty();
+    private Optional<Integer>maxPollRecords = Optional.empty();
     private AutoOffsetResetType autoOffsetResetType = AutoOffsetResetType.Latest;
     private Class<? extends Deserializer<K>> keyDe;
     private Class<? extends Deserializer<V>> valueDe;
 
-    public KafkaConsumerBuilder(Properties prop, AppInfo appInfo) {
+    public KafkaConsumerBuilder(Map<String, Object> prop, AppInfo appInfo) {
         kafkaBaseBuilder = new KafkaBaseBuilder(prop, appInfo);
         kafkaBaseBuilder.interceptors.add(LoggingConsumerInterceptor.class.getName());
     }
@@ -118,18 +118,21 @@ public class KafkaConsumerBuilder<K, V>  {
     }
 
     public KafkaConsumer<K, V> build() {
-        kafkaBaseBuilder.baseBuild();
         kafkaBaseBuilder.addLoggingUtilsRef(ConsumerConfig.INTERCEPTOR_CLASSES_CONFIG, LoggingConsumerInterceptor.class.getName());
         // Isn't this mandatory?
         groupId.ifPresent(gid -> kafkaBaseBuilder.addProperty(ConsumerConfig.GROUP_ID_CONFIG, gid));
         kafkaBaseBuilder.addProperty(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, autoOffsetResetType.value);
         maxPollRecords.ifPresent(mpr -> kafkaBaseBuilder.addProperty(ConsumerConfig.MAX_POLL_RECORDS_CONFIG, mpr));
-        if (keyDe == null || valueDe == null) {
-            throw new IllegalStateException("Either keyDeserializer or ValueDeserializer is missing");
+        if (keyDe != null) {
+            kafkaBaseBuilder.addProperty(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, keyDe);
         }
-        kafkaBaseBuilder.addProperty(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, keyDe);
-        kafkaBaseBuilder.addProperty(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, valueDe);
-
+        if (valueDe != null) {
+            kafkaBaseBuilder.addProperty(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, valueDe);
+        }
+        // Merge in common and user supplied properties.
+        kafkaBaseBuilder.finishBuild();
+        kafkaBaseBuilder.cantBeNull(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, "Key deserializer missing");
+        kafkaBaseBuilder.cantBeNull(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, "Value deserializer missing");
         return kafkaBaseBuilder.consumer();
     }
 

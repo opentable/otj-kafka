@@ -13,8 +13,8 @@
  */
 package com.opentable.kafka.builders;
 
+import java.util.Map;
 import java.util.Optional;
-import java.util.Properties;
 
 import javax.inject.Inject;
 
@@ -28,8 +28,12 @@ import com.opentable.service.ServiceInfo;
 public class KafkaConsumerBuilderFactoryBean<K,V> extends KafkaBaseBuilderFactoryBean {
 
     @Inject
-    public KafkaConsumerBuilderFactoryBean(Optional<ServiceInfo> serviceInfo, AppInfo appInfo, ConfigurableEnvironment env, Optional<MetricRegistry> metricRegistry) {
-        super(serviceInfo, appInfo, env, metricRegistry);
+    public KafkaConsumerBuilderFactoryBean(
+                                           final AppInfo appInfo,
+                                           final ConfigurableEnvironment env,
+                                           final Optional<ServiceInfo> serviceInfo,
+                                           final Optional<MetricRegistry> metricRegistry) {
+        super(appInfo, env, serviceInfo, metricRegistry);
     }
 
     public KafkaConsumerBuilder<K,V> builder() {
@@ -37,10 +41,12 @@ public class KafkaConsumerBuilderFactoryBean<K,V> extends KafkaBaseBuilderFactor
     }
 
     public KafkaConsumerBuilder<K,V> builder(String name) {
-        final KafkaConsumerBuilder<K,V> res = new KafkaConsumerBuilder<>(
-                getProperties(name,
-                        getProperties( DEFAULT, new Properties())), appInfo);
-        metricRegistry.ifPresent(mr -> res.withMetricRegistry(mr));
+        final Map<String, Object> mergedSeedProperties = mergeProperties(
+                getProperties(DEFAULT),
+                name
+        );
+        final KafkaConsumerBuilder<K,V> res = new KafkaConsumerBuilder<>(mergedSeedProperties, appInfo);
+        metricRegistry.ifPresent(res::withMetricRegistry);
         serviceInfo.ifPresent(si -> res.withClientId(si.getName()));
         return res;
     }
