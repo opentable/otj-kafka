@@ -43,7 +43,6 @@ public class LoggingProducerInterceptor implements ProducerInterceptor<Object, O
 
     @Override
     public void onAcknowledgement(RecordMetadata metadata, Exception e) {
-        //LOG.info("metadata: {}", metadata);
         if (e != null) {
             LOG.error("Error occurred during acknowledgement {}", metadata, e);
         }
@@ -51,7 +50,7 @@ public class LoggingProducerInterceptor implements ProducerInterceptor<Object, O
 
     @Override
     public void close() {
-
+        LOG.info("Shutting down LoggingProducerInterceptor");
     }
 
     @Override

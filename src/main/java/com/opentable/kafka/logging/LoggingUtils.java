@@ -69,6 +69,7 @@ public class LoggingUtils {
 
     private final AppInfo appInfo;
 
+    // I don't think this is needed at all. I believe adam's code does the trick.
     static {
         Resource resource = new ClassPathResource(ARTIFACT_ID + PROPERTIES_FILE_EXTENSION);
         String clientVersion = DEFAULT_VERSION;
@@ -226,7 +227,7 @@ public class LoggingUtils {
             final MsgV1 event = producerEvent(record, clientId);
             MDC.put(CommonLogFields.REQUEST_ID_KEY, Objects.toString(event.getRequestId(), null));
             try {
-                log.trace(event.log(),
+                log.debug(event.log(),
                     "[Producer clientId={}] To:{}@{}, Headers:[{}], Message: {}",
                     clientId, record.topic(), record.partition(), toString(record.headers()), record.value());
             } finally {
@@ -249,7 +250,7 @@ public class LoggingUtils {
             final MsgV1 event = consumerEvent(record, groupId, clientId);
             MDC.put(CommonLogFields.REQUEST_ID_KEY, Objects.toString(event.getRequestId(), null));
             try {
-                log.trace(event.log(),
+                log.debug(event.log(),
                     "[Consumer clientId={}, groupId={}] From:{}@{}, Headers:[{}], Message: {}",
                     clientId, groupId, record.topic(), record.partition(), toString(record.headers()), record.value());
             } finally {

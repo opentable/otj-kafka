@@ -43,12 +43,12 @@ public class LoggingConsumerInterceptor<K, V> implements ConsumerInterceptor<K, 
 
     @Override
     public void onCommit(Map<TopicPartition, OffsetAndMetadata> offsets) {
-
+        /* no op */
     }
 
     @Override
     public void close() {
-
+        LOG.info("Shutting down LoggingConsumerInterceptor");
     }
 
     @Override
