@@ -36,18 +36,29 @@ public class KafkaProducerBuilderFactoryBean extends KafkaBaseBuilderFactoryBean
         super(appInfo, env, serviceInfo, metricRegistry);
     }
 
+
+    // This exists only because the generics  notation (bean.<Integer,String>builder("goo") is awkward and this is easier to remember
     public <K,V> KafkaProducerBuilder<K,V> builder(Class<K> keyClass, Class<V> valueClass) {
-        return builder(DEFAULT, keyClass, valueClass);
+        return builder();
     }
 
+    // This exists only because the generics  notation (bean.<Integer,String>builder("goo") is awkward and this is easier to remember
     public <K,V> KafkaProducerBuilder<K,V> builder(String name, Class<K> keyClass, Class<V> valueClass) {
+        return builder(name);
+    }
+
+    public <K,V> KafkaProducerBuilder<K,V> builder() {
+        return builder(DEFAULT);
+    }
+
+    public <K,V> KafkaProducerBuilder<K,V> builder(String name) {
         final Map<String, Object> mergedSeedProperties = mergeProperties(
                 getProperties(DEFAULT),
                 name
         );
         final KafkaProducerBuilder<K,V> res = new KafkaProducerBuilder<>(mergedSeedProperties, appInfo);
         metricRegistry.ifPresent(res::withMetricRegistry);
-        serviceInfo.ifPresent(si -> res.withClientId(si.getName()));
+        serviceInfo.ifPresent(si -> res.withClientId(name + "-" + si.getName()));
         return res;
     }
 
