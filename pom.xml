@@ -31,10 +31,11 @@
   </scm>
 
   <properties>
-      <basepom.oss.skip-scala-doc>true</basepom.oss.skip-scala-doc>
-      <basepom.check.skip-javadoc>false</basepom.check.skip-javadoc>
-      <basepom.check.fail-javadoc>false</basepom.check.fail-javadoc>
-      <dep.otj-otl.version>0.8.19-SNAPSHOT</dep.otj-otl.version>
+    <dep.bucket4j.version>4.4.1</dep.bucket4j.version>
+    <basepom.oss.skip-scala-doc>true</basepom.oss.skip-scala-doc>
+    <basepom.check.skip-javadoc>false</basepom.check.skip-javadoc>
+    <basepom.check.fail-javadoc>false</basepom.check.fail-javadoc>
+    <dep.otj-otl.version>0.8.19-SNAPSHOT</dep.otj-otl.version>
   </properties>
 
   <groupId>com.opentable.components</groupId>
@@ -170,7 +171,7 @@
     <dependency>
       <groupId>com.github.vladimir-bukhtoyarov</groupId>
       <artifactId>bucket4j-core</artifactId>
-      <version>3.1.0</version>
+      <version>${dep.bucket4j.version}</version>
     </dependency>
 
     <dependency>

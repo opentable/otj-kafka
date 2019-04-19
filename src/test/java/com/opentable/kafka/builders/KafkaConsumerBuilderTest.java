@@ -66,7 +66,7 @@ public class KafkaConsumerBuilderTest {
                 .withGroupId("test")
                 .withDeserializers(IntegerDeserializer.class, StringDeserializer.class)
                 .withOffsetReset(AutoOffsetResetType.Latest)
-                .withLoggingSampleRate(10.0);
+                .withLoggingSampleRate(3);
         KafkaConsumer<Integer, String> c = builder
                 .build();
     }

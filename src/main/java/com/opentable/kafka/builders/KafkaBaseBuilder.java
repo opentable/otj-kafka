@@ -46,7 +46,7 @@ class KafkaBaseBuilder {
     private final Map<String, Object> seedProperties; // what the user initialized with. This will take priority
     private final Map<String, Object> finalProperties = new HashMap<>(); // what we'll build the final version of
     private final List<String> interceptors = new ArrayList<>();
-    private Double loggingSampleRate = LoggingInterceptorConfig.DEFAULT_SAMPLE_RATE_PCT;
+    private int loggingSampleRate = LoggingInterceptorConfig.DEFAULT_SAMPLE_RATE_PCT;
     private OptionalLong requestTimeout = OptionalLong.empty();
     private OptionalLong retryBackoff = OptionalLong.empty();
     private final List<String> bootStrapServers = new ArrayList<>();
@@ -114,7 +114,7 @@ class KafkaBaseBuilder {
         this.metricRegistry = Optional.ofNullable(metricRegistry);
     }
 
-    void withSamplingRate(final double rate) {
+    void withSamplingRatePer10Seconds(final int rate) {
         loggingSampleRate = rate;
     }
 

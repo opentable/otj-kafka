@@ -67,7 +67,7 @@ public class KafkaProducerBuilderTest {
             .withAcks(AckType.none)
             .withRetries(5)
             .withSerializers(IntegerSerializer.class, StringSerializer.class)
-            .withLoggingSampleRate(10.0);
+            .withLoggingSampleRate(3);
         KafkaProducer<Integer, String> p = builder
             .build();
     }

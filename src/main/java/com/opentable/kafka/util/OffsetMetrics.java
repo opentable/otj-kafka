@@ -101,7 +101,7 @@ public class OffsetMetrics implements Closeable {
 
     private final Bucket logLimitBucket = Bucket4j
             .builder()
-            .addLimit(Bandwidth.classic(6, Refill.smooth(1, Duration.ofMinutes(10))))
+            .addLimit(Bandwidth.classic(6, Refill.greedy(1, Duration.ofMinutes(10))))
             .build();
 
     private final String metricPrefix;

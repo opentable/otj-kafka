@@ -16,6 +16,7 @@ package com.opentable.kafka.logging;
 import java.io.IOException;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.Arrays;
 import java.util.EnumMap;
@@ -41,8 +42,11 @@ import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.support.PropertiesLoaderUtils;
 
+import io.github.bucket4j.Bandwidth;
+import io.github.bucket4j.Bucket;
+import io.github.bucket4j.Bucket4j;
+
 import com.opentable.conservedheaders.ConservedHeader;
-import com.opentable.kafka.util.LogSamplerRandom;
 import com.opentable.logging.CommonLogFields;
 import com.opentable.logging.CommonLogHolder;
 import com.opentable.logging.otl.EdaMessageTraceV1;
@@ -79,6 +83,18 @@ public class LoggingUtils {
 
     public LoggingUtils(AppInfo appInfo) {
         this.appInfo = appInfo;
+    }
+
+    public Bucket getBucket(LoggingInterceptorConfig conf) {
+        final Integer howOftenPer10Seconds = conf.getInt(LoggingInterceptorConfig.SAMPLE_RATE_PCT_CONFIG);
+        Bandwidth limit = null;
+        if (howOftenPer10Seconds == null || howOftenPer10Seconds < 0) {
+            LOG.warn("Not rate limiting");
+            limit = Bandwidth.simple(Long.MAX_VALUE, Duration.ofMillis(1));
+        } else {
+            limit = Bandwidth.simple(howOftenPer10Seconds, Duration.ofSeconds(10));
+        }
+        return Bucket4j.builder().addLimit(limit).build();
     }
 
     private EdaMessageTraceV1Builder builder() {
@@ -183,11 +199,11 @@ public class LoggingUtils {
         }
     }
 
-    public <K, V> void setupTracing(LogSamplerRandom sampler, ProducerRecord<K, V> record) {
+    public <K, V> void setupTracing(Bucket bucket, ProducerRecord<K, V> record) {
         final Headers headers = record.headers();
         if (!headers.headers(OTKafkaHeaders.TRACE_FLAG).iterator().hasNext()) {
             // If header not present, make decision our self and set it
-            if (sampler.mark(record.topic())) {
+            if (bucket.tryConsume(1)) {
                 headers.add(OTKafkaHeaders.TRACE_FLAG, TRUE);
             } else {
                 headers.add(OTKafkaHeaders.TRACE_FLAG, FALSE);
@@ -219,17 +235,17 @@ public class LoggingUtils {
         }
     }
 
-    public static <K, V> boolean isTraceNeeded(ConsumerRecord<K, V> record, LogSamplerRandom sampler) {
+    public static <K, V> boolean isTraceNeeded(ConsumerRecord<K, V> record) {
         final Headers headers = record.headers();
         return StreamSupport.stream(headers.headers("ot-trace-message").spliterator(), false)
             .map(h -> new String(h.value(), CHARSET))
             .map("true"::equals)
             .findFirst()
-            .orElse(sampler.mark(record.topic()));
+            .orElse(false);
     }
 
-    public <K, V> void trace(Logger log, String clientId, String groupId, LogSamplerRandom sampler, ConsumerRecord<K, V> record) {
-        if (isTraceNeeded(record, sampler)) {
+    public <K, V> void trace(Logger log, String clientId, String groupId, Bucket bucket, ConsumerRecord<K, V> record) {
+        if (isTraceNeeded(record) || bucket.tryConsume(1)) {
             final MsgV1 event = consumerEvent(record, groupId, clientId);
             MDC.put(CommonLogFields.REQUEST_ID_KEY, Objects.toString(event.getRequestId(), null));
             try {
@@ -272,15 +288,6 @@ public class LoggingUtils {
         return headers;
     }
 
-    public <K, V> void setupMDC(ConsumerRecord<K, V> record) {
-        final Headers headers = record.headers();
-        final Map<ConservedHeader, String> values = extractHeaders(headers);
-        Arrays.asList(ConservedHeader.values()).forEach((header) -> {
-            if (values.get(header) != null) {
-                MDC.put(header.getLogName(), values.get(header));
-            }
-        });
-    }
 
     private static UUID optUuid(String uuid) {
         try {

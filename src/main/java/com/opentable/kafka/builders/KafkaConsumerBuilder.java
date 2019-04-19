@@ -34,8 +34,8 @@ import com.opentable.service.AppInfo;
 
 /**
  * Main builder for KafkaConsumer. This is usually entered via a KafkaConsumerBuilderFactoryBean so some "sugar" is injected.
- * @param <K>
- * @param <V>
+ * @param <K> Key
+ * @param <V> Value
  */
 public class KafkaConsumerBuilder<K, V>  {
 
@@ -70,8 +70,8 @@ public class KafkaConsumerBuilder<K, V>  {
         return this;
     }
 
-    public KafkaConsumerBuilder<K, V> withLoggingSampleRate(double rate) {
-        kafkaBaseBuilder.withSamplingRate(rate);
+    public KafkaConsumerBuilder<K, V> withLoggingSampleRate(int rate) {
+        kafkaBaseBuilder.withSamplingRatePer10Seconds(rate);
         return this;
     }
 

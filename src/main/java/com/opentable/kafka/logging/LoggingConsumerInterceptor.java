@@ -24,7 +24,7 @@ import org.apache.kafka.common.TopicPartition;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.opentable.kafka.util.LogSamplerRandom;
+import io.github.bucket4j.Bucket;
 
 public class LoggingConsumerInterceptor<K, V> implements ConsumerInterceptor<K, V> {
 
@@ -33,11 +33,11 @@ public class LoggingConsumerInterceptor<K, V> implements ConsumerInterceptor<K, 
     private String interceptorClientId;
     private String groupId;
     private volatile LoggingUtils loggingUtils;
-    private LogSamplerRandom sampler;
+    private Bucket bucket;
 
     @Override
     public ConsumerRecords<K, V> onConsume(ConsumerRecords<K, V> records) {
-        records.forEach(record -> loggingUtils.trace(LOG, interceptorClientId, groupId, sampler, record));
+        records.forEach(record -> loggingUtils.trace(LOG, interceptorClientId, groupId, bucket, record));
         return records;
     }
 
@@ -54,17 +54,16 @@ public class LoggingConsumerInterceptor<K, V> implements ConsumerInterceptor<K, 
     @Override
     public void configure(Map<String, ?> config) {
         final LoggingInterceptorConfig conf = new LoggingInterceptorConfig(config);
-        // Dmitry - consider using bucket4j instead
-        this.sampler = new LogSamplerRandom(conf.getDouble(LoggingInterceptorConfig.SAMPLE_RATE_PCT_CONFIG));
         String originalsClientId = (String) config.get(ConsumerConfig.CLIENT_ID_CONFIG);
         groupId  = (String) config.get(ConsumerConfig.GROUP_ID_CONFIG);
         loggingUtils = (LoggingUtils) config.get(LoggingInterceptorConfig.LOGGING_REF);
+        bucket = loggingUtils.getBucket(conf);
         interceptorClientId = (originalsClientId == null) ? "interceptor-consumer-" + ClientIdGenerator.INSTANCE.nextClientId() : originalsClientId;
         LOG.info("LoggingConsumerInterceptor is configured for client: {}, group-id: {}", interceptorClientId, groupId);
     }
 
     private static class ClientIdGenerator {
-        public static ClientIdGenerator INSTANCE = new ClientIdGenerator();
+        static ClientIdGenerator INSTANCE = new ClientIdGenerator();
         private final AtomicInteger IDS = new AtomicInteger(0);
         int nextClientId() {
             return IDS.getAndIncrement();

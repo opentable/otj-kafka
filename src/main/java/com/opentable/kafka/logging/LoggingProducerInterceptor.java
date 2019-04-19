@@ -23,7 +23,7 @@ import org.apache.kafka.clients.producer.RecordMetadata;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.opentable.kafka.util.LogSamplerRandom;
+import io.github.bucket4j.Bucket;
 
 public class LoggingProducerInterceptor implements ProducerInterceptor<Object, Object> {
 
@@ -31,12 +31,12 @@ public class LoggingProducerInterceptor implements ProducerInterceptor<Object, O
 
     private String interceptorClientId;
     private LoggingUtils loggingUtils;
-    private LogSamplerRandom sampler;
+    private Bucket bucket;
 
     @Override
     public ProducerRecord<Object, Object> onSend(ProducerRecord<Object, Object> record) {
         loggingUtils.setupHeaders(record);
-        loggingUtils.setupTracing(sampler, record);
+        loggingUtils.setupTracing(bucket, record);
         loggingUtils.trace(LOG, interceptorClientId, record);
         return record;
     }
@@ -57,16 +57,16 @@ public class LoggingProducerInterceptor implements ProducerInterceptor<Object, O
     @Override
     public void configure(Map<String, ?> config) {
         final LoggingInterceptorConfig conf = new LoggingInterceptorConfig(config);
-        this.sampler = new LogSamplerRandom(conf.getDouble(LoggingInterceptorConfig.SAMPLE_RATE_PCT_CONFIG));
         final String originalsClientId = (String) config.get(ProducerConfig.CLIENT_ID_CONFIG);
         loggingUtils = (LoggingUtils) config.get(LoggingInterceptorConfig.LOGGING_REF);
+        bucket = loggingUtils.getBucket(conf);
         //MJB: Dmitry why is this done?
         this.interceptorClientId = (originalsClientId == null) ? "interceptor-producer-" + ClientIdGenerator.INSTANCE.nextClientId() : originalsClientId;
         LOG.info("LoggingProducerInterceptor is configured for client: {}", interceptorClientId);
     }
 
     private static class ClientIdGenerator {
-        public static ClientIdGenerator INSTANCE = new ClientIdGenerator();
+        static ClientIdGenerator INSTANCE = new ClientIdGenerator();
         private final AtomicInteger IDS = new AtomicInteger(0);
         int nextClientId() {
             return IDS.getAndIncrement();
