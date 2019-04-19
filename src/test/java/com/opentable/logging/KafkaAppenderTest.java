@@ -17,6 +17,7 @@ import static org.junit.Assert.assertEquals;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.time.Duration;
 import java.util.Collections;
 import java.util.Iterator;
 
@@ -84,7 +85,7 @@ public class KafkaAppenderTest
 
         try (KafkaConsumer<String, String> consumer = kafka.getBroker().createConsumer("test")) {
             consumer.subscribe(Collections.singletonList("logs"));
-            final Iterator<ConsumerRecord<String, String>> iterator = consumer.poll(10000).iterator();
+            final Iterator<ConsumerRecord<String, String>> iterator = consumer.poll(Duration.ofSeconds(10)).iterator();
 
             log1 = read(iterator.next().value());
             log2 = read(iterator.next().value());
