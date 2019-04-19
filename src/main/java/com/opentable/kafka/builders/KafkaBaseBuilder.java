@@ -13,17 +13,18 @@
  */
 package com.opentable.kafka.builders;
 
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.OptionalLong;
 import java.util.stream.Collectors;
 
 import com.codahale.metrics.MetricRegistry;
 
 import org.apache.kafka.clients.CommonClientConfigs;
-import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.slf4j.Logger;
@@ -38,14 +39,16 @@ import com.opentable.service.AppInfo;
 /**
  * Some common configuration options + the main properties builder is here.
  */
-public class KafkaBaseBuilder {
+class KafkaBaseBuilder {
     private static final Logger LOG = LoggerFactory.getLogger(KafkaBaseBuilder.class);
 
-    final LoggingUtils loggingUtils;
-    Double loggingSampleRate = LoggingInterceptorConfig.DEFAULT_SAMPLE_RATE_PCT;
-    final List<String> interceptors = new ArrayList<>();
-    final Map<String, Object> seedProperties; // what the user initialized with. This will take priority
-    final Map<String, Object> finalProperties = new HashMap<>(); // what we'll build the final version of
+    private final LoggingUtils loggingUtils;
+    private final Map<String, Object> seedProperties; // what the user initialized with. This will take priority
+    private final Map<String, Object> finalProperties = new HashMap<>(); // what we'll build the final version of
+    private final List<String> interceptors = new ArrayList<>();
+    private Double loggingSampleRate = LoggingInterceptorConfig.DEFAULT_SAMPLE_RATE_PCT;
+    private OptionalLong requestTimeout = OptionalLong.empty();
+    private OptionalLong retryBackoff = OptionalLong.empty();
     private final List<String> bootStrapServers = new ArrayList<>();
     private Optional<String> clientId = Optional.empty();
     private Optional<String> securityProtocol = Optional.empty();
@@ -62,11 +65,19 @@ public class KafkaBaseBuilder {
         finalProperties.put(key, value);
     }
 
+    void addInterceptor(String className) {
+        interceptors.add(className);
+    }
+
+    void removeInterceptor(String className) {
+        interceptors.remove(className);
+    }
+
     void addLoggingUtilsRef(String interceptorConfigName, String loggingInterceptorName) {
         if (!interceptors.isEmpty()) {
             addProperty(interceptorConfigName, interceptors.stream().distinct().collect(Collectors.joining(",")));
             if (interceptors.contains(loggingInterceptorName)) {
-                addProperty("opentable.logging",  loggingUtils);
+                addProperty(LoggingInterceptorConfig.LOGGING_REF,  loggingUtils);
                 addProperty(LoggingInterceptorConfig.SAMPLE_RATE_PCT_CONFIG, loggingSampleRate);
             }
         }
@@ -92,8 +103,19 @@ public class KafkaBaseBuilder {
         this.securityProtocol = Optional.ofNullable(protocol);
     }
 
+    void withRequestTimeoutMs(Duration duration) {
+        requestTimeout = OptionalLong.of(duration.toMillis());
+    }
+    void withRetryBackOff(Duration duration) {
+        retryBackoff = OptionalLong.of(duration.toMillis());
+    }
+
     void withMetricRegistry(MetricRegistry metricRegistry) {
         this.metricRegistry = Optional.ofNullable(metricRegistry);
+    }
+
+    void withSamplingRate(final double rate) {
+        loggingSampleRate = rate;
     }
 
     <CK,CV> KafkaConsumer<CK,CV> consumer() {
@@ -112,10 +134,12 @@ public class KafkaBaseBuilder {
         if (!bootStrapServers.isEmpty()) {
             addProperty(CommonClientConfigs.BOOTSTRAP_SERVERS_CONFIG, bootStrapServers.stream().distinct().collect(Collectors.joining(",")));
         }
+        requestTimeout.ifPresent(i -> addProperty(CommonClientConfigs.REQUEST_TIMEOUT_MS_CONFIG, String.valueOf(i)));
+        retryBackoff.ifPresent(i -> addProperty(CommonClientConfigs.RETRY_BACKOFF_MS_CONFIG, String.valueOf(i)));
         clientId.ifPresent(cid -> addProperty(CommonClientConfigs.SECURITY_PROTOCOL_CONFIG, cid));
         securityProtocol.ifPresent(sp -> addProperty(CommonClientConfigs.SECURITY_PROTOCOL_CONFIG, sp));
         metricRegistry.ifPresent(mr -> {
-            addProperty(ConsumerConfig.METRIC_REPORTER_CLASSES_CONFIG, OtMetricsReporter.class.getName());
+            addProperty(CommonClientConfigs.METRIC_REPORTER_CLASSES_CONFIG, OtMetricsReporter.class.getName());
             addProperty(OtMetricsReporterConfig.METRIC_REGISTRY_REF_CONFIG, mr);
         });
         mergeProperties();
@@ -134,4 +158,5 @@ public class KafkaBaseBuilder {
     private void mergeProperties() {
         seedProperties.forEach(finalProperties::put);
     }
+
 }

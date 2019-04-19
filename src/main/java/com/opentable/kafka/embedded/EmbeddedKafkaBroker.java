@@ -339,7 +339,7 @@ public class EmbeddedKafkaBroker implements Closeable
     public Properties baseProducerProperties() {
         Properties props = new Properties();
         Map<String, Object> map = baseProducerMap();
-
+        map.forEach(props::put);
         return props;
     }
 

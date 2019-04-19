@@ -44,6 +44,10 @@ public interface MessageSink<K, V, CallbackType> extends Closeable {
     /**
      * Offer a message to the destination.  May throw delayed exceptions from any message
      * previously offered due to batching.
+     * @param topic The kafka topic
+     * @param key The key
+     * @param message the value
+     * @param callback callback
      */
     void send(String topic, K key, V message, CallbackType callback);
 }

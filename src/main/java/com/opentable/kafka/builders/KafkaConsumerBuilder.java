@@ -13,15 +13,20 @@
  */
 package com.opentable.kafka.builders;
 
+import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.OptionalInt;
+import java.util.OptionalLong;
 
 import com.codahale.metrics.MetricRegistry;
 
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.consumer.ConsumerInterceptor;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
+import org.apache.kafka.clients.consumer.RangeAssignor;
+import org.apache.kafka.clients.consumer.internals.PartitionAssignor;
 import org.apache.kafka.common.serialization.Deserializer;
 
 import com.opentable.kafka.logging.LoggingConsumerInterceptor;
@@ -36,14 +41,18 @@ public class KafkaConsumerBuilder<K, V>  {
 
     private final KafkaBaseBuilder kafkaBaseBuilder;
     private Optional<String> groupId = Optional.empty();
-    private Optional<Integer>maxPollRecords = Optional.empty();
+    private boolean enableAutoCommit = true;
+    private OptionalInt maxPollRecords = OptionalInt.empty();
+    private OptionalLong sessionTimeoutMs = OptionalLong.empty();
+    private OptionalLong maxPollIntervalMs = OptionalLong.empty();
     private AutoOffsetResetType autoOffsetResetType = AutoOffsetResetType.Latest;
+    private Class<? extends PartitionAssignor> partitionStrategy = RangeAssignor.class;
     private Class<? extends Deserializer<K>> keyDe;
     private Class<? extends Deserializer<V>> valueDe;
 
     public KafkaConsumerBuilder(Map<String, Object> prop, AppInfo appInfo) {
         kafkaBaseBuilder = new KafkaBaseBuilder(prop, appInfo);
-        kafkaBaseBuilder.interceptors.add(LoggingConsumerInterceptor.class.getName());
+        kafkaBaseBuilder.addInterceptor(LoggingConsumerInterceptor.class.getName());
     }
 
     public KafkaConsumerBuilder<K, V> withProperty(String key, Object value) {
@@ -57,17 +66,17 @@ public class KafkaConsumerBuilder<K, V>  {
     }
 
     public KafkaConsumerBuilder<K, V> disableLogging() {
-        kafkaBaseBuilder.interceptors.remove(LoggingConsumerInterceptor.class.getName());
+        kafkaBaseBuilder.removeInterceptor(LoggingConsumerInterceptor.class.getName());
         return this;
     }
 
     public KafkaConsumerBuilder<K, V> withLoggingSampleRate(double rate) {
-        kafkaBaseBuilder.loggingSampleRate = rate;
+        kafkaBaseBuilder.withSamplingRate(rate);
         return this;
     }
 
     public KafkaConsumerBuilder<K, V> withInterceptor(Class<? extends ConsumerInterceptor<K, V>> clazz) {
-        kafkaBaseBuilder.interceptors.add(clazz.getName());
+        kafkaBaseBuilder.addInterceptor(clazz.getName());
         return this;
     }
 
@@ -82,13 +91,18 @@ public class KafkaConsumerBuilder<K, V>  {
     }
 
     public KafkaConsumerBuilder<K, V> withMaxPollRecords(int val) {
-        maxPollRecords = Optional.of(val);
+        maxPollRecords = OptionalInt.of(val);
         return this;
     }
 
     public KafkaConsumerBuilder<K, V> withDeserializers(Class<? extends Deserializer<K>> keyDeSer, Class<? extends Deserializer<V>> valDeSer) {
         this.keyDe = keyDeSer;
         this.valueDe = valDeSer;
+        return this;
+    }
+
+    public KafkaConsumerBuilder<K, V> withPartitionAssignmentStrategy(Class<? extends PartitionAssignor> partitionAssignmentStrategy) {
+        partitionStrategy = partitionAssignmentStrategy;
         return this;
     }
 
@@ -107,8 +121,41 @@ public class KafkaConsumerBuilder<K, V>  {
         return this;
     }
 
+    public KafkaConsumerBuilder<K, V> withAutoCommit(boolean val) {
+        enableAutoCommit = val;
+        return this;
+    }
+
     public KafkaConsumerBuilder<K, V> withSecurityProtocol(String protocol) {
         kafkaBaseBuilder.withSecurityProtocol(protocol);
+        return this;
+    }
+
+    public KafkaConsumerBuilder<K, V> withRequestTimeout(Duration duration) {
+        if (duration != null) {
+            kafkaBaseBuilder.withRequestTimeoutMs(duration);
+        }
+        return this;
+    }
+
+    public KafkaConsumerBuilder<K, V> withRetryBackoff(Duration duration) {
+        if (duration != null) {
+            kafkaBaseBuilder.withRetryBackOff(duration);
+        }
+        return this;
+    }
+
+    public KafkaConsumerBuilder<K, V> withPollInterval(Duration duration) {
+        if (duration != null) {
+            maxPollIntervalMs = OptionalLong.of(duration.toMillis());
+        }
+        return this;
+    }
+
+    public KafkaConsumerBuilder<K, V> withSessionTimeoutMs(Duration duration) {
+        if (duration != null) {
+            sessionTimeoutMs = OptionalLong.of(duration.toMillis());
+        }
         return this;
     }
 
@@ -118,8 +165,13 @@ public class KafkaConsumerBuilder<K, V>  {
     }
 
     public KafkaConsumer<K, V> build() {
+        if (partitionStrategy != null) {
+            kafkaBaseBuilder.addProperty(ConsumerConfig.PARTITION_ASSIGNMENT_STRATEGY_CONFIG, partitionStrategy.getName());
+        }
+        maxPollIntervalMs.ifPresent(m -> kafkaBaseBuilder.addProperty(ConsumerConfig.MAX_POLL_INTERVAL_MS_CONFIG, String.valueOf(m)));
+        sessionTimeoutMs.ifPresent(s -> kafkaBaseBuilder.addProperty(ConsumerConfig.SESSION_TIMEOUT_MS_CONFIG, String.valueOf(s)));
+        kafkaBaseBuilder.addProperty(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG, String.valueOf(enableAutoCommit));
         kafkaBaseBuilder.addLoggingUtilsRef(ConsumerConfig.INTERCEPTOR_CLASSES_CONFIG, LoggingConsumerInterceptor.class.getName());
-        // Isn't this mandatory?
         groupId.ifPresent(gid -> kafkaBaseBuilder.addProperty(ConsumerConfig.GROUP_ID_CONFIG, gid));
         kafkaBaseBuilder.addProperty(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, autoOffsetResetType.value);
         maxPollRecords.ifPresent(mpr -> kafkaBaseBuilder.addProperty(ConsumerConfig.MAX_POLL_RECORDS_CONFIG, mpr));
@@ -131,8 +183,7 @@ public class KafkaConsumerBuilder<K, V>  {
         }
         // Merge in common and user supplied properties.
         kafkaBaseBuilder.finishBuild();
-        kafkaBaseBuilder.cantBeNull(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, "Key deserializer missing");
-        kafkaBaseBuilder.cantBeNull(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, "Value deserializer missing");
+        kafkaBaseBuilder.cantBeNull(ConsumerConfig.PARTITION_ASSIGNMENT_STRATEGY_CONFIG, "Partition assignment strategy can't be null");
         return kafkaBaseBuilder.consumer();
     }
 

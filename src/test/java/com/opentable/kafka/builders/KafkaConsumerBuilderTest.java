@@ -52,11 +52,11 @@ public class KafkaConsumerBuilderTest {
     private static final Logger LOG = LoggerFactory.getLogger(KafkaConsumerBuilderTest.class);
 
     @Autowired
-    private KafkaConsumerBuilderFactoryBean<Integer, String> builderFactoryBean;
+    private KafkaConsumerBuilderFactoryBean builderFactoryBean;
 
     @Test
     public void builderTest() {
-        KafkaConsumerBuilder<Integer, String> builder = builderFactoryBean.builder("consumer")
+        KafkaConsumerBuilder<Integer, String> builder = builderFactoryBean.builder("consumer", Integer.class, String.class)
                 .withBootstrapServer("localhost:8080")
                 .withProperty("blah", "blah")
                 .removeProperty("blah")

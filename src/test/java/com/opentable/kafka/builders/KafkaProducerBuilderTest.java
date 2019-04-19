@@ -53,11 +53,11 @@ public class KafkaProducerBuilderTest {
     private static final Logger LOG = LoggerFactory.getLogger(KafkaProducerBuilderTest.class);
 
     @Autowired
-    private KafkaProducerBuilderFactoryBean<Integer,String> builderFactoryBean;
+    private KafkaProducerBuilderFactoryBean builderFactoryBean;
 
     @Test
     public void builderTest() {
-        KafkaProducerBuilder<Integer, String> builder = builderFactoryBean.builder("producer")
+        KafkaProducerBuilder<Integer, String> builder = builderFactoryBean.builder("producer", Integer.class, String.class)
             .withBootstrapServer("localhost:8080")
             .withProperty("blah", "blah")
             .removeProperty("blah")

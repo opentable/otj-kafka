@@ -25,7 +25,7 @@ import org.springframework.core.env.ConfigurableEnvironment;
 import com.opentable.service.AppInfo;
 import com.opentable.service.ServiceInfo;
 
-public class KafkaProducerBuilderFactoryBean<K,V> extends KafkaBaseBuilderFactoryBean {
+public class KafkaProducerBuilderFactoryBean extends KafkaBaseBuilderFactoryBean {
 
     @Inject
     public KafkaProducerBuilderFactoryBean(
@@ -36,11 +36,11 @@ public class KafkaProducerBuilderFactoryBean<K,V> extends KafkaBaseBuilderFactor
         super(appInfo, env, serviceInfo, metricRegistry);
     }
 
-    public KafkaProducerBuilder<K,V> builder() {
-        return builder(DEFAULT);
+    public <K,V> KafkaProducerBuilder<K,V> builder(Class<K> keyClass, Class<V> valueClass) {
+        return builder(DEFAULT, keyClass, valueClass);
     }
 
-    public KafkaProducerBuilder<K,V> builder(String name) {
+    public <K,V> KafkaProducerBuilder<K,V> builder(String name, Class<K> keyClass, Class<V> valueClass) {
         final Map<String, Object> mergedSeedProperties = mergeProperties(
                 getProperties(DEFAULT),
                 name

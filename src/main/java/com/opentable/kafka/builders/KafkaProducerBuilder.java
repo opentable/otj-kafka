@@ -13,26 +13,32 @@
  */
 package com.opentable.kafka.builders;
 
+import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.OptionalInt;
 
 import com.codahale.metrics.MetricRegistry;
 
 import org.apache.kafka.clients.CommonClientConfigs;
 import org.apache.kafka.clients.producer.KafkaProducer;
+import org.apache.kafka.clients.producer.Partitioner;
 import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.clients.producer.ProducerInterceptor;
+import org.apache.kafka.clients.producer.internals.DefaultPartitioner;
 import org.apache.kafka.common.serialization.Serializer;
 
 import com.opentable.kafka.logging.LoggingProducerInterceptor;
 import com.opentable.service.AppInfo;
 
-public class KafkaProducerBuilder<K,V>  {
+public class KafkaProducerBuilder<K, V> {
 
     private final KafkaBaseBuilder kafkaBaseBuilder;
     private Optional<AckType> ackType = Optional.empty();
-    private Optional<Integer> retries = Optional.empty();
+    private OptionalInt retries = OptionalInt.empty();
+    private int maxInfFlight = 5;
+    private Class<? extends Partitioner> partitioner = DefaultPartitioner.class;
 
     private Class<? extends Serializer<K>> keySe;
     private Class<? extends Serializer<V>> valueSe;
@@ -40,7 +46,7 @@ public class KafkaProducerBuilder<K,V>  {
 
     public KafkaProducerBuilder(Map<String, Object> prop, AppInfo appInfo) {
         kafkaBaseBuilder = new KafkaBaseBuilder(prop, appInfo);
-        kafkaBaseBuilder.interceptors.add(LoggingProducerInterceptor.class.getName());
+        kafkaBaseBuilder.addInterceptor(LoggingProducerInterceptor.class.getName());
     }
 
     public KafkaProducerBuilder<K, V> withProperty(String key, Object value) {
@@ -55,17 +61,17 @@ public class KafkaProducerBuilder<K,V>  {
 
 
     public KafkaProducerBuilder<K, V> disableLogging() {
-        kafkaBaseBuilder.interceptors.remove(LoggingProducerInterceptor.class.getName());
+        kafkaBaseBuilder.removeInterceptor(LoggingProducerInterceptor.class.getName());
         return this;
     }
 
     public KafkaProducerBuilder<K, V> withLoggingSampleRate(double rate) {
-        kafkaBaseBuilder.loggingSampleRate = rate;
+        kafkaBaseBuilder.withSamplingRate(rate);
         return this;
     }
 
     public KafkaProducerBuilder<K, V> withInterceptor(Class<? extends ProducerInterceptor<K, V>> clazz) {
-        kafkaBaseBuilder.interceptors.add(clazz.getName());
+        kafkaBaseBuilder.addInterceptor(clazz.getName());
         return this;
     }
 
@@ -75,7 +81,12 @@ public class KafkaProducerBuilder<K,V>  {
     }
 
     public KafkaProducerBuilder<K, V> withRetries(int val) {
-        this.retries = Optional.of(val);
+        this.retries = OptionalInt.of(val);
+        return this;
+    }
+
+    public KafkaProducerBuilder<K, V> withMaxInFlightRequests(int val) {
+        this.maxInfFlight = val;
         return this;
     }
 
@@ -84,6 +95,14 @@ public class KafkaProducerBuilder<K,V>  {
         this.valueSe = valSer;
         return this;
     }
+
+    public KafkaProducerBuilder<K, V> withPartitioner(Class<? extends Partitioner> partitioner) {
+        if (partitioner != null) {
+            this.partitioner = partitioner;
+        }
+        return this;
+    }
+
 
     public KafkaProducerBuilder<K, V> withBootstrapServer(String bootStrapServer) {
         kafkaBaseBuilder.withBootstrapServer(bootStrapServer);
@@ -105,13 +124,29 @@ public class KafkaProducerBuilder<K,V>  {
         return this;
     }
 
+    public KafkaProducerBuilder<K, V> withRequestTimeoutMs(Duration duration) {
+        if (duration != null) {
+            kafkaBaseBuilder.withRequestTimeoutMs(duration);
+        }
+        return this;
+    }
+
+    public KafkaProducerBuilder<K, V> withRetryBackoff(Duration duration) {
+        if (duration != null) {
+            kafkaBaseBuilder.withRetryBackOff(duration);
+        }
+        return this;
+    }
+
     public KafkaProducerBuilder<K, V> withMetricRegistry(MetricRegistry metricRegistry) {
         kafkaBaseBuilder.withMetricRegistry(metricRegistry);
         return this;
     }
 
-    public  KafkaProducer<K, V> build() {
+    public KafkaProducer<K, V> build() {
+        kafkaBaseBuilder.addProperty(ProducerConfig.PARTITIONER_CLASS_CONFIG, partitioner.getName());
         kafkaBaseBuilder.addLoggingUtilsRef(ProducerConfig.INTERCEPTOR_CLASSES_CONFIG, LoggingProducerInterceptor.class.getName());
+        kafkaBaseBuilder.addProperty(ProducerConfig.MAX_IN_FLIGHT_REQUESTS_PER_CONNECTION, maxInfFlight);
         ackType.ifPresent(ack -> kafkaBaseBuilder.addProperty(ProducerConfig.ACKS_CONFIG, ack.value));
         retries.ifPresent(retries -> kafkaBaseBuilder.addProperty(CommonClientConfigs.RETRIES_CONFIG, retries));
         if (keySe != null) {
@@ -123,8 +158,6 @@ public class KafkaProducerBuilder<K,V>  {
 
         // merge in common and seed properties
         kafkaBaseBuilder.finishBuild();
-        kafkaBaseBuilder.cantBeNull(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, "Key serializer is missing");
-        kafkaBaseBuilder.cantBeNull(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, "Value serializer is missing");
         return kafkaBaseBuilder.producer();
     }
 

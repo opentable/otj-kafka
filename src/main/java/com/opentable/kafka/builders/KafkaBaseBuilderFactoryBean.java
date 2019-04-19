@@ -29,17 +29,17 @@ import com.opentable.spring.PropertySourceUtil;
 /**
  * A base class with the common fields and methods
  */
-public class KafkaBaseBuilderFactoryBean {
+class KafkaBaseBuilderFactoryBean {
 
-    protected static final String PREFIX = "ot.kafka.";
-    protected static final String DEFAULT = "default";
+    private static final String PREFIX = "ot.kafka.";
+    static final String DEFAULT = "default";
 
-    protected final ConfigurableEnvironment env;
+    private final ConfigurableEnvironment env;
     protected final Optional<MetricRegistry> metricRegistry;
-    protected final AppInfo appInfo;
-    protected final Optional<ServiceInfo> serviceInfo;
+    final AppInfo appInfo;
+    final Optional<ServiceInfo> serviceInfo;
 
-    public KafkaBaseBuilderFactoryBean(
+    KafkaBaseBuilderFactoryBean(
             final AppInfo appInfo,
             final ConfigurableEnvironment env,
             final Optional<ServiceInfo> serviceInfo,
@@ -51,7 +51,7 @@ public class KafkaBaseBuilderFactoryBean {
     }
 
     // These take precedence. One minor flaw is list properties are not currently combined, these replace all
-    protected Map<String, Object> getProperties(final String nameSpace) {
+    Map<String, Object> getProperties(final String nameSpace) {
         return PropertySourceUtil.getProperties(env, PREFIX + nameSpace)
                 .entrySet()
                 .stream()
@@ -59,7 +59,7 @@ public class KafkaBaseBuilderFactoryBean {
 
     }
 
-    protected Map<String, Object> mergeProperties(final Map<String, Object> originalProperties, final String namespace) {
+    Map<String, Object> mergeProperties(final Map<String, Object> originalProperties, final String namespace) {
         final Map<String, Object> originalMap = new HashMap<>(originalProperties);
         final Map<String, Object> mergeMap = getProperties(namespace);
         originalMap.putAll(mergeMap);

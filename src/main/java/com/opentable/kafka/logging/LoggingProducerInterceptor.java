@@ -59,7 +59,7 @@ public class LoggingProducerInterceptor implements ProducerInterceptor<Object, O
         final LoggingInterceptorConfig conf = new LoggingInterceptorConfig(config);
         this.sampler = new LogSamplerRandom(conf.getDouble(LoggingInterceptorConfig.SAMPLE_RATE_PCT_CONFIG));
         final String originalsClientId = (String) config.get(ProducerConfig.CLIENT_ID_CONFIG);
-        loggingUtils = (LoggingUtils) config.get("opentable.logging");
+        loggingUtils = (LoggingUtils) config.get(LoggingInterceptorConfig.LOGGING_REF);
         //MJB: Dmitry why is this done?
         this.interceptorClientId = (originalsClientId == null) ? "interceptor-producer-" + ClientIdGenerator.INSTANCE.nextClientId() : originalsClientId;
         LOG.info("LoggingProducerInterceptor is configured for client: {}", interceptorClientId);

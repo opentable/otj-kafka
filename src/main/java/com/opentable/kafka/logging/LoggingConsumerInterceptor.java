@@ -58,7 +58,7 @@ public class LoggingConsumerInterceptor<K, V> implements ConsumerInterceptor<K, 
         this.sampler = new LogSamplerRandom(conf.getDouble(LoggingInterceptorConfig.SAMPLE_RATE_PCT_CONFIG));
         String originalsClientId = (String) config.get(ConsumerConfig.CLIENT_ID_CONFIG);
         groupId  = (String) config.get(ConsumerConfig.GROUP_ID_CONFIG);
-        loggingUtils = (LoggingUtils) config.get("opentable.logging");
+        loggingUtils = (LoggingUtils) config.get(LoggingInterceptorConfig.LOGGING_REF);
         interceptorClientId = (originalsClientId == null) ? "interceptor-consumer-" + ClientIdGenerator.INSTANCE.nextClientId() : originalsClientId;
         LOG.info("LoggingConsumerInterceptor is configured for client: {}, group-id: {}", interceptorClientId, groupId);
     }
