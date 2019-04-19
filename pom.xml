@@ -31,10 +31,12 @@
   </scm>
 
   <properties>
+    <!-- remove once parent updates -->
     <dep.bucket4j.version>4.4.1</dep.bucket4j.version>
     <basepom.oss.skip-scala-doc>true</basepom.oss.skip-scala-doc>
     <basepom.check.skip-javadoc>false</basepom.check.skip-javadoc>
     <basepom.check.fail-javadoc>false</basepom.check.fail-javadoc>
+    <!-- remove (and replace snapshot) -->
     <dep.otj-otl.version>0.8.19-SNAPSHOT</dep.otj-otl.version>
   </properties>
 
