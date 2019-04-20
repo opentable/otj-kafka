@@ -21,5 +21,6 @@ public class TODO {
      * 4. worry about metrics filters, and other goofisms
      * 5. understand current tests
      * 6. improve tests
+     * 7. Discuss MDC put behavior. I've removed all of this.
      */
 }
