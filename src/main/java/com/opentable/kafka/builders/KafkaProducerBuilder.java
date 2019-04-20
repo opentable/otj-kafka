@@ -14,6 +14,7 @@
 package com.opentable.kafka.builders;
 
 import java.time.Duration;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -44,10 +45,17 @@ public class KafkaProducerBuilder<K, V> {
     private Class<? extends Serializer<K>> keySe;
     private Class<? extends Serializer<V>> valueSe;
 
+    // Constructors
+
+    public KafkaProducerBuilder(EnvironmentProvider environmentProvider) {
+        this(new HashMap<>(), environmentProvider);
+    }
 
     public KafkaProducerBuilder(Map<String, Object> prop, EnvironmentProvider environmentProvider) {
         kafkaBaseBuilder = new KafkaBaseBuilder(prop, environmentProvider);
     }
+
+    // builder methods
 
     public KafkaProducerBuilder<K, V> withProperty(String key, Object value) {
         kafkaBaseBuilder.addProperty(key, value);
@@ -143,6 +151,10 @@ public class KafkaProducerBuilder<K, V> {
         return this;
     }
 
+    /**
+     * Build the producer.
+     * @return kafka producer
+     */
     public KafkaProducer<K, V> build() {
         kafkaBaseBuilder.addProperty(ProducerConfig.PARTITIONER_CLASS_CONFIG, partitioner.getName());
         kafkaBaseBuilder.setupInterceptors(ProducerConfig.INTERCEPTOR_CLASSES_CONFIG, LoggingProducerInterceptor.class.getName());

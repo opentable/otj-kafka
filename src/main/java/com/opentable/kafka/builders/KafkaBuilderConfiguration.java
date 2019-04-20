@@ -19,6 +19,10 @@ import org.springframework.context.annotation.Import;
 import com.opentable.service.AppInfo;
 import com.opentable.service.EnvInfo;
 
+/**
+ * Used to wire up the factory beans.
+ * More commonly, developers use the convenience annotation '@InjectKafkaBuilderBeans'
+ */
 @Configuration
 @Import({
         KafkaConsumerBuilderFactoryBean.class,

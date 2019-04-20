@@ -55,11 +55,14 @@ import com.opentable.logging.otl.MsgV1;
  * General logging code and logic. Builds various OTL records, headers for metadata, etc.
  */
 public class LoggingUtils {
+    private static final Logger LOG = LoggerFactory.getLogger(LoggingUtils.class);
 
     private static final Charset CHARSET = StandardCharsets.UTF_8;
+    private static final String UNKNOWN = "unknown";
+    private static final byte[] UNKNOWN_BYTES = UNKNOWN.getBytes(CHARSET);
     private static final byte[] FALSE = "false".getBytes(CHARSET);
     private static final byte[] TRUE = "true".getBytes(CHARSET);
-    private static final Logger LOG = LoggerFactory.getLogger(LoggingUtils.class);
+
     private static final String PROPERTIES_FILE_EXTENSION = ".properties";
     private static final String DEFAULT_VERSION = "unknown";
     private static final String ARTIFACT_ID = "otj-kafka";
@@ -73,20 +76,29 @@ public class LoggingUtils {
 
     public LoggingUtils(EnvironmentProvider environmentProvider) {
         this.environmentProvider = environmentProvider;
-        this.javaVersion = System.getProperty("java.runtime.version");
-        this.os = System.getProperty("os.name");
+        this.javaVersion = System.getProperty("java.runtime.version", UNKNOWN);
+        this.os = System.getProperty("os.name", UNKNOWN);
         this.errLogging = getBucket(Bandwidth.simple(10, Duration.ofMinutes(1)));
 
         this.libraryVersion = getVersion(ARTIFACT_ID + PROPERTIES_FILE_EXTENSION, "kafka.logging.version", DEFAULT_VERSION);
         this.kafkaVersion = getVersion("/kafka/kafka-version.properties", "kafka.version.version", DEFAULT_VERSION);
     }
 
+    /**
+     * Read a classpath resource, looking for the version property.
+     * @param classPathResourceName path on classpath
+     * @param systemPropertyName fall back if version is missing to reading this system property. null indicates skip this
+     * @param defaultVersion finally if all else fails return this value.
+     * @return derived value
+     */
     private String getVersion(String classPathResourceName, String systemPropertyName, String defaultVersion) {
         String clientVersion = defaultVersion;
         try {
             final Resource resource = new ClassPathResource(classPathResourceName);
             final Properties props = PropertiesLoaderUtils.loadProperties(resource);
-            clientVersion = props.getProperty("version", System.getProperty(systemPropertyName, DEFAULT_VERSION));
+            clientVersion = props.getProperty("version",
+                    systemPropertyName == null ? defaultVersion :
+                            System.getProperty(systemPropertyName, defaultVersion));
         } catch (IOException e) {
             if (errLogging.tryConsume(1)) {
                 LOG.warn("Cannot get client version for logging.", e);
@@ -144,7 +156,6 @@ public class LoggingUtils {
             .kafkaTopic(record.topic())
             .kafkaPartition(record.partition())
             .kafkaClientId(clientId)
-                // again these two fail for binary data
             .kafkaRecordKey(String.valueOf(record.key()))
             .kafkaRecordValue(String.valueOf(record.value()))
             .kafkaRecordTimestamp(record.timestamp())
@@ -156,15 +167,13 @@ public class LoggingUtils {
             .build();
     }
 
-    private static final byte[] UNKNOWN = "unknown".getBytes(CHARSET);
-
     /**
      * Convenience method to guard against a missing value
      * @param lastHeader header
      * @return the value, or UNKNOWN if missing
      */
     private byte[] unk(final Header lastHeader) {
-        return lastHeader == null ? UNKNOWN : lastHeader.value();
+        return lastHeader == null ? UNKNOWN_BYTES : lastHeader.value();
     }
 
     @Nonnull
@@ -185,10 +194,8 @@ public class LoggingUtils {
             .kafkaGroupId(groupId)
             .kafkaClientId(clientId)
             .kafkaRecordKeySize(record.serializedKeySize())
-                // this will fail for binary data
             .kafkaRecordKey(String.valueOf(record.key()))
             .kafkaRecordValueSize(record.serializedValueSize())
-                // This will fail for binary data
             .kafkaRecordValue(String.valueOf(record.value()))
             .kafkaRecordTimestamp(record.timestamp())
             .kafkaRecordTimestampType(record.timestampType() == null ? TimestampType.NO_TIMESTAMP_TYPE.name : record.timestampType().name)

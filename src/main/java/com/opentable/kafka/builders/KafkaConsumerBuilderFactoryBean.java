@@ -24,6 +24,9 @@ import org.springframework.core.env.ConfigurableEnvironment;
 
 import com.opentable.service.ServiceInfo;
 
+/**
+ * Main spring entry point for building KafkaConsumer
+ */
 public class KafkaConsumerBuilderFactoryBean extends KafkaBaseBuilderFactoryBean {
 
     @SuppressWarnings("OptionalUsedAsFieldOrParameterType")

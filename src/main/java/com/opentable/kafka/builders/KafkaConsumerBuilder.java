@@ -14,6 +14,7 @@
 package com.opentable.kafka.builders;
 
 import java.time.Duration;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -50,6 +51,10 @@ public class KafkaConsumerBuilder<K, V>  {
     private Class<? extends PartitionAssignor> partitionStrategy = RangeAssignor.class;
     private Class<? extends Deserializer<K>> keyDe;
     private Class<? extends Deserializer<V>> valueDe;
+
+    public KafkaConsumerBuilder(EnvironmentProvider environmentProvider) {
+        this(new HashMap<>(), environmentProvider);
+    }
 
     public KafkaConsumerBuilder(Map<String, Object> prop, EnvironmentProvider environmentProvider) {
         kafkaBaseBuilder = new KafkaBaseBuilder(prop, environmentProvider);
