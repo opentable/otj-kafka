@@ -202,7 +202,7 @@ public class LoggingUtils {
      * @param headers headers collection
      * @return String
      */
-    private String toString(Headers headers) {
+    private String formatHeaders(Headers headers) {
         return Arrays.stream(headers.toArray())
             .map(h -> String.format("%s=%s", h.key(), new String(h.value(), CHARSET)))
             .collect(Collectors.joining(", "));
@@ -216,7 +216,7 @@ public class LoggingUtils {
      * @param <K> key
      * @param <V> value
      */
-    <K, V> void setupHeaders(ProducerRecord<K, V> record) {
+    <K, V> void addHeaders(ProducerRecord<K, V> record) {
         final Headers headers = record.headers();
         Arrays.asList(ConservedHeader.values()).forEach((header) -> {
             if (getHeaderValue(header) != null) {
@@ -226,8 +226,8 @@ public class LoggingUtils {
         setKafkaHeader(headers, OTKafkaHeaders.REFERRING_SERVICE, CommonLogHolder.getServiceType());
         setKafkaHeader(headers, OTKafkaHeaders.REFERRING_HOST, appInfo.getTaskHost());
         setKafkaHeader(headers, OTKafkaHeaders.REFERRING_INSTANCE_NO, appInfo.getInstanceNumber());
-        setKafkaHeader(headers, OTKafkaHeaders.ENV, appInfo.getEnvInfo().getEnvironment());
-        setKafkaHeader(headers, OTKafkaHeaders.ENV_FLAVOR, appInfo.getEnvInfo().getFlavor());
+        setKafkaHeader(headers, OTKafkaHeaders.ENV, appInfo.getEnvInfo() == null ? null : appInfo.getEnvInfo().getEnvironment());
+        setKafkaHeader(headers, OTKafkaHeaders.ENV_FLAVOR, appInfo.getEnvInfo() == null ? null : appInfo.getEnvInfo().getFlavor());
     }
 
     /**
@@ -261,7 +261,7 @@ public class LoggingUtils {
      * @param bucket token bucket
      * @param headers headers of record. These will be mutated.
      */
-    <K, V> void setupTracing(Bucket bucket,  Headers headers) {
+    <K, V> void setTracingHeaderf(Bucket bucket, Headers headers) {
         if (!headers.headers(OTKafkaHeaders.TRACE_FLAG).iterator().hasNext()) {
             // If header not present, make decision our self and set it
             if (bucket.tryConsume(1)) {
@@ -303,7 +303,7 @@ public class LoggingUtils {
             final MsgV1 event = producerEvent(record, clientId);
             log.debug(event.log(),
                     "[Producer clientId={}] To:{}@{}, Headers:[{}], Message: {}",
-                    clientId, record.topic(), record.partition(), toString(record.headers()), record.value());
+                    clientId, record.topic(), record.partition(), formatHeaders(record.headers()), record.value());
         }
     }
 
@@ -350,7 +350,7 @@ public class LoggingUtils {
             final MsgV1 event = consumerEvent(record, groupId, clientId);
             log.debug(event.log(),
                     "[Consumer clientId={}, groupId={}] From:{}@{}, Headers:[{}], Message: {}",
-                    clientId, groupId, record.topic(), record.partition(), toString(record.headers()), record.value());
+                    clientId, groupId, record.topic(), record.partition(), formatHeaders(record.headers()), record.value());
         }
     }
 
