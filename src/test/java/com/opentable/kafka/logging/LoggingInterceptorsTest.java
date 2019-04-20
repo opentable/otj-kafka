@@ -48,6 +48,7 @@ import org.springframework.test.context.junit4.SpringRunner;
 
 import com.opentable.conservedheaders.ConservedHeader;
 import com.opentable.kafka.builders.EnvironmentProvider;
+import com.opentable.kafka.builders.InjectKafkaBuilderBeans;
 import com.opentable.kafka.builders.KafkaBuilderConfiguration;
 import com.opentable.kafka.util.ReadWriteRule;
 import com.opentable.service.ServiceInfo;
@@ -134,7 +135,7 @@ public class LoggingInterceptorsTest {
     }
 
     @Configuration
-    @Import({KafkaBuilderConfiguration.class})
+    @InjectKafkaBuilderBeans
     public static class Config {
         @Bean
         ServiceInfo serviceInfo(@Value("${info.component:test-service}") final String serviceType) {

@@ -70,8 +70,8 @@ public class KafkaConsumerBuilderTest {
     }
 
     @Configuration
+    @InjectKafkaBuilderBeans
     @Import({
-            KafkaBuilderConfiguration.class,
             DefaultMetricsConfiguration.class,
     })
     public static class Config {
