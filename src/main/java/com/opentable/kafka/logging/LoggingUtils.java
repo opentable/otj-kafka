@@ -19,7 +19,6 @@ import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Arrays;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.Properties;
 import java.util.UUID;
@@ -46,13 +45,15 @@ import io.github.bucket4j.Bucket;
 import io.github.bucket4j.Bucket4j;
 
 import com.opentable.conservedheaders.ConservedHeader;
-import com.opentable.logging.CommonLogFields;
 import com.opentable.logging.CommonLogHolder;
 import com.opentable.logging.otl.EdaMessageTraceV1;
 import com.opentable.logging.otl.EdaMessageTraceV1.EdaMessageTraceV1Builder;
 import com.opentable.logging.otl.MsgV1;
 import com.opentable.service.AppInfo;
 
+/**
+ * General logging code and logic. Builds various OTL records, headers for metadata, etc.
+ */
 public class LoggingUtils {
 
     private static final Charset CHARSET = StandardCharsets.UTF_8;
@@ -127,7 +128,7 @@ public class LoggingUtils {
             // msg-v1
             .logName("kafka-producer")
             .incoming(false)
-            .requestId(checkIfGoodUUID(new String(unk(record.headers().lastHeader(CommonLogFields.REQUEST_ID_KEY)), CHARSET)))
+            .requestId(checkIfGoodUUID(new String(unk(record.headers().lastHeader(OTKafkaHeaders.REQUEST_ID)), CHARSET)))
             .referringService(new String(unk(record.headers().lastHeader(OTKafkaHeaders.REFERRING_SERVICE)), CHARSET))
             .referringHost(new String(unk(record.headers().lastHeader(OTKafkaHeaders.REFERRING_HOST)), CHARSET))
 
@@ -165,7 +166,7 @@ public class LoggingUtils {
             // msg-v1
             .logName("kafka-consumer")
             .incoming(true)
-            .requestId(checkIfGoodUUID(headers.map(h -> h.lastHeader((CommonLogFields.REQUEST_ID_KEY))).map(Header::value).map(String::new).orElse(null)))
+            .requestId(checkIfGoodUUID(headers.map(h -> h.lastHeader((OTKafkaHeaders.REQUEST_ID))).map(Header::value).map(String::new).orElse(null)))
             .referringService(headers.map(h -> h.lastHeader((OTKafkaHeaders.REFERRING_SERVICE))).map(Header::value).map(String::new).orElse(null))
             .referringHost(headers.map(h -> h.lastHeader((OTKafkaHeaders.REFERRING_HOST))).map(Header::value).map(String::new).orElse(null))
 
@@ -300,14 +301,9 @@ public class LoggingUtils {
     <K, V> void maybeLogProducer(Logger log, String clientId, ProducerRecord<K, V> record) {
         if (isLoggingNeeded(record)) {
             final MsgV1 event = producerEvent(record, clientId);
-            MDC.put(CommonLogFields.REQUEST_ID_KEY, Objects.toString(event.getRequestId(), null));
-            try {
-                log.debug(event.log(),
+            log.debug(event.log(),
                     "[Producer clientId={}] To:{}@{}, Headers:[{}], Message: {}",
                     clientId, record.topic(), record.partition(), toString(record.headers()), record.value());
-            } finally {
-                MDC.remove(CommonLogFields.REQUEST_ID_KEY);
-            }
         }
     }
 
@@ -352,14 +348,9 @@ public class LoggingUtils {
     <K, V> void maybeLogConsumer(Logger log, String clientId, String groupId, Bucket bucket, ConsumerRecord<K, V> record) {
         if (isLoggingNeeded(record, bucket)) {
             final MsgV1 event = consumerEvent(record, groupId, clientId);
-            MDC.put(CommonLogFields.REQUEST_ID_KEY, Objects.toString(event.getRequestId(), null));
-            try {
-                log.debug(event.log(),
+            log.debug(event.log(),
                     "[Consumer clientId={}, groupId={}] From:{}@{}, Headers:[{}], Message: {}",
                     clientId, groupId, record.topic(), record.partition(), toString(record.headers()), record.value());
-            } finally {
-                MDC.remove(CommonLogFields.REQUEST_ID_KEY);
-            }
         }
     }
 
