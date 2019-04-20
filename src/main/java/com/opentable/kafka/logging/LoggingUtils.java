@@ -19,9 +19,6 @@ import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Arrays;
-import java.util.EnumMap;
-import java.util.Iterator;
-import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Properties;
@@ -89,12 +86,18 @@ public class LoggingUtils {
         this.appInfo = appInfo;
     }
 
-    public Bucket getBucket(LoggingInterceptorConfig conf) {
+    /**
+     * Generate a fresh new token bucket
+     * @param conf the configuration, used to determine the token refresh rate
+     * @return a bucket
+     */
+    Bucket getBucket(LoggingInterceptorConfig conf) {
         final Integer howOftenPer10Seconds = conf.getInt(LoggingInterceptorConfig.SAMPLE_RATE_PCT_CONFIG);
-        Bandwidth limit = null;
+        Bandwidth limit;
         if (howOftenPer10Seconds == null || howOftenPer10Seconds < 0) {
             LOG.warn("Not rate limiting");
-            limit = Bandwidth.simple(Long.MAX_VALUE, Duration.ofMillis(1));
+            // Apparently the only way to be "unlimited"
+            limit = Bandwidth.simple(Long.MAX_VALUE, Duration.ofSeconds(1));
         } else {
             limit = Bandwidth.simple(howOftenPer10Seconds, Duration.ofSeconds(10));
         }
@@ -118,9 +121,9 @@ public class LoggingUtils {
             .serviceType(CommonLogHolder.getServiceType())
             .uuid(UUID.randomUUID())
             .timestamp(Instant.now())
-            .requestId(optUuid(new String(record.headers().lastHeader(CommonLogFields.REQUEST_ID_KEY).value(), CHARSET)))
-            .referringService(new String(record.headers().lastHeader(OTKafkaHeaders.REFERRING_SERVICE).value(), CHARSET))
-            .referringHost(new String(record.headers().lastHeader(OTKafkaHeaders.REFERRING_HOST).value(), CHARSET))
+            .requestId(checkIfGoodUUID(new String(unk(record.headers().lastHeader(CommonLogFields.REQUEST_ID_KEY)), CHARSET)))
+            .referringService(new String(unk(record.headers().lastHeader(OTKafkaHeaders.REFERRING_SERVICE)), CHARSET))
+            .referringHost(new String(unk(record.headers().lastHeader(OTKafkaHeaders.REFERRING_HOST)), CHARSET))
 
             // eda-message-trace-v1
             .topic(record.topic())
@@ -137,8 +140,19 @@ public class LoggingUtils {
             .build();
     }
 
+    private static final byte[] UNKNOWN = "unknown".getBytes(CHARSET);
+
+    /**
+     * Convenience method to guard against a missing value
+     * @param lastHeader header
+     * @return the value, or UNKNOWN if missing
+     */
+    private byte[] unk(final Header lastHeader) {
+        return lastHeader == null ? UNKNOWN : lastHeader.value();
+    }
+
     @Nonnull
-    public <K, V> MsgV1 consumerEvent(ConsumerRecord<K, V> record, String groupId, String clientId) {
+    private <K, V> MsgV1 consumerEvent(ConsumerRecord<K, V> record, String groupId, String clientId) {
         final Optional<Headers> headers = Optional.ofNullable(record.headers());
         return builder()
             // msg-v1
@@ -147,7 +161,7 @@ public class LoggingUtils {
             .serviceType(CommonLogHolder.getServiceType())
             .uuid(UUID.randomUUID())
             .timestamp(Instant.now())
-            .requestId(optUuid(headers.map(h -> h.lastHeader((CommonLogFields.REQUEST_ID_KEY))).map(Header::value).map(String::new).orElse(null)))
+            .requestId(checkIfGoodUUID(headers.map(h -> h.lastHeader((CommonLogFields.REQUEST_ID_KEY))).map(Header::value).map(String::new).orElse(null)))
             .referringService(headers.map(h -> h.lastHeader((OTKafkaHeaders.REFERRING_SERVICE))).map(Header::value).map(String::new).orElse(null))
             .referringHost(headers.map(h -> h.lastHeader((OTKafkaHeaders.REFERRING_HOST))).map(Header::value).map(String::new).orElse(null))
 
@@ -166,11 +180,11 @@ public class LoggingUtils {
             .build();
     }
 
-    public String getHeaderValue(final ConservedHeader header) {
+    private String getHeaderValue(final ConservedHeader header) {
         return MDC.get(header.getLogName());
     }
 
-    public String toString(Headers headers) {
+    private String toString(Headers headers) {
         return Arrays.stream(headers.toArray())
             .map(h -> String.format("%s=%s", h.key(), new String(h.value(), CHARSET)))
             .collect(Collectors.joining(", "));
@@ -237,7 +251,7 @@ public class LoggingUtils {
      * @param <V> value
      * @return true, if logging is needed.
      */
-    public <K, V> boolean isLoggingNeeded(ProducerRecord<K, V> record) {
+    private <K, V> boolean isLoggingNeeded(ProducerRecord<K, V> record) {
         final Headers headers = record.headers();
         return StreamSupport.stream(headers.headers(OTKafkaHeaders.TRACE_FLAG).spliterator(), false)
             .map(h -> new String(h.value(), CHARSET))
@@ -255,7 +269,7 @@ public class LoggingUtils {
      * @param <K> key
      * @param <V> value
      */
-    public <K, V> void trace(Logger log, String clientId, ProducerRecord<K, V> record) {
+    <K, V> void trace(Logger log, String clientId, ProducerRecord<K, V> record) {
         if (isLoggingNeeded(record)) {
             final MsgV1 event = producerEvent(record, clientId);
             MDC.put(CommonLogFields.REQUEST_ID_KEY, Objects.toString(event.getRequestId(), null));
@@ -269,7 +283,14 @@ public class LoggingUtils {
         }
     }
 
-    public static <K, V> boolean isLoggingNeeded(ConsumerRecord<K, V> record) {
+    /**
+     * Check if the trace flag is set
+     * @param record consumer recod
+     * @param <K> key
+     * @param <V> value
+     * @return true, if trace flag set
+     */
+    private <K, V> boolean isTraceFlagEnabled(ConsumerRecord<K, V> record) {
         final Headers headers = record.headers();
         return StreamSupport.stream(headers.headers("ot-trace-message").spliterator(), false)
             .map(h -> new String(h.value(), CHARSET))
@@ -278,8 +299,30 @@ public class LoggingUtils {
             .orElse(false);
     }
 
-    public <K, V> void trace(Logger log, String clientId, String groupId, Bucket bucket, ConsumerRecord<K, V> record) {
-        if (isLoggingNeeded(record) || bucket.tryConsume(1)) {
+    /**
+     * Log a consumer record if either a trace flag is passed, or we have tokens remaining
+     * @param record record
+     * @param bucket token bucket
+     * @param <K> key
+     * @param <V> value
+     * @return true, if logging is needed
+     */
+    private <K, V> boolean isLoggingNeeded(ConsumerRecord<K, V> record, Bucket bucket) {
+        return isTraceFlagEnabled(record) || bucket.tryConsume(1);
+    }
+
+    /**
+     * Logging logic for the consumer
+     * @param log logger
+     * @param clientId clientId
+     * @param groupId groupId
+     * @param bucket token bucket
+     * @param record consumer record
+     * @param <K> key
+     * @param <V> value
+     */
+    <K, V> void trace(Logger log, String clientId, String groupId, Bucket bucket, ConsumerRecord<K, V> record) {
+        if (isLoggingNeeded(record, bucket)) {
             final MsgV1 event = consumerEvent(record, groupId, clientId);
             MDC.put(CommonLogFields.REQUEST_ID_KEY, Objects.toString(event.getRequestId(), null));
             try {
@@ -292,48 +335,26 @@ public class LoggingUtils {
         }
     }
 
-    @Nonnull
-    public Map<ConservedHeader, String> extractHeaders(final Headers h) {
-        final Map<ConservedHeader, String> headers = new EnumMap<>(ConservedHeader.class);
-        for (final ConservedHeader header : ConservedHeader.values()) {
-            final Iterator<Header> values = h.headers(header.getHeaderName()).iterator();
-            if (values.hasNext()) {
-
-                headers.put(header, new String(values.next().value(), CHARSET));
-            }
-            if (values.hasNext()) {
-                LOG.warn("Request has '{}' header specified multiple times: {}", header,
-                    values);
-            }
-        }
-        // Check and conditionally sanitize request ID.
-        String reqId = headers.get(ConservedHeader.REQUEST_ID);
-        if (reqId != null) {
-            try {
-                UUID.fromString(reqId);
-            } catch (final IllegalArgumentException e) {
-                LOG.warn("Could not decode Tracking header '{}'", reqId, e);
-                reqId = null;
-            }
-        }
-        if (reqId == null) {
-            headers.put(ConservedHeader.REQUEST_ID, UUID.randomUUID().toString());
-        }
-        return headers;
-    }
-
-
-    private static UUID optUuid(String uuid) {
+    /**
+     * Take a string, possibly a null one, and check if it parses to a UUID
+     * If it does, return it, otherwise log and return a random one
+     * @param uuids string
+     * @return UUID
+     */
+    private UUID checkIfGoodUUID(String uuids) {
         try {
-            return uuid == null ? null : UUID.fromString(uuid);
-        } catch (IllegalArgumentException e) {
-            LOG.warn("Unable to parse purported request id '{}': {}", uuid, e.toString());
-            return null;
+            return UUID.fromString(uuids);
+        } catch (IllegalArgumentException | NullPointerException e) {
+            LOG.warn("Unable to parse purported request id '{}': {}", uuids, e);
+            return UUID.randomUUID();
         }
     }
 
-    public static class ClientIdGenerator {
-        static ClientIdGenerator INSTANCE = new ClientIdGenerator();
+    /**
+     * Provides a simple way to make sure all clientIds are unique.
+     */
+    static class ClientIdGenerator {
+        static final ClientIdGenerator INSTANCE = new ClientIdGenerator();
         private final AtomicInteger consumerIds = new AtomicInteger(0);
         private final AtomicInteger producerIds = new AtomicInteger(0);
         int nextConsumerId() {

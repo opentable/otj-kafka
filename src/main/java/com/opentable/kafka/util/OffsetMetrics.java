@@ -207,6 +207,7 @@ public class OffsetMetrics implements Closeable {
         exec.scheduleAtFixedRate(this::poll, 0, pollPeriod.toMillis(), TimeUnit.MILLISECONDS);
     }
 
+    @SuppressWarnings("UnstableApiUsage")
     @PreDestroy
     public void stop() {
         MetricSets.removeAll(metricRegistry, this::getMetrics);

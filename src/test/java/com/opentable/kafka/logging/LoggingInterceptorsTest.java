@@ -83,10 +83,10 @@ public class LoggingInterceptorsTest {
         try (Producer<String, String> producer = createProducer(StringSerializer.class, StringSerializer.class)) {
             for (int i = lo; i <= hi; ++i) {
                 MDC.put(REQUEST_ID_KEY, UUID.randomUUID().toString());
-                producer.send(new ProducerRecord<String, String>(
-                    rw.getTopicName(),
-                    String.format("key-%d", i),
-                    String.format("value-%d", i)));
+                producer.send(new ProducerRecord<>(
+                        rw.getTopicName(),
+                        String.format("key-%d", i),
+                        String.format("value-%d", i)));
             }
             producer.flush();
         }

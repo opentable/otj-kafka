@@ -175,9 +175,7 @@ public class EmbeddedKafkaBroker implements Closeable
     }
 
     private void waitForCoordinator() throws InterruptedException {
-        retry("coordinator available", () -> {
-            admin.describeCluster().controller().get(10, TimeUnit.SECONDS);
-        });
+        retry("coordinator available", () -> admin.describeCluster().controller().get(10, TimeUnit.SECONDS));
     }
 
     private static void retry(String description, RetryAction action) {

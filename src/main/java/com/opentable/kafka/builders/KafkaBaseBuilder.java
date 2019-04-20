@@ -52,7 +52,7 @@ class KafkaBaseBuilder {
     private final List<String> bootStrapServers = new ArrayList<>();
     private Optional<String> clientId = Optional.empty();
     private Optional<String> securityProtocol = Optional.empty();
-    protected Optional<MetricRegistry> metricRegistry;
+    private Optional<MetricRegistry> metricRegistry;
 
     KafkaBaseBuilder(Map<String, Object> props, AppInfo appInfo) {
         this.seedProperties = props;
@@ -120,12 +120,12 @@ class KafkaBaseBuilder {
 
     <CK,CV> KafkaConsumer<CK,CV> consumer() {
         LOG.trace("Building KafkaConsumer with props {}", finalProperties);
-        return new KafkaConsumer<CK, CV>(finalProperties);
+        return new KafkaConsumer<>(finalProperties);
     }
 
     <PK,PV> KafkaProducer<PK,PV> producer() {
         LOG.trace("Building KafkaProducer with props {}", finalProperties);
-        return new KafkaProducer<PK,PV>(finalProperties);
+        return new KafkaProducer<>(finalProperties);
     }
 
 

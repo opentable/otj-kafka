@@ -35,7 +35,7 @@ class KafkaBaseBuilderFactoryBean {
     static final String DEFAULT = "default";
 
     private final ConfigurableEnvironment env;
-    protected final Optional<MetricRegistry> metricRegistry;
+    final Optional<MetricRegistry> metricRegistry;
     final AppInfo appInfo;
     final Optional<ServiceInfo> serviceInfo;
 
