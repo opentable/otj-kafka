@@ -15,6 +15,7 @@ package com.opentable.kafka.builders;
 
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -24,6 +25,7 @@ import java.util.stream.Collectors;
 
 import com.codahale.metrics.MetricRegistry;
 
+import org.apache.commons.lang3.StringUtils;
 import org.apache.kafka.clients.CommonClientConfigs;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.clients.producer.KafkaProducer;
@@ -75,6 +77,8 @@ class KafkaBaseBuilder {
     }
 
     void addLoggingUtilsRef(String interceptorConfigName, String loggingInterceptorName) {
+        // Copy over any injected properties, then remove the seed property
+        interceptors.addAll(mergeListProperty(interceptorConfigName));
         if (!interceptors.isEmpty()) {
             addProperty(interceptorConfigName, interceptors.stream().distinct().collect(Collectors.joining(",")));
             if (interceptors.contains(loggingInterceptorName)) {
@@ -139,14 +143,29 @@ class KafkaBaseBuilder {
         retryBackoff.ifPresent(i -> addProperty(CommonClientConfigs.RETRY_BACKOFF_MS_CONFIG, String.valueOf(i)));
         clientId.ifPresent(cid -> addProperty(CommonClientConfigs.CLIENT_ID_CONFIG, cid));
         securityProtocol.ifPresent(sp -> addProperty(CommonClientConfigs.SECURITY_PROTOCOL_CONFIG, sp.name));
+        final List<String> metricReporters = mergeListProperty(CommonClientConfigs.METRIC_REPORTER_CLASSES_CONFIG);
         metricRegistry.ifPresent(mr -> {
-            addProperty(CommonClientConfigs.METRIC_REPORTER_CLASSES_CONFIG, OtMetricsReporter.class.getName());
+            metricReporters.add(OtMetricsReporter.class.getName());
             addProperty(OtMetricsReporterConfig.METRIC_REGISTRY_REF_CONFIG, mr);
         });
+        if (!metricReporters.isEmpty()) {
+            addProperty(CommonClientConfigs.METRIC_REPORTER_CLASSES_CONFIG, metricReporters.stream().distinct().collect(Collectors.joining(",")));
+        }
         mergeProperties();
         cantBeNull(CommonClientConfigs.BOOTSTRAP_SERVERS_CONFIG, "No bootstrap servers specified");
     }
 
+    List<String> mergeListProperty(String propertyName) {
+        Object seededObject = seedProperties.get(propertyName);
+        List<String> seedList = new ArrayList<>();
+        if (seededObject instanceof String) {
+            String seededList = (String) seededObject;
+            seedList = Arrays.stream(seededList.split(",")).filter(StringUtils::isNotEmpty).collect(Collectors.toList());
+        }
+        // remove, because we've precombined, and don't want the mergeProperties() to overwrite.
+        seedProperties.remove(propertyName);
+        return seedList;
+    }
     void cantBeNull(String key, String message) {
         if (finalProperties.get(key) == null) {
             throw new IllegalStateException(message);
