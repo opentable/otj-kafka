@@ -31,6 +31,7 @@ public class LoggingProducerInterceptor implements ProducerInterceptor<Object, O
 
     private static final Logger LOG = LoggerFactory.getLogger(LoggingProducerInterceptor.class);
 
+    // see configure()
     private String interceptorClientId;
     private LoggingUtils loggingUtils;
     private Bucket bucket;
@@ -52,7 +53,7 @@ public class LoggingProducerInterceptor implements ProducerInterceptor<Object, O
 
     @Override
     public void close() {
-        LOG.info("Shutting down LoggingProducerInterceptor");
+        LOG.debug("Shutting down LoggingProducerInterceptor");
     }
 
     @Override

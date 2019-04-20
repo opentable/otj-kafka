@@ -31,7 +31,7 @@ public class LoggingInterceptorConfig extends AbstractConfig {
         .define(SAMPLE_RATE_PCT_CONFIG, Type.INT, DEFAULT_SAMPLE_RATE_PCT, ConfigDef.Importance.LOW,
             "Logging limit rate per 10 seconds. Use a negative value to disable limiting (lots of logs!) ");
 
-    public LoggingInterceptorConfig(Map<String, ?> originals) {
+    LoggingInterceptorConfig(Map<String, ?> originals) {
         super(CONFIG, originals);
     }
 }

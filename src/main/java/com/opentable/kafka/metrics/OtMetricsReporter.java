@@ -40,8 +40,8 @@ public class OtMetricsReporter implements MetricsReporter {
     private MetricRegistry metricRegistry;
     private String groupId;
     private String prefix;
-    private final HashSet<String> groups = new HashSet<>();
-    private final HashSet<String> metricMatchers = new HashSet<>();
+    private final Set<String> groups = new HashSet<>();
+    private final Set<String> metricMatchers = new HashSet<>();
     private final AntPathMatcher matcher = new AntPathMatcher("-");
 
     @Override

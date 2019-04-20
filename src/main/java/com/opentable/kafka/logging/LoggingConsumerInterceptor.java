@@ -25,13 +25,19 @@ import org.slf4j.LoggerFactory;
 
 import io.github.bucket4j.Bucket;
 
+/**
+ * Logging interceptor to add otl based logging
+ * @param <K> key
+ * @param <V> value
+ */
 public class LoggingConsumerInterceptor<K, V> implements ConsumerInterceptor<K, V> {
 
     private static final Logger LOG = LoggerFactory.getLogger(LoggingConsumerInterceptor.class);
 
+    // See configure()
     private String interceptorClientId;
     private String groupId;
-    private volatile LoggingUtils loggingUtils;
+    private LoggingUtils loggingUtils;
     private Bucket bucket;
 
     @Override
@@ -47,7 +53,7 @@ public class LoggingConsumerInterceptor<K, V> implements ConsumerInterceptor<K, 
 
     @Override
     public void close() {
-        LOG.info("Shutting down LoggingConsumerInterceptor");
+        LOG.debug("Shutting down LoggingConsumerInterceptor");
     }
 
     @Override

@@ -343,11 +343,15 @@ public class LoggingUtils {
      */
     private UUID checkIfGoodUUID(String uuids) {
         try {
-            return UUID.fromString(uuids);
-        } catch (IllegalArgumentException | NullPointerException e) {
+            if (uuids != null) {
+                return UUID.fromString(uuids);
+            } else {
+                throw new IllegalArgumentException("UUID is null");
+            }
+        } catch (IllegalArgumentException e) {
             LOG.warn("Unable to parse purported request id '{}': {}", uuids, e);
-            return UUID.randomUUID();
         }
+        return UUID.randomUUID();
     }
 
     /**
