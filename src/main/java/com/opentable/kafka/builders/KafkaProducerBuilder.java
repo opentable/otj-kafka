@@ -46,7 +46,6 @@ public class KafkaProducerBuilder<K, V> {
 
     public KafkaProducerBuilder(Map<String, Object> prop, EnvironmentProvider environmentProvider) {
         kafkaBaseBuilder = new KafkaBaseBuilder(prop, environmentProvider);
-        kafkaBaseBuilder.addInterceptor(LoggingProducerInterceptor.class.getName());
     }
 
     public KafkaProducerBuilder<K, V> withProperty(String key, Object value) {
@@ -61,7 +60,7 @@ public class KafkaProducerBuilder<K, V> {
 
 
     public KafkaProducerBuilder<K, V> disableLogging() {
-        kafkaBaseBuilder.removeInterceptor(LoggingProducerInterceptor.class.getName());
+        kafkaBaseBuilder.withLogging(false);
         return this;
     }
 
@@ -145,7 +144,7 @@ public class KafkaProducerBuilder<K, V> {
 
     public KafkaProducer<K, V> build() {
         kafkaBaseBuilder.addProperty(ProducerConfig.PARTITIONER_CLASS_CONFIG, partitioner.getName());
-        kafkaBaseBuilder.addLoggingUtilsRef(ProducerConfig.INTERCEPTOR_CLASSES_CONFIG, LoggingProducerInterceptor.class.getName());
+        kafkaBaseBuilder.setupInterceptors(ProducerConfig.INTERCEPTOR_CLASSES_CONFIG, LoggingProducerInterceptor.class.getName());
         kafkaBaseBuilder.addProperty(ProducerConfig.MAX_IN_FLIGHT_REQUESTS_PER_CONNECTION, maxInfFlight);
         ackType.ifPresent(ack -> kafkaBaseBuilder.addProperty(ProducerConfig.ACKS_CONFIG, ack.value));
         retries.ifPresent(retries -> kafkaBaseBuilder.addProperty(CommonClientConfigs.RETRIES_CONFIG, retries));

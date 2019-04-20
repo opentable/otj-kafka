@@ -45,9 +45,10 @@ class KafkaBaseBuilder {
     private static final Logger LOG = LoggerFactory.getLogger(KafkaBaseBuilder.class);
 
     private final LoggingUtils loggingUtils;
-    private final Map<String, Object> seedProperties; // what the user initialized with. This will take priority
+    private final Map<String, Object> seedProperties; // what the user initialized with. This will take priority since mergeProperties will merge in last.
     private final Map<String, Object> finalProperties = new HashMap<>(); // what we'll build the final version of
     private final List<String> interceptors = new ArrayList<>();
+    private boolean enableLoggingInterceptor = true;
     private int loggingSampleRate = LoggingInterceptorConfig.DEFAULT_SAMPLE_RATE_PCT;
     private OptionalLong requestTimeout = OptionalLong.empty();
     private OptionalLong retryBackoff = OptionalLong.empty();
@@ -75,7 +76,10 @@ class KafkaBaseBuilder {
         interceptors.remove(className);
     }
 
-    void addLoggingUtilsRef(String interceptorConfigName, String loggingInterceptorName) {
+    void setupInterceptors(String interceptorConfigName, String loggingInterceptorName) {
+        if (enableLoggingInterceptor) {
+            interceptors.add(loggingInterceptorName);
+        }
         // Copy over any injected properties, then remove the seed property
         interceptors.addAll(mergeListProperty(interceptorConfigName));
         if (!interceptors.isEmpty()) {
@@ -86,6 +90,8 @@ class KafkaBaseBuilder {
             }
         }
     }
+
+
 
     void removeProperty(String key) {
         finalProperties.remove(key);
@@ -118,6 +124,9 @@ class KafkaBaseBuilder {
         this.metricRegistry = Optional.ofNullable(metricRegistry);
     }
 
+    void withLogging(boolean enabled) {
+        enableLoggingInterceptor = enabled;
+    }
     void withSamplingRatePer10Seconds(final int rate) {
         loggingSampleRate = rate;
     }
@@ -134,7 +143,6 @@ class KafkaBaseBuilder {
 
 
     void finishBuild() {
-
         if (!bootStrapServers.isEmpty()) {
             addProperty(CommonClientConfigs.BOOTSTRAP_SERVERS_CONFIG, bootStrapServers.stream().distinct().collect(Collectors.joining(",")));
         }
@@ -142,6 +150,12 @@ class KafkaBaseBuilder {
         retryBackoff.ifPresent(i -> addProperty(CommonClientConfigs.RETRY_BACKOFF_MS_CONFIG, String.valueOf(i)));
         clientId.ifPresent(cid -> addProperty(CommonClientConfigs.CLIENT_ID_CONFIG, cid));
         securityProtocol.ifPresent(sp -> addProperty(CommonClientConfigs.SECURITY_PROTOCOL_CONFIG, sp.name));
+        setupMetrics();
+        mergeProperties();
+        cantBeNull(CommonClientConfigs.BOOTSTRAP_SERVERS_CONFIG, "No bootstrap servers specified");
+    }
+
+    private void setupMetrics() {
         final List<String> metricReporters = mergeListProperty(CommonClientConfigs.METRIC_REPORTER_CLASSES_CONFIG);
         metricRegistry.ifPresent(mr -> {
             metricReporters.add(OtMetricsReporter.class.getName());
@@ -150,11 +164,9 @@ class KafkaBaseBuilder {
         if (!metricReporters.isEmpty()) {
             addProperty(CommonClientConfigs.METRIC_REPORTER_CLASSES_CONFIG, metricReporters.stream().distinct().collect(Collectors.joining(",")));
         }
-        mergeProperties();
-        cantBeNull(CommonClientConfigs.BOOTSTRAP_SERVERS_CONFIG, "No bootstrap servers specified");
     }
 
-    List<String> mergeListProperty(String propertyName) {
+    private List<String> mergeListProperty(String propertyName) {
         Object seededObject = seedProperties.get(propertyName);
         List<String> seedList = new ArrayList<>();
         if (seededObject instanceof String) {

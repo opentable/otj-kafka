@@ -52,7 +52,6 @@ public class KafkaConsumerBuilder<K, V>  {
 
     public KafkaConsumerBuilder(Map<String, Object> prop, EnvironmentProvider environmentProvider) {
         kafkaBaseBuilder = new KafkaBaseBuilder(prop, environmentProvider);
-        kafkaBaseBuilder.addInterceptor(LoggingConsumerInterceptor.class.getName());
     }
 
     public KafkaConsumerBuilder<K, V> withProperty(String key, Object value) {
@@ -66,7 +65,7 @@ public class KafkaConsumerBuilder<K, V>  {
     }
 
     public KafkaConsumerBuilder<K, V> disableLogging() {
-        kafkaBaseBuilder.removeInterceptor(LoggingConsumerInterceptor.class.getName());
+        kafkaBaseBuilder.withLogging(false);
         return this;
     }
 
@@ -171,7 +170,7 @@ public class KafkaConsumerBuilder<K, V>  {
         maxPollIntervalMs.ifPresent(m -> kafkaBaseBuilder.addProperty(ConsumerConfig.MAX_POLL_INTERVAL_MS_CONFIG, String.valueOf(m)));
         sessionTimeoutMs.ifPresent(s -> kafkaBaseBuilder.addProperty(ConsumerConfig.SESSION_TIMEOUT_MS_CONFIG, String.valueOf(s)));
         kafkaBaseBuilder.addProperty(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG, String.valueOf(enableAutoCommit));
-        kafkaBaseBuilder.addLoggingUtilsRef(ConsumerConfig.INTERCEPTOR_CLASSES_CONFIG, LoggingConsumerInterceptor.class.getName());
+        kafkaBaseBuilder.setupInterceptors(ConsumerConfig.INTERCEPTOR_CLASSES_CONFIG, LoggingConsumerInterceptor.class.getName());
         groupId.ifPresent(gid -> kafkaBaseBuilder.addProperty(ConsumerConfig.GROUP_ID_CONFIG, gid));
         kafkaBaseBuilder.addProperty(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, autoOffsetResetType.value);
         maxPollRecords.ifPresent(mpr -> kafkaBaseBuilder.addProperty(ConsumerConfig.MAX_POLL_RECORDS_CONFIG, mpr));
