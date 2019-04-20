@@ -69,11 +69,13 @@ public class LoggingUtils {
     private final String kafkaVersion;
     private final String javaVersion;
     private final String os;
+    private final Bucket errLogging;
 
     public LoggingUtils(AppInfo appInfo) {
         this.appInfo = appInfo;
         this.javaVersion = System.getProperty("java.runtime.version");
         this.os = System.getProperty("os.name");
+        this.errLogging = getBucket(Bandwidth.simple(10, Duration.ofMinutes(1)));
 
         this.libraryVersion = getVersion(ARTIFACT_ID + PROPERTIES_FILE_EXTENSION, "kafka.logging.version", DEFAULT_VERSION);
         this.kafkaVersion = getVersion("/kafka/kafka-version.properties", "kafka.version.version", DEFAULT_VERSION);
@@ -86,7 +88,9 @@ public class LoggingUtils {
             final Properties props = PropertiesLoaderUtils.loadProperties(resource);
             clientVersion = props.getProperty("version", System.getProperty(systemPropertyName, DEFAULT_VERSION));
         } catch (IOException e) {
-            LOG.warn("Cannot get client version for logging.", e);
+            if (errLogging.tryConsume(1)) {
+                LOG.warn("Cannot get client version for logging.", e);
+            }
         }
         return clientVersion;
     }
@@ -106,7 +110,11 @@ public class LoggingUtils {
         } else {
             limit = Bandwidth.simple(howOftenPer10Seconds, Duration.ofSeconds(10));
         }
-        return Bucket4j.builder().addLimit(limit).build();
+        return getBucket(limit);
+    }
+
+    Bucket getBucket(Bandwidth bandWidth) {
+        return Bucket4j.builder().addLimit(bandWidth).build();
     }
 
     private EdaMessageTraceV1Builder builder() {
