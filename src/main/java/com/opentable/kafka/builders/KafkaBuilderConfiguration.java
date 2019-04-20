@@ -16,10 +16,15 @@ package com.opentable.kafka.builders;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
 
+import com.opentable.service.AppInfo;
+import com.opentable.service.EnvInfo;
+
 @Configuration
 @Import({
         KafkaConsumerBuilderFactoryBean.class,
         KafkaProducerBuilderFactoryBean.class,
+        AppInfo.class,
+        EnvInfo.class
 })
 public class KafkaBuilderConfiguration {
 }

@@ -22,6 +22,5 @@ public class TODO {
      * 5. worry about metrics filters, and other goofisms
      * 6. understand current tests
      * 7. improve tests
-     * 8. Examine issue of otj-kafka.properties
      */
 }

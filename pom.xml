@@ -67,7 +67,7 @@
       <groupId>com.opentable.components</groupId>
       <artifactId>otj-core</artifactId>
     </dependency>
-    <!-- We need to discuss, because this and additional deps will cause problems, sigh -->
+
     <dependency>
       <groupId>com.opentable.components</groupId>
       <artifactId>otj-metrics-core</artifactId>
@@ -182,7 +182,6 @@
       <optional>true</optional>
     </dependency>
 
-
     <dependency>
       <groupId>ch.qos.logback</groupId>
       <artifactId>logback-core</artifactId>
@@ -191,12 +190,6 @@
       <groupId>ch.qos.logback</groupId>
       <artifactId>logback-classic</artifactId>
     </dependency>
-    <dependency>
-      <groupId>org.codehaus.janino</groupId>
-      <artifactId>janino</artifactId>
-      <scope>test</scope>
-    </dependency>
-
 
     <dependency>
       <groupId>org.assertj</groupId>

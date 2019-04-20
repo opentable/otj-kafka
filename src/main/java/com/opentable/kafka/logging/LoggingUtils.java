@@ -69,13 +69,15 @@ public class LoggingUtils {
 
     private final AppInfo appInfo;
 
-    // I don't think this is needed at all. I believe adam's code does the trick.
     static {
+        // With adam's plugin, it will work fine from command line, but not from ide. Still
+        // better than adding another file + janino!
+        // To test in ide, set the system property.
         Resource resource = new ClassPathResource(ARTIFACT_ID + PROPERTIES_FILE_EXTENSION);
         String clientVersion = DEFAULT_VERSION;
         try {
             final Properties props = PropertiesLoaderUtils.loadProperties(resource);
-            clientVersion = props.getProperty("version", DEFAULT_VERSION);
+            clientVersion = props.getProperty("version", System.getProperty("kafka.logging.version", DEFAULT_VERSION));
         } catch (IOException e) {
             LOG.warn("Cannot get client version for logging.", e);
         }
