@@ -37,7 +37,6 @@ import com.opentable.kafka.logging.LoggingInterceptorConfig;
 import com.opentable.kafka.logging.LoggingUtils;
 import com.opentable.kafka.metrics.OtMetricsReporter;
 import com.opentable.kafka.metrics.OtMetricsReporterConfig;
-import com.opentable.service.AppInfo;
 
 /**
  * Some common configuration options + the main properties builder is here.
@@ -57,9 +56,9 @@ class KafkaBaseBuilder {
     private Optional<SecurityProtocol> securityProtocol = Optional.empty();
     private Optional<MetricRegistry> metricRegistry;
 
-    KafkaBaseBuilder(Map<String, Object> props, AppInfo appInfo) {
+    KafkaBaseBuilder(Map<String, Object> props, EnvironmentProvider environmentProvider) {
         this.seedProperties = props;
-        this.loggingUtils = new LoggingUtils(appInfo);
+        this.loggingUtils = new LoggingUtils(environmentProvider);
         metricRegistry = Optional.empty();
     }
 

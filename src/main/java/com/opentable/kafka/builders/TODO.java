@@ -16,11 +16,12 @@ package com.opentable.kafka.builders;
 public class TODO {
     /**
      * 1. Review logic with Dmitry.
-     * 2. Discuss issues with Spark etc
+     * 2. Discuss issues with Spark etc - does EnvironmentProvider (and its mockable SettableEnvironmentProvider) do the trick
      * 3. understand metrics code
      * 4. worry about metrics filters, and other goofisms
-     * 5. understand current tests
-     * 6. improve tests
-     * 7. Discuss MDC put behavior. I've removed all of this.
+     * 5. improve tests
+     * 6. Discuss MDC put behavior. I've removed all of this.
+     * 7. Metric collisions
+     * 8. COnsider metric namespace rooting
      */
 }

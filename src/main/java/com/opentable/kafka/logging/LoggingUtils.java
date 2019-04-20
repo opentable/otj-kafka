@@ -45,11 +45,11 @@ import io.github.bucket4j.Bucket;
 import io.github.bucket4j.Bucket4j;
 
 import com.opentable.conservedheaders.ConservedHeader;
+import com.opentable.kafka.builders.EnvironmentProvider;
 import com.opentable.logging.CommonLogHolder;
 import com.opentable.logging.otl.EdaMessageTraceV1;
 import com.opentable.logging.otl.EdaMessageTraceV1.EdaMessageTraceV1Builder;
 import com.opentable.logging.otl.MsgV1;
-import com.opentable.service.AppInfo;
 
 /**
  * General logging code and logic. Builds various OTL records, headers for metadata, etc.
@@ -64,15 +64,15 @@ public class LoggingUtils {
     private static final String DEFAULT_VERSION = "unknown";
     private static final String ARTIFACT_ID = "otj-kafka";
 
-    private final AppInfo appInfo;
+    private final EnvironmentProvider environmentProvider;
     private final String libraryVersion;
     private final String kafkaVersion;
     private final String javaVersion;
     private final String os;
     private final Bucket errLogging;
 
-    public LoggingUtils(AppInfo appInfo) {
-        this.appInfo = appInfo;
+    public LoggingUtils(EnvironmentProvider environmentProvider) {
+        this.environmentProvider = environmentProvider;
         this.javaVersion = System.getProperty("java.runtime.version");
         this.os = System.getProperty("os.name");
         this.errLogging = getBucket(Bandwidth.simple(10, Duration.ofMinutes(1)));
@@ -231,11 +231,11 @@ public class LoggingUtils {
                 headers.add(header.getLogName(), getHeaderValue(header).getBytes(CHARSET));
             }
         });
-        setKafkaHeader(headers, OTKafkaHeaders.REFERRING_SERVICE, CommonLogHolder.getServiceType());
-        setKafkaHeader(headers, OTKafkaHeaders.REFERRING_HOST, appInfo.getTaskHost());
-        setKafkaHeader(headers, OTKafkaHeaders.REFERRING_INSTANCE_NO, appInfo.getInstanceNumber());
-        setKafkaHeader(headers, OTKafkaHeaders.ENV, appInfo.getEnvInfo() == null ? null : appInfo.getEnvInfo().getEnvironment());
-        setKafkaHeader(headers, OTKafkaHeaders.ENV_FLAVOR, appInfo.getEnvInfo() == null ? null : appInfo.getEnvInfo().getFlavor());
+        setKafkaHeader(headers, OTKafkaHeaders.REFERRING_SERVICE, environmentProvider.getReferringService());
+        setKafkaHeader(headers, OTKafkaHeaders.REFERRING_HOST, environmentProvider.getReferringHost());
+        setKafkaHeader(headers, OTKafkaHeaders.REFERRING_INSTANCE_NO, environmentProvider.getReferringInstanceNumber());
+        setKafkaHeader(headers, OTKafkaHeaders.ENV, environmentProvider.getEnvironment());
+        setKafkaHeader(headers, OTKafkaHeaders.ENV_FLAVOR, environmentProvider.getEnvironmentFlavor());
     }
 
     /**

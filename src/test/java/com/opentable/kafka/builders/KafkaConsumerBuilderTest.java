@@ -36,8 +36,6 @@ import org.springframework.test.context.junit4.SpringRunner;
 
 import com.opentable.kafka.builders.KafkaConsumerBuilder.AutoOffsetResetType;
 import com.opentable.metrics.DefaultMetricsConfiguration;
-import com.opentable.service.AppInfo;
-import com.opentable.service.EnvInfo;
 import com.opentable.service.ServiceInfo;
 
 @RunWith(SpringRunner.class)
@@ -73,10 +71,8 @@ public class KafkaConsumerBuilderTest {
 
     @Configuration
     @Import({
-            AppInfo.class,
-            EnvInfo.class,
+            KafkaBuilderConfiguration.class,
             DefaultMetricsConfiguration.class,
-            KafkaConsumerBuilderFactoryBean.class
     })
     public static class Config {
         @Bean

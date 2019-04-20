@@ -31,7 +31,6 @@ import org.apache.kafka.common.security.auth.SecurityProtocol;
 import org.apache.kafka.common.serialization.Serializer;
 
 import com.opentable.kafka.logging.LoggingProducerInterceptor;
-import com.opentable.service.AppInfo;
 
 public class KafkaProducerBuilder<K, V> {
 
@@ -45,8 +44,8 @@ public class KafkaProducerBuilder<K, V> {
     private Class<? extends Serializer<V>> valueSe;
 
 
-    public KafkaProducerBuilder(Map<String, Object> prop, AppInfo appInfo) {
-        kafkaBaseBuilder = new KafkaBaseBuilder(prop, appInfo);
+    public KafkaProducerBuilder(Map<String, Object> prop, EnvironmentProvider environmentProvider) {
+        kafkaBaseBuilder = new KafkaBaseBuilder(prop, environmentProvider);
         kafkaBaseBuilder.addInterceptor(LoggingProducerInterceptor.class.getName());
     }
 

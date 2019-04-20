@@ -48,12 +48,12 @@ import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.junit4.SpringRunner;
 
 import com.opentable.conservedheaders.ConservedHeader;
+import com.opentable.kafka.builders.EnvironmentProvider;
+import com.opentable.kafka.builders.KafkaBuilderConfiguration;
 import com.opentable.kafka.builders.KafkaConsumerBuilder;
 import com.opentable.kafka.builders.KafkaProducerBuilder;
 import com.opentable.kafka.util.ReadWriteRule;
 import com.opentable.metrics.DefaultMetricsConfiguration;
-import com.opentable.service.AppInfo;
-import com.opentable.service.EnvInfo;
 import com.opentable.service.ServiceInfo;
 
 @RunWith(SpringRunner.class)
@@ -73,10 +73,10 @@ public class MetricReporterTest {
     private MetricRegistry metricRegistry;
 
     @Inject
-    private AppInfo appInfo;
+    private EnvironmentProvider environmentProvider;
 
     public <K, V> Producer<K, V> createProducer(Class<? extends Serializer<K>> keySer, Class<? extends Serializer<V>> valueSer) {
-        return new KafkaProducerBuilder<K,V>(rw.getEkb().baseProducerMap(), appInfo)
+        return new KafkaProducerBuilder<K,V>(rw.getEkb().baseProducerMap(), environmentProvider)
             .withClientId("producer-metrics-01")
             .withMetricRegistry(metricRegistry)
             .withSerializers(keySer, valueSer)
@@ -98,7 +98,7 @@ public class MetricReporterTest {
     }
 
     public <K, V> Consumer<K, V> createConsumer(String groupId, Class<? extends Deserializer<K>> keySer, Class<? extends Deserializer<V>> valueSer) {
-        return new KafkaConsumerBuilder<K,V>(rw.getEkb().baseConsumerMap(groupId), appInfo)
+        return new KafkaConsumerBuilder<K,V>(rw.getEkb().baseConsumerMap(groupId), environmentProvider)
             .withClientId("consumer-metrics-01")
             .withMetricRegistry(metricRegistry)
             .withGroupId(groupId)
@@ -166,9 +166,8 @@ public class MetricReporterTest {
 
     @Configuration
     @Import({
-        AppInfo.class,
-        EnvInfo.class,
-        DefaultMetricsConfiguration.class,
+            KafkaBuilderConfiguration.class,
+            DefaultMetricsConfiguration.class,
     })
     public static class Config {
         @Bean

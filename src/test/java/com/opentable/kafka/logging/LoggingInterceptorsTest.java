@@ -47,9 +47,9 @@ import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.junit4.SpringRunner;
 
 import com.opentable.conservedheaders.ConservedHeader;
+import com.opentable.kafka.builders.EnvironmentProvider;
+import com.opentable.kafka.builders.KafkaBuilderConfiguration;
 import com.opentable.kafka.util.ReadWriteRule;
-import com.opentable.service.AppInfo;
-import com.opentable.service.EnvInfo;
 import com.opentable.service.ServiceInfo;
 
 @RunWith(SpringRunner.class)
@@ -66,14 +66,14 @@ public class LoggingInterceptorsTest {
     public final ReadWriteRule rw = new ReadWriteRule();
 
     @Inject
-    AppInfo appInfo;
+    EnvironmentProvider environmentProvider;
 
     public <K, V> Producer<K, V> createProducer(Class<? extends Serializer<K>> keySer, Class<? extends Serializer<V>> valueSer) {
         Properties props = rw.getEkb().baseProducerProperties();
         props.put("key.serializer", keySer.getName());
         props.put("value.serializer", valueSer.getName());
         props.put(ProducerConfig.INTERCEPTOR_CLASSES_CONFIG, LoggingProducerInterceptor.class.getCanonicalName());
-        props.put(LoggingInterceptorConfig.LOGGING_REF, new LoggingUtils(appInfo));
+        props.put(LoggingInterceptorConfig.LOGGING_REF, new LoggingUtils(environmentProvider));
         props.put(ProducerConfig.LINGER_MS_CONFIG, "200");
         //put logger here
         return new KafkaProducer<>(props);
@@ -97,7 +97,7 @@ public class LoggingInterceptorsTest {
         props.put("key.deserializer", keySer.getName());
         props.put("value.deserializer", valueSer.getName());
         props.put(ConsumerConfig.INTERCEPTOR_CLASSES_CONFIG, LoggingConsumerInterceptor.class.getCanonicalName());
-        props.put(LoggingInterceptorConfig.LOGGING_REF, new LoggingUtils(appInfo));
+        props.put(LoggingInterceptorConfig.LOGGING_REF, new LoggingUtils(environmentProvider));
         //put logger here
         return new KafkaConsumer<>(props);
     }
@@ -134,7 +134,7 @@ public class LoggingInterceptorsTest {
     }
 
     @Configuration
-    @Import({AppInfo.class, EnvInfo.class})
+    @Import({KafkaBuilderConfiguration.class})
     public static class Config {
         @Bean
         ServiceInfo serviceInfo(@Value("${info.component:test-service}") final String serviceType) {

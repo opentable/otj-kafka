@@ -22,18 +22,17 @@ import com.codahale.metrics.MetricRegistry;
 
 import org.springframework.core.env.ConfigurableEnvironment;
 
-import com.opentable.service.AppInfo;
 import com.opentable.service.ServiceInfo;
 
 public class KafkaProducerBuilderFactoryBean extends KafkaBaseBuilderFactoryBean {
 
     @Inject
     public KafkaProducerBuilderFactoryBean(
-                                           final AppInfo appInfo,
+                                           final EnvironmentProvider environmentProvider,
                                            final ConfigurableEnvironment env,
                                            final Optional<ServiceInfo> serviceInfo,
                                            final Optional<MetricRegistry> metricRegistry) {
-        super(appInfo, env, serviceInfo, metricRegistry);
+        super(environmentProvider, env, serviceInfo, metricRegistry);
     }
 
 
@@ -56,7 +55,7 @@ public class KafkaProducerBuilderFactoryBean extends KafkaBaseBuilderFactoryBean
                 getProperties(DEFAULT),
                 name
         );
-        final KafkaProducerBuilder<K,V> res = new KafkaProducerBuilder<>(mergedSeedProperties, appInfo);
+        final KafkaProducerBuilder<K,V> res = new KafkaProducerBuilder<>(mergedSeedProperties, environmentProvider);
         metricRegistry.ifPresent(res::withMetricRegistry);
         serviceInfo.ifPresent(si -> res.withClientId(name + "-" + si.getName()));
         return res;

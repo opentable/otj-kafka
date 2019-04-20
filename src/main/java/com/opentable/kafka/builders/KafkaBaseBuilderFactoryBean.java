@@ -22,7 +22,6 @@ import com.codahale.metrics.MetricRegistry;
 
 import org.springframework.core.env.ConfigurableEnvironment;
 
-import com.opentable.service.AppInfo;
 import com.opentable.service.ServiceInfo;
 import com.opentable.spring.PropertySourceUtil;
 
@@ -36,16 +35,16 @@ class KafkaBaseBuilderFactoryBean {
 
     private final ConfigurableEnvironment env;
     final Optional<MetricRegistry> metricRegistry;
-    final AppInfo appInfo;
+    final EnvironmentProvider environmentProvider;
     final Optional<ServiceInfo> serviceInfo;
 
     KafkaBaseBuilderFactoryBean(
-            final AppInfo appInfo,
+            final EnvironmentProvider environmentProvider,
             final ConfigurableEnvironment env,
             final Optional<ServiceInfo> serviceInfo,
             final Optional<MetricRegistry> metricRegistry) {
         this.env = env;
-        this.appInfo = appInfo;
+        this.environmentProvider = environmentProvider;
         this.serviceInfo = serviceInfo;
         this.metricRegistry = metricRegistry;
     }

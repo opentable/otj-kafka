@@ -79,10 +79,8 @@ public class KafkaProducerBuilderTest {
 
     @Configuration
     @Import({
-        AppInfo.class,
-        EnvInfo.class,
+        KafkaBuilderConfiguration.class,
         DefaultMetricsConfiguration.class,
-        KafkaProducerBuilderFactoryBean.class
     })
     public static class Config {
         @Bean

@@ -31,7 +31,6 @@ import org.apache.kafka.common.security.auth.SecurityProtocol;
 import org.apache.kafka.common.serialization.Deserializer;
 
 import com.opentable.kafka.logging.LoggingConsumerInterceptor;
-import com.opentable.service.AppInfo;
 
 /**
  * Main builder for KafkaConsumer. This is usually entered via a KafkaConsumerBuilderFactoryBean so some "sugar" is injected.
@@ -51,8 +50,8 @@ public class KafkaConsumerBuilder<K, V>  {
     private Class<? extends Deserializer<K>> keyDe;
     private Class<? extends Deserializer<V>> valueDe;
 
-    public KafkaConsumerBuilder(Map<String, Object> prop, AppInfo appInfo) {
-        kafkaBaseBuilder = new KafkaBaseBuilder(prop, appInfo);
+    public KafkaConsumerBuilder(Map<String, Object> prop, EnvironmentProvider environmentProvider) {
+        kafkaBaseBuilder = new KafkaBaseBuilder(prop, environmentProvider);
         kafkaBaseBuilder.addInterceptor(LoggingConsumerInterceptor.class.getName());
     }
 
