@@ -32,6 +32,7 @@ import org.apache.kafka.common.serialization.Serializer;
 
 import com.opentable.kafka.logging.LoggingProducerInterceptor;
 
+@SuppressWarnings("OptionalUsedAsFieldOrParameterType")
 public class KafkaProducerBuilder<K, V> {
 
     private final KafkaBaseBuilder kafkaBaseBuilder;

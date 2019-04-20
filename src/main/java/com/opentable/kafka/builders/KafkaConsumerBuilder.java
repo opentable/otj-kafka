@@ -37,6 +37,7 @@ import com.opentable.kafka.logging.LoggingConsumerInterceptor;
  * @param <K> Key
  * @param <V> Value
  */
+@SuppressWarnings("OptionalUsedAsFieldOrParameterType")
 public class KafkaConsumerBuilder<K, V>  {
 
     private final KafkaBaseBuilder kafkaBaseBuilder;

@@ -113,7 +113,7 @@ public class LoggingUtils {
         return getBucket(limit);
     }
 
-    Bucket getBucket(Bandwidth bandWidth) {
+    private Bucket getBucket(Bandwidth bandWidth) {
         return Bucket4j.builder().addLimit(bandWidth).build();
     }
 
@@ -131,7 +131,7 @@ public class LoggingUtils {
     }
 
     @Nonnull
-    public <K, V> MsgV1 producerEvent(ProducerRecord<K, V> record, String clientId) {
+    private <K, V> MsgV1 producerEvent(ProducerRecord<K, V> record, String clientId) {
         return builder()
             // msg-v1
             .logName("kafka-producer")

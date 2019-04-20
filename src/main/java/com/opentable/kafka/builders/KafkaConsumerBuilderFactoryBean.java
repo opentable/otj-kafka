@@ -26,6 +26,7 @@ import com.opentable.service.ServiceInfo;
 
 public class KafkaConsumerBuilderFactoryBean extends KafkaBaseBuilderFactoryBean {
 
+    @SuppressWarnings("OptionalUsedAsFieldOrParameterType")
     @Inject
     public KafkaConsumerBuilderFactoryBean(
                                            final EnvironmentProvider environmentProvider,

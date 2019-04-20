@@ -41,6 +41,7 @@ import com.opentable.kafka.metrics.OtMetricsReporterConfig;
 /**
  * Some common configuration options + the main properties builder is here.
  */
+@SuppressWarnings("OptionalUsedAsFieldOrParameterType")
 class KafkaBaseBuilder {
     private static final Logger LOG = LoggerFactory.getLogger(KafkaBaseBuilder.class);
 

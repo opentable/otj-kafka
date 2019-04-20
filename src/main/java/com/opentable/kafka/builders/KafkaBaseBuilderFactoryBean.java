@@ -28,6 +28,7 @@ import com.opentable.spring.PropertySourceUtil;
 /**
  * A base class with the common fields and methods
  */
+@SuppressWarnings("OptionalUsedAsFieldOrParameterType")
 class KafkaBaseBuilderFactoryBean {
 
     private static final String PREFIX = "ot.kafka.";
