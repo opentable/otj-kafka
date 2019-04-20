@@ -66,9 +66,14 @@ public class LoggingUtils {
     private final AppInfo appInfo;
     private final String libraryVersion;
     private final String kafkaVersion;
+    private final String javaVersion;
+    private final String os;
 
     public LoggingUtils(AppInfo appInfo) {
         this.appInfo = appInfo;
+        this.javaVersion = System.getProperty("java.runtime.version");
+        this.os = System.getProperty("os.name");
+
         this.libraryVersion = getVersion(ARTIFACT_ID + PROPERTIES_FILE_EXTENSION, "kafka.logging.version", DEFAULT_VERSION);
         this.kafkaVersion = getVersion("/kafka/kafka-version.properties", "kafka.version.version", DEFAULT_VERSION);
     }
@@ -105,10 +110,12 @@ public class LoggingUtils {
 
     private EdaMessageTraceV1Builder builder() {
         return EdaMessageTraceV1.builder()
-                .edaClientName(ARTIFACT_ID)
-                .edaClientVersion(libraryVersion)
-                .edaClientPlatform("Java: " + System.getProperty("java.version"))
-                .edaClientOs(System.getProperty("os.name"))
+                .kafkaVersion(kafkaVersion)
+                .kafkaClientName(ARTIFACT_ID)
+                .kafkaClientVersion(libraryVersion)
+                .kafkaClientPlatform("java")
+                .kafkaClientPlaformVersion(javaVersion)
+                .kafkaClientOs(os)
                 .uuid(UUID.randomUUID())
                 .timestamp(Instant.now())
                 .serviceType(CommonLogHolder.getServiceType());
@@ -125,13 +132,13 @@ public class LoggingUtils {
             .referringHost(new String(unk(record.headers().lastHeader(OTKafkaHeaders.REFERRING_HOST)), CHARSET))
 
             // eda-message-trace-v1
-            .topic(record.topic())
-            .partition(record.partition())
-            .clientId(clientId)
+            .kafkaTopic(record.topic())
+            .kafkaPartition(record.partition())
+            .kafkaClientId(clientId)
                 // again these two fail for binary data
-            .recordKey(String.valueOf(record.key()))
-            .recordValue(String.valueOf(record.value()))
-            .recordTimestamp(record.timestamp())
+            .kafkaRecordKey(String.valueOf(record.key()))
+            .kafkaRecordValue(String.valueOf(record.value()))
+            .kafkaRecordTimestamp(record.timestamp())
 
             // from committed metadata
             //.recordKeySize(record.serializedKeySize())
@@ -163,26 +170,37 @@ public class LoggingUtils {
             .referringHost(headers.map(h -> h.lastHeader((OTKafkaHeaders.REFERRING_HOST))).map(Header::value).map(String::new).orElse(null))
 
             // eda-message-trace-v1
-            .topic(record.topic())
-            .offset(record.offset())
-            .partition(record.partition())
-            .groupId(groupId)
-            .clientId(clientId)
-            .recordKeySize(record.serializedKeySize())
+            .kafkaTopic(record.topic())
+            .kafkaOffset(record.offset())
+            .kafkaPartition(record.partition())
+            .kafkaGroupId(groupId)
+            .kafkaClientId(clientId)
+            .kafkaRecordKeySize(record.serializedKeySize())
                 // this will fail for binary data
-            .recordKey(String.valueOf(record.key()))
-            .recordValueSize(record.serializedValueSize())
+            .kafkaRecordKey(String.valueOf(record.key()))
+            .kafkaRecordValueSize(record.serializedValueSize())
                 // This will fail for binary data
-            .recordValue(String.valueOf(record.value()))
-            .recordTimestamp(record.timestamp())
-            .recordTimestampType(record.timestampType() == null ? TimestampType.NO_TIMESTAMP_TYPE.name : record.timestampType().name)
+            .kafkaRecordValue(String.valueOf(record.value()))
+            .kafkaRecordTimestamp(record.timestamp())
+            .kafkaRecordTimestampType(record.timestampType() == null ? TimestampType.NO_TIMESTAMP_TYPE.name : record.timestampType().name)
             .build();
     }
 
+    /**
+     * Grab value from MDC
+     * @param header header type
+     * @return value
+     */
     private String getHeaderValue(final ConservedHeader header) {
         return MDC.get(header.getLogName());
     }
 
+    /**
+     * Output all headers as
+     *  - headerName=Value (comma delimited)
+     * @param headers headers collection
+     * @return String
+     */
     private String toString(Headers headers) {
         return Arrays.stream(headers.toArray())
             .map(h -> String.format("%s=%s", h.key(), new String(h.value(), CHARSET)))
@@ -211,15 +229,26 @@ public class LoggingUtils {
         setKafkaHeader(headers, OTKafkaHeaders.ENV_FLAVOR, appInfo.getEnvInfo().getFlavor());
     }
 
-
+    /**
+     * Set the header only if the value isn't null
+     * @param headers kafka headers
+     * @param headerName name
+     * @param value value
+     */
     private void setKafkaHeader(Headers headers, String headerName, String value) {
-        if (value != null) {
+        if (value != null && headers != null && headerName != null) {
             headers.add(headerName, value.getBytes(CHARSET));
         }
     }
 
+    /**
+     * Set the header only if the value isn't null
+     * @param headers kafka headers
+     * @param headerName name
+     * @param value value
+     */
     private void setKafkaHeader(Headers headers, String headerName, Integer value) {
-        if (value != null) {
+        if (value != null && (headerName != null)) {
             setKafkaHeader(headers, headerName, String.valueOf(value));
         }
     }
