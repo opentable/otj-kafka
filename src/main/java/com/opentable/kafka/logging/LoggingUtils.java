@@ -100,7 +100,7 @@ public class LoggingUtils {
      * @param conf the configuration, used to determine the token refresh rate
      * @return a bucket
      */
-    Bucket getBucket(LoggingInterceptorConfig conf) {
+    final Bucket getBucket(LoggingInterceptorConfig conf) {
         final Integer howOftenPer10Seconds = conf.getInt(LoggingInterceptorConfig.SAMPLE_RATE_PCT_CONFIG);
         Bandwidth limit;
         if (howOftenPer10Seconds == null || howOftenPer10Seconds < 0) {
