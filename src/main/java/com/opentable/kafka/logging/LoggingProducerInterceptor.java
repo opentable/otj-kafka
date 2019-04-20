@@ -14,7 +14,6 @@
 package com.opentable.kafka.logging;
 
 import java.util.Map;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.clients.producer.ProducerInterceptor;
@@ -25,6 +24,9 @@ import org.slf4j.LoggerFactory;
 
 import io.github.bucket4j.Bucket;
 
+/**
+ * Intercepts all KafkaProducer traffic and applies otl-standardized logging and metrics to them
+ */
 public class LoggingProducerInterceptor implements ProducerInterceptor<Object, Object> {
 
     private static final Logger LOG = LoggerFactory.getLogger(LoggingProducerInterceptor.class);
@@ -59,17 +61,8 @@ public class LoggingProducerInterceptor implements ProducerInterceptor<Object, O
         final String originalsClientId = (String) config.get(ProducerConfig.CLIENT_ID_CONFIG);
         loggingUtils = (LoggingUtils) config.get(LoggingInterceptorConfig.LOGGING_REF);
         bucket = loggingUtils.getBucket(conf);
-        //MJB: Dmitry why is this done?
-        this.interceptorClientId = (originalsClientId == null) ? "interceptor-producer-" + ClientIdGenerator.INSTANCE.nextClientId() : originalsClientId;
+        this.interceptorClientId = (originalsClientId == null) ? "interceptor-producer-" + LoggingUtils.ClientIdGenerator.INSTANCE.nextPublisherId() : originalsClientId;
         LOG.info("LoggingProducerInterceptor is configured for client: {}", interceptorClientId);
-    }
-
-    private static class ClientIdGenerator {
-        static ClientIdGenerator INSTANCE = new ClientIdGenerator();
-        private final AtomicInteger IDS = new AtomicInteger(0);
-        int nextClientId() {
-            return IDS.getAndIncrement();
-        }
     }
 
 }

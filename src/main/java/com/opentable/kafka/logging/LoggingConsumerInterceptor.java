@@ -14,7 +14,6 @@
 package com.opentable.kafka.logging;
 
 import java.util.Map;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.consumer.ConsumerInterceptor;
@@ -58,15 +57,7 @@ public class LoggingConsumerInterceptor<K, V> implements ConsumerInterceptor<K, 
         groupId  = (String) config.get(ConsumerConfig.GROUP_ID_CONFIG);
         loggingUtils = (LoggingUtils) config.get(LoggingInterceptorConfig.LOGGING_REF);
         bucket = loggingUtils.getBucket(conf);
-        interceptorClientId = (originalsClientId == null) ? "interceptor-consumer-" + ClientIdGenerator.INSTANCE.nextClientId() : originalsClientId;
+        interceptorClientId = (originalsClientId == null) ? "interceptor-consumer-" + LoggingUtils.ClientIdGenerator.INSTANCE.nextConsumerId() : originalsClientId;
         LOG.info("LoggingConsumerInterceptor is configured for client: {}, group-id: {}", interceptorClientId, groupId);
-    }
-
-    private static class ClientIdGenerator {
-        static ClientIdGenerator INSTANCE = new ClientIdGenerator();
-        private final AtomicInteger IDS = new AtomicInteger(0);
-        int nextClientId() {
-            return IDS.getAndIncrement();
-        }
     }
 }

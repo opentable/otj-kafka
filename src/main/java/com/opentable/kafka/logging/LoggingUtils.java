@@ -26,6 +26,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Properties;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
@@ -301,4 +302,16 @@ public class LoggingUtils {
         }
     }
 
+    public static class ClientIdGenerator {
+        static ClientIdGenerator INSTANCE = new ClientIdGenerator();
+        private final AtomicInteger consumerIds = new AtomicInteger(0);
+        private final AtomicInteger producerIds = new AtomicInteger(0);
+        int nextConsumerId() {
+            return consumerIds.getAndIncrement();
+        }
+
+        int nextPublisherId() {
+            return producerIds.getAndIncrement();
+        }
+    }
 }
