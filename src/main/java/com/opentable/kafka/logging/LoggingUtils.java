@@ -65,18 +65,24 @@ public class LoggingUtils {
 
     private final AppInfo appInfo;
     private final String libraryVersion;
+    private final String kafkaVersion;
 
     public LoggingUtils(AppInfo appInfo) {
         this.appInfo = appInfo;
-        String clientVersion = DEFAULT_VERSION;
+        this.libraryVersion = getVersion(ARTIFACT_ID + PROPERTIES_FILE_EXTENSION, "kafka.logging.version", DEFAULT_VERSION);
+        this.kafkaVersion = getVersion("/kafka/kafka-version.properties", "kafka.version.version", DEFAULT_VERSION);
+    }
+
+    private String getVersion(String classPathResourceName, String systemPropertyName, String defaultVersion) {
+        String clientVersion = defaultVersion;
         try {
-            final Resource resource = new ClassPathResource(ARTIFACT_ID + PROPERTIES_FILE_EXTENSION);
+            final Resource resource = new ClassPathResource(classPathResourceName);
             final Properties props = PropertiesLoaderUtils.loadProperties(resource);
-            clientVersion = props.getProperty("version", System.getProperty("kafka.logging.version", DEFAULT_VERSION));
+            clientVersion = props.getProperty("version", System.getProperty(systemPropertyName, DEFAULT_VERSION));
         } catch (IOException e) {
             LOG.warn("Cannot get client version for logging.", e);
         }
-        this.libraryVersion = clientVersion;
+        return clientVersion;
     }
 
     /**
@@ -102,7 +108,10 @@ public class LoggingUtils {
                 .edaClientName(ARTIFACT_ID)
                 .edaClientVersion(libraryVersion)
                 .edaClientPlatform("Java: " + System.getProperty("java.version"))
-                .edaClientOs(System.getProperty("os.name"));
+                .edaClientOs(System.getProperty("os.name"))
+                .uuid(UUID.randomUUID())
+                .timestamp(Instant.now())
+                .serviceType(CommonLogHolder.getServiceType());
     }
 
     @Nonnull
@@ -111,9 +120,6 @@ public class LoggingUtils {
             // msg-v1
             .logName("kafka-producer")
             .incoming(false)
-            .serviceType(CommonLogHolder.getServiceType())
-            .uuid(UUID.randomUUID())
-            .timestamp(Instant.now())
             .requestId(checkIfGoodUUID(new String(unk(record.headers().lastHeader(CommonLogFields.REQUEST_ID_KEY)), CHARSET)))
             .referringService(new String(unk(record.headers().lastHeader(OTKafkaHeaders.REFERRING_SERVICE)), CHARSET))
             .referringHost(new String(unk(record.headers().lastHeader(OTKafkaHeaders.REFERRING_HOST)), CHARSET))
@@ -152,9 +158,6 @@ public class LoggingUtils {
             // msg-v1
             .logName("kafka-consumer")
             .incoming(true)
-            .serviceType(CommonLogHolder.getServiceType())
-            .uuid(UUID.randomUUID())
-            .timestamp(Instant.now())
             .requestId(checkIfGoodUUID(headers.map(h -> h.lastHeader((CommonLogFields.REQUEST_ID_KEY))).map(Header::value).map(String::new).orElse(null)))
             .referringService(headers.map(h -> h.lastHeader((OTKafkaHeaders.REFERRING_SERVICE))).map(Header::value).map(String::new).orElse(null))
             .referringHost(headers.map(h -> h.lastHeader((OTKafkaHeaders.REFERRING_HOST))).map(Header::value).map(String::new).orElse(null))
