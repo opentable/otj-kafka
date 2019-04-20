@@ -176,7 +176,15 @@ public class LoggingUtils {
             .collect(Collectors.joining(", "));
     }
 
-    public <K, V> void setupHeaders(ProducerRecord<K, V> record) {
+    /**
+     * Sets up headers.
+     * If "conserved headers" are available in the MDC, we copy them over to the Header
+     * In addition, we add various other diagnostic headers, mostly from AppInfo
+     * @param record record
+     * @param <K> key
+     * @param <V> value
+     */
+    <K, V> void setupHeaders(ProducerRecord<K, V> record) {
         final Headers headers = record.headers();
         Arrays.asList(ConservedHeader.values()).forEach((header) -> {
             if (getHeaderValue(header) != null) {
@@ -203,8 +211,14 @@ public class LoggingUtils {
         }
     }
 
-    public <K, V> void setupTracing(Bucket bucket, ProducerRecord<K, V> record) {
-        final Headers headers = record.headers();
+    /**
+     * This checks if the tracing flag is on. Perhaps someone set it manually?
+     * Otherwise it is set if the log limit has not been reached.
+     * We'll use this tracing flag to determine logging
+     * @param bucket token bucket
+     * @param headers headers of record. These will be mutated.
+     */
+    <K, V> void setupTracing(Bucket bucket,  Headers headers) {
         if (!headers.headers(OTKafkaHeaders.TRACE_FLAG).iterator().hasNext()) {
             // If header not present, make decision our self and set it
             if (bucket.tryConsume(1)) {
@@ -215,7 +229,15 @@ public class LoggingUtils {
         }
     }
 
-    public <K, V> boolean isTraceNeeded(ProducerRecord<K, V> record) {
+    /**
+     * Determining whether the ProducerRecord should be logged at this point is simple - We look for the trace flag,
+     * and if it exists, we log
+     * @param record record
+     * @param <K> key
+     * @param <V> value
+     * @return true, if logging is needed.
+     */
+    public <K, V> boolean isLoggingNeeded(ProducerRecord<K, V> record) {
         final Headers headers = record.headers();
         return StreamSupport.stream(headers.headers(OTKafkaHeaders.TRACE_FLAG).spliterator(), false)
             .map(h -> new String(h.value(), CHARSET))
@@ -225,8 +247,16 @@ public class LoggingUtils {
             .orElse(false);
     }
 
+    /**
+     * For the producer interceptor, this determines if we are going to log, and if so, builds the otl log record and outputs
+     * @param log logger, for setting level
+     * @param clientId The clientId
+     * @param record the Record
+     * @param <K> key
+     * @param <V> value
+     */
     public <K, V> void trace(Logger log, String clientId, ProducerRecord<K, V> record) {
-        if (isTraceNeeded(record)) {
+        if (isLoggingNeeded(record)) {
             final MsgV1 event = producerEvent(record, clientId);
             MDC.put(CommonLogFields.REQUEST_ID_KEY, Objects.toString(event.getRequestId(), null));
             try {
@@ -239,7 +269,7 @@ public class LoggingUtils {
         }
     }
 
-    public static <K, V> boolean isTraceNeeded(ConsumerRecord<K, V> record) {
+    public static <K, V> boolean isLoggingNeeded(ConsumerRecord<K, V> record) {
         final Headers headers = record.headers();
         return StreamSupport.stream(headers.headers("ot-trace-message").spliterator(), false)
             .map(h -> new String(h.value(), CHARSET))
@@ -249,7 +279,7 @@ public class LoggingUtils {
     }
 
     public <K, V> void trace(Logger log, String clientId, String groupId, Bucket bucket, ConsumerRecord<K, V> record) {
-        if (isTraceNeeded(record) || bucket.tryConsume(1)) {
+        if (isLoggingNeeded(record) || bucket.tryConsume(1)) {
             final MsgV1 event = consumerEvent(record, groupId, clientId);
             MDC.put(CommonLogFields.REQUEST_ID_KEY, Objects.toString(event.getRequestId(), null));
             try {
