@@ -18,6 +18,7 @@ import java.time.Duration;
 import java.util.Collections;
 import java.util.UUID;
 
+import javax.inject.Inject;
 import javax.management.MBeanServer;
 
 import com.codahale.metrics.Gauge;
@@ -37,7 +38,6 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.slf4j.MDC;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Bean;
@@ -69,10 +69,10 @@ public class MetricReporterTest {
     @Rule
     public final ReadWriteRule rw = new ReadWriteRule();
 
-    @Autowired
+    @Inject
     private MetricRegistry metricRegistry;
 
-    @Autowired
+    @Inject
     private AppInfo appInfo;
 
     public <K, V> Producer<K, V> createProducer(Class<? extends Serializer<K>> keySer, Class<? extends Serializer<V>> valueSer) {

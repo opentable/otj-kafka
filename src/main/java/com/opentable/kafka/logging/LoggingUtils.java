@@ -33,6 +33,7 @@ import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.common.header.Header;
 import org.apache.kafka.common.header.Headers;
+import org.apache.kafka.common.record.TimestampType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
@@ -57,33 +58,25 @@ public class LoggingUtils {
     private static final Charset CHARSET = StandardCharsets.UTF_8;
     private static final byte[] FALSE = "false".getBytes(CHARSET);
     private static final byte[] TRUE = "true".getBytes(CHARSET);
-
-    private static final String CLIENT_VERSION;
-
     private static final Logger LOG = LoggerFactory.getLogger(LoggingUtils.class);
     private static final String PROPERTIES_FILE_EXTENSION = ".properties";
     private static final String DEFAULT_VERSION = "unknown";
     private static final String ARTIFACT_ID = "otj-kafka";
 
     private final AppInfo appInfo;
+    private final String libraryVersion;
 
-    static {
-        // With adam's plugin, it will work fine from command line, but not from ide. Still
-        // better than adding another file + janino!
-        // To test in ide, set the system property.
-        Resource resource = new ClassPathResource(ARTIFACT_ID + PROPERTIES_FILE_EXTENSION);
+    public LoggingUtils(AppInfo appInfo) {
+        this.appInfo = appInfo;
         String clientVersion = DEFAULT_VERSION;
         try {
+            final Resource resource = new ClassPathResource(ARTIFACT_ID + PROPERTIES_FILE_EXTENSION);
             final Properties props = PropertiesLoaderUtils.loadProperties(resource);
             clientVersion = props.getProperty("version", System.getProperty("kafka.logging.version", DEFAULT_VERSION));
         } catch (IOException e) {
             LOG.warn("Cannot get client version for logging.", e);
         }
-        CLIENT_VERSION = clientVersion;
-    }
-
-    public LoggingUtils(AppInfo appInfo) {
-        this.appInfo = appInfo;
+        this.libraryVersion = clientVersion;
     }
 
     /**
@@ -107,7 +100,7 @@ public class LoggingUtils {
     private EdaMessageTraceV1Builder builder() {
         return EdaMessageTraceV1.builder()
                 .edaClientName(ARTIFACT_ID)
-                .edaClientVersion(CLIENT_VERSION)
+                .edaClientVersion(libraryVersion)
                 .edaClientPlatform("Java: " + System.getProperty("java.version"))
                 .edaClientOs(System.getProperty("os.name"));
     }
@@ -129,6 +122,7 @@ public class LoggingUtils {
             .topic(record.topic())
             .partition(record.partition())
             .clientId(clientId)
+                // again these two fail for binary data
             .recordKey(String.valueOf(record.key()))
             .recordValue(String.valueOf(record.value()))
             .recordTimestamp(record.timestamp())
@@ -172,11 +166,13 @@ public class LoggingUtils {
             .groupId(groupId)
             .clientId(clientId)
             .recordKeySize(record.serializedKeySize())
+                // this will fail for binary data
             .recordKey(String.valueOf(record.key()))
             .recordValueSize(record.serializedValueSize())
+                // This will fail for binary data
             .recordValue(String.valueOf(record.value()))
             .recordTimestamp(record.timestamp())
-            .recordTimestampType(record.timestampType().name)
+            .recordTimestampType(record.timestampType() == null ? TimestampType.NO_TIMESTAMP_TYPE.name : record.timestampType().name)
             .build();
     }
 

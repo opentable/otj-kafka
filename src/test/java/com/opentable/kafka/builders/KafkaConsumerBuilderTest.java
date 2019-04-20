@@ -15,6 +15,7 @@ package com.opentable.kafka.builders;
 
 import java.lang.management.ManagementFactory;
 
+import javax.inject.Inject;
 import javax.management.MBeanServer;
 
 import org.apache.kafka.clients.consumer.KafkaConsumer;
@@ -24,7 +25,6 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Bean;
@@ -51,7 +51,7 @@ public class KafkaConsumerBuilderTest {
 
     private static final Logger LOG = LoggerFactory.getLogger(KafkaConsumerBuilderTest.class);
 
-    @Autowired
+    @Inject
     private KafkaConsumerBuilderFactoryBean builderFactoryBean;
 
     @Test

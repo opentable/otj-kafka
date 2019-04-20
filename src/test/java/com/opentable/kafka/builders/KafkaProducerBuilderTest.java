@@ -14,17 +14,19 @@
 package com.opentable.kafka.builders;
 
 import java.lang.management.ManagementFactory;
+import java.time.Duration;
 
+import javax.inject.Inject;
 import javax.management.MBeanServer;
 
 import org.apache.kafka.clients.producer.KafkaProducer;
+import org.apache.kafka.common.security.auth.SecurityProtocol;
 import org.apache.kafka.common.serialization.IntegerSerializer;
 import org.apache.kafka.common.serialization.StringSerializer;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Bean;
@@ -52,7 +54,7 @@ public class KafkaProducerBuilderTest {
 
     private static final Logger LOG = LoggerFactory.getLogger(KafkaProducerBuilderTest.class);
 
-    @Autowired
+    @Inject
     private KafkaProducerBuilderFactoryBean builderFactoryBean;
 
     @Test
@@ -66,6 +68,9 @@ public class KafkaProducerBuilderTest {
             .removeProperty("blah2")
             .withAcks(AckType.none)
             .withRetries(5)
+            .withMaxInFlightRequests(5)
+            .withRequestTimeoutMs(Duration.ofSeconds(30))
+            .withSecurityProtocol(SecurityProtocol.PLAINTEXT)
             .withSerializers(IntegerSerializer.class, StringSerializer.class)
             .withLoggingSampleRate(3);
         KafkaProducer<Integer, String> p = builder

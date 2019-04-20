@@ -27,6 +27,7 @@ import com.codahale.metrics.MetricRegistry;
 import org.apache.kafka.clients.CommonClientConfigs;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.clients.producer.KafkaProducer;
+import org.apache.kafka.common.security.auth.SecurityProtocol;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -51,7 +52,7 @@ class KafkaBaseBuilder {
     private OptionalLong retryBackoff = OptionalLong.empty();
     private final List<String> bootStrapServers = new ArrayList<>();
     private Optional<String> clientId = Optional.empty();
-    private Optional<String> securityProtocol = Optional.empty();
+    private Optional<SecurityProtocol> securityProtocol = Optional.empty();
     private Optional<MetricRegistry> metricRegistry;
 
     KafkaBaseBuilder(Map<String, Object> props, AppInfo appInfo) {
@@ -99,7 +100,7 @@ class KafkaBaseBuilder {
         clientId = Optional.ofNullable(val);
     }
 
-    void withSecurityProtocol(String protocol) {
+    void withSecurityProtocol(SecurityProtocol protocol) {
         this.securityProtocol = Optional.ofNullable(protocol);
     }
 
@@ -137,7 +138,7 @@ class KafkaBaseBuilder {
         requestTimeout.ifPresent(i -> addProperty(CommonClientConfigs.REQUEST_TIMEOUT_MS_CONFIG, String.valueOf(i)));
         retryBackoff.ifPresent(i -> addProperty(CommonClientConfigs.RETRY_BACKOFF_MS_CONFIG, String.valueOf(i)));
         clientId.ifPresent(cid -> addProperty(CommonClientConfigs.CLIENT_ID_CONFIG, cid));
-        securityProtocol.ifPresent(sp -> addProperty(CommonClientConfigs.SECURITY_PROTOCOL_CONFIG, sp));
+        securityProtocol.ifPresent(sp -> addProperty(CommonClientConfigs.SECURITY_PROTOCOL_CONFIG, sp.name));
         metricRegistry.ifPresent(mr -> {
             addProperty(CommonClientConfigs.METRIC_REPORTER_CLASSES_CONFIG, OtMetricsReporter.class.getName());
             addProperty(OtMetricsReporterConfig.METRIC_REGISTRY_REF_CONFIG, mr);

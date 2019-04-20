@@ -27,6 +27,7 @@ import org.apache.kafka.clients.consumer.ConsumerInterceptor;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.clients.consumer.RangeAssignor;
 import org.apache.kafka.clients.consumer.internals.PartitionAssignor;
+import org.apache.kafka.common.security.auth.SecurityProtocol;
 import org.apache.kafka.common.serialization.Deserializer;
 
 import com.opentable.kafka.logging.LoggingConsumerInterceptor;
@@ -126,7 +127,7 @@ public class KafkaConsumerBuilder<K, V>  {
         return this;
     }
 
-    public KafkaConsumerBuilder<K, V> withSecurityProtocol(String protocol) {
+    public KafkaConsumerBuilder<K, V> withSecurityProtocol(SecurityProtocol protocol) {
         kafkaBaseBuilder.withSecurityProtocol(protocol);
         return this;
     }

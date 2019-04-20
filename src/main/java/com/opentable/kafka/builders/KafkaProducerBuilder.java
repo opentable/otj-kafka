@@ -27,6 +27,7 @@ import org.apache.kafka.clients.producer.Partitioner;
 import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.clients.producer.ProducerInterceptor;
 import org.apache.kafka.clients.producer.internals.DefaultPartitioner;
+import org.apache.kafka.common.security.auth.SecurityProtocol;
 import org.apache.kafka.common.serialization.Serializer;
 
 import com.opentable.kafka.logging.LoggingProducerInterceptor;
@@ -119,7 +120,7 @@ public class KafkaProducerBuilder<K, V> {
         return this;
     }
 
-    public KafkaProducerBuilder<K, V> withSecurityProtocol(String protocol) {
+    public KafkaProducerBuilder<K, V> withSecurityProtocol(SecurityProtocol protocol) {
         kafkaBaseBuilder.withSecurityProtocol(protocol);
         return this;
     }
