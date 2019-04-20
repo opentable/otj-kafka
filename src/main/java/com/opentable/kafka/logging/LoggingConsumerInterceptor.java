@@ -42,7 +42,7 @@ public class LoggingConsumerInterceptor<K, V> implements ConsumerInterceptor<K, 
 
     @Override
     public ConsumerRecords<K, V> onConsume(ConsumerRecords<K, V> records) {
-        records.forEach(record -> loggingUtils.trace(LOG, interceptorClientId, groupId, bucket, record));
+        records.forEach(record -> loggingUtils.maybeLogConsumer(LOG, interceptorClientId, groupId, bucket, record));
         return records;
     }
 

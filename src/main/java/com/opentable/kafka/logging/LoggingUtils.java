@@ -297,7 +297,7 @@ public class LoggingUtils {
      * @param <K> key
      * @param <V> value
      */
-    <K, V> void trace(Logger log, String clientId, ProducerRecord<K, V> record) {
+    <K, V> void maybeLogProducer(Logger log, String clientId, ProducerRecord<K, V> record) {
         if (isLoggingNeeded(record)) {
             final MsgV1 event = producerEvent(record, clientId);
             MDC.put(CommonLogFields.REQUEST_ID_KEY, Objects.toString(event.getRequestId(), null));
@@ -349,7 +349,7 @@ public class LoggingUtils {
      * @param <K> key
      * @param <V> value
      */
-    <K, V> void trace(Logger log, String clientId, String groupId, Bucket bucket, ConsumerRecord<K, V> record) {
+    <K, V> void maybeLogConsumer(Logger log, String clientId, String groupId, Bucket bucket, ConsumerRecord<K, V> record) {
         if (isLoggingNeeded(record, bucket)) {
             final MsgV1 event = consumerEvent(record, groupId, clientId);
             MDC.put(CommonLogFields.REQUEST_ID_KEY, Objects.toString(event.getRequestId(), null));

@@ -40,7 +40,7 @@ public class LoggingProducerInterceptor implements ProducerInterceptor<Object, O
     public ProducerRecord<Object, Object> onSend(ProducerRecord<Object, Object> record) {
         loggingUtils.setupHeaders(record);
         loggingUtils.setupTracing(bucket, record.headers());
-        loggingUtils.trace(LOG, interceptorClientId, record);
+        loggingUtils.maybeLogProducer(LOG, interceptorClientId, record);
         return record;
     }
 
