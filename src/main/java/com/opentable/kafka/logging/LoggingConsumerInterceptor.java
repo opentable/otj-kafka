@@ -40,6 +40,10 @@ public class LoggingConsumerInterceptor<K, V> implements ConsumerInterceptor<K, 
     private LoggingUtils loggingUtils;
     private Bucket bucket;
 
+    public LoggingConsumerInterceptor() {
+        /* noargs needed for kafka */
+    }
+
     @Override
     public ConsumerRecords<K, V> onConsume(ConsumerRecords<K, V> records) {
         records.forEach(record -> loggingUtils.maybeLogConsumer(LOG, interceptorClientId, groupId, bucket, record));

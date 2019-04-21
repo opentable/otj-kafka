@@ -59,6 +59,7 @@ class KafkaBaseBuilderFactoryBean {
 
     }
 
+    // merge properties in, given the officially namespaced properties get precedence
     Map<String, Object> mergeProperties(final Map<String, Object> originalProperties, final String namespace) {
         final Map<String, Object> originalMap = new HashMap<>(originalProperties);
         final Map<String, Object> mergeMap = getProperties(namespace);

@@ -64,7 +64,6 @@ class KafkaBaseBuilder {
         metricRegistry = Optional.empty();
     }
 
-
     void addProperty(String key, Object value) {
         finalProperties.put(key, value);
     }

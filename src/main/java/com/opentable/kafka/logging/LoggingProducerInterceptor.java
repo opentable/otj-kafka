@@ -36,6 +36,11 @@ public class LoggingProducerInterceptor implements ProducerInterceptor<Object, O
     private LoggingUtils loggingUtils;
     private Bucket bucket;
 
+
+    public LoggingProducerInterceptor() {
+        /* noargs needed for kafka */
+    }
+
     @Override
     public ProducerRecord<Object, Object> onSend(ProducerRecord<Object, Object> record) {
         loggingUtils.addHeaders(record);

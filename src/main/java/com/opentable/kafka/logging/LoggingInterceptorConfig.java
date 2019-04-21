@@ -22,10 +22,10 @@ import org.apache.kafka.common.config.ConfigDef.Type;
 public class LoggingInterceptorConfig extends AbstractConfig {
 
     // Key used to store an object reference to LoggingUtils
-    public static final String LOGGING_REF = "opentable.logging.ref";
+    public static final String LOGGING_REF = "ot.logging.reference";
     public static final int DEFAULT_SAMPLE_RATE_PCT = 1;
     // Key used to store the bucket limit rate
-    public static final String SAMPLE_RATE_PCT_CONFIG = "opentable.logging.rate";
+    public static final String SAMPLE_RATE_PCT_CONFIG = "ot.logging.rate";
 
     private static final ConfigDef CONFIG = new ConfigDef()
         .define(SAMPLE_RATE_PCT_CONFIG, Type.INT, DEFAULT_SAMPLE_RATE_PCT, ConfigDef.Importance.LOW,
