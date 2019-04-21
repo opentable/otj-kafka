@@ -59,7 +59,6 @@ public class LoggingUtils {
 
     private static final Charset CHARSET = StandardCharsets.UTF_8;
     private static final String UNKNOWN = "unknown";
-    private static final byte[] UNKNOWN_BYTES = UNKNOWN.getBytes(CHARSET);
     private static final byte[] FALSE = "false".getBytes(CHARSET);
     private static final byte[] TRUE = "true".getBytes(CHARSET);
 
@@ -129,7 +128,8 @@ public class LoggingUtils {
         return Bucket4j.builder().addLimit(bandWidth).build();
     }
 
-    private EdaMessageTraceV1Builder builder() {
+    @SuppressWarnings("OptionalUsedAsFieldOrParameterType")
+    private EdaMessageTraceV1Builder builder(final Optional<Headers> headers) {
         return EdaMessageTraceV1.builder()
                 .kafkaVersion(kafkaVersion)
                 .kafkaClientName(ARTIFACT_ID)
@@ -139,53 +139,43 @@ public class LoggingUtils {
                 .kafkaClientOs(os)
                 .uuid(UUID.randomUUID())
                 .timestamp(Instant.now())
-                .serviceType(CommonLogHolder.getServiceType());
+                .serviceType(CommonLogHolder.getServiceType())
+                .requestId(ensureUUID(headers.map(h -> h.lastHeader((OTKafkaHeaders.REQUEST_ID))).map(Header::value).map(String::new).orElse(null)))
+                .referringService(headers.map(h -> h.lastHeader((OTKafkaHeaders.REFERRING_SERVICE))).map(Header::value).map(String::new).orElse(null))
+                .referringHost(headers.map(h -> h.lastHeader((OTKafkaHeaders.REFERRING_HOST))).map(Header::value).map(String::new).orElse(null))
+                ;
     }
 
     @Nonnull
     private <K, V> MsgV1 producerEvent(ProducerRecord<K, V> record, String clientId) {
-        return builder()
-            // msg-v1
-            .logName("kafka-producer")
-            .incoming(false)
-            .requestId(checkIfGoodUUID(new String(unk(record.headers().lastHeader(OTKafkaHeaders.REQUEST_ID)), CHARSET)))
-            .referringService(new String(unk(record.headers().lastHeader(OTKafkaHeaders.REFERRING_SERVICE)), CHARSET))
-            .referringHost(new String(unk(record.headers().lastHeader(OTKafkaHeaders.REFERRING_HOST)), CHARSET))
+        final Optional<Headers> headers = Optional.ofNullable(record.headers());
+        return builder(headers)
+                // msg-v1
+                .logName("kafka-producer")
+                .incoming(false)
 
-            // eda-message-trace-v1
-            .kafkaTopic(record.topic())
-            .kafkaPartition(record.partition())
-            .kafkaClientId(clientId)
-            .kafkaRecordKey(String.valueOf(record.key()))
-            .kafkaRecordValue(String.valueOf(record.value()))
-            .kafkaRecordTimestamp(record.timestamp())
+                // eda-message-trace-v1
+                .kafkaTopic(record.topic())
+                .kafkaPartition(record.partition())
+                .kafkaClientId(clientId)
+                .kafkaRecordKey(String.valueOf(record.key()))
+                .kafkaRecordValue(String.valueOf(record.value()))
+                .kafkaRecordTimestamp(record.timestamp())
 
-            // from committed metadata
-            //.recordKeySize(record.serializedKeySize())
-            //.recordValueSize((record.serializedValueSize())
-            //.offset(record.offset())
-            .build();
-    }
-
-    /**
-     * Convenience method to guard against a missing value
-     * @param lastHeader header
-     * @return the value, or UNKNOWN if missing
-     */
-    private byte[] unk(final Header lastHeader) {
-        return lastHeader == null ? UNKNOWN_BYTES : lastHeader.value();
+                // from committed metadata
+                //.recordKeySize(record.serializedKeySize())
+                //.recordValueSize((record.serializedValueSize())
+                //.offset(record.offset())
+                .build();
     }
 
     @Nonnull
     private <K, V> MsgV1 consumerEvent(ConsumerRecord<K, V> record, String groupId, String clientId) {
         final Optional<Headers> headers = Optional.ofNullable(record.headers());
-        return builder()
+        return builder(headers)
             // msg-v1
             .logName("kafka-consumer")
             .incoming(true)
-            .requestId(checkIfGoodUUID(headers.map(h -> h.lastHeader((OTKafkaHeaders.REQUEST_ID))).map(Header::value).map(String::new).orElse(null)))
-            .referringService(headers.map(h -> h.lastHeader((OTKafkaHeaders.REFERRING_SERVICE))).map(Header::value).map(String::new).orElse(null))
-            .referringHost(headers.map(h -> h.lastHeader((OTKafkaHeaders.REFERRING_HOST))).map(Header::value).map(String::new).orElse(null))
 
             // eda-message-trace-v1
             .kafkaTopic(record.topic())
@@ -375,15 +365,17 @@ public class LoggingUtils {
      * @param uuids string
      * @return UUID
      */
-    private UUID checkIfGoodUUID(String uuids) {
+    private UUID ensureUUID(String uuids) {
         try {
             if (uuids != null) {
                 return UUID.fromString(uuids);
             } else {
-                throw new IllegalArgumentException("UUID is null");
+                return null;
             }
         } catch (IllegalArgumentException e) {
-            LOG.warn("Unable to parse purported request id '{}': {}", uuids, e);
+            if (errLogging.tryConsume(1)) {
+                LOG.trace("Unable to parse purported request id '{}': {}", uuids, e);
+            }
         }
         return UUID.randomUUID();
     }
