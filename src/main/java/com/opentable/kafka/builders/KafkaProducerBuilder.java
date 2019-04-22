@@ -44,6 +44,9 @@ public class KafkaProducerBuilder<K, V> {
 
     private Class<? extends Serializer<K>> keySe;
     private Class<? extends Serializer<V>> valueSe;
+    private Serializer<K> keySerializer;
+    private Serializer<V> valueSerializer;
+
 
     // Constructors
 
@@ -98,9 +101,31 @@ public class KafkaProducerBuilder<K, V> {
         return this;
     }
 
+    /**
+     * Provide an class. If you have a no-args constructor use this
+     * @param keySer key serializer
+     * @param valSer value serializer
+     * @return this
+     */
     public KafkaProducerBuilder<K, V> withSerializers(Class<? extends Serializer<K>> keySer, Class<? extends Serializer<V>> valSer) {
         this.keySe = keySer;
         this.valueSe = valSer;
+        this.keySerializer = null;
+        this.valueSerializer = null;
+        return this;
+    }
+
+    /**
+     * Provide an instance. If you don't have a no-args constructor use this
+     * @param keySer key serializer
+     * @param valSer value serializer
+     * @return this
+     */
+    public KafkaProducerBuilder<K, V> withSerializers(Serializer<K> keySer, Serializer<V> valSer) {
+        this.keySerializer = keySer;
+        this.valueSerializer = valSer;
+        this.keySe = null;
+        this.valueSe = null;
         return this;
     }
 
@@ -170,7 +195,7 @@ public class KafkaProducerBuilder<K, V> {
 
         // merge in common and seed properties
         kafkaBaseBuilder.finishBuild();
-        return kafkaBaseBuilder.producer();
+        return kafkaBaseBuilder.producer(keySerializer, valueSerializer);
     }
 
     public enum AckType {

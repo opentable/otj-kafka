@@ -49,8 +49,12 @@ public class KafkaConsumerBuilder<K, V>  {
     private OptionalLong maxPollIntervalMs = OptionalLong.empty();
     private AutoOffsetResetType autoOffsetResetType = AutoOffsetResetType.Latest;
     private Class<? extends PartitionAssignor> partitionStrategy = RangeAssignor.class;
+    // Kafka is really stupid. In the properties you can only configure a no-args
+    // and then they hack around it if you have one supplied
     private Class<? extends Deserializer<K>> keyDe;
     private Class<? extends Deserializer<V>> valueDe;
+    private Deserializer<K> keyDeserializerInstance;
+    private Deserializer<V> valueDeserializerInstance;
 
     public KafkaConsumerBuilder(EnvironmentProvider environmentProvider) {
         this(new HashMap<>(), environmentProvider);
@@ -100,9 +104,31 @@ public class KafkaConsumerBuilder<K, V>  {
         return this;
     }
 
+    /**
+     * Provide an class. If you have a no-args constructor use this
+     * @param keyDeSer key deserializer
+     * @param valDeSer value deserializer
+     * @return this
+     */
     public KafkaConsumerBuilder<K, V> withDeserializers(Class<? extends Deserializer<K>> keyDeSer, Class<? extends Deserializer<V>> valDeSer) {
         this.keyDe = keyDeSer;
         this.valueDe = valDeSer;
+        this.keyDeserializerInstance = null;
+        this.valueDeserializerInstance = null;
+        return this;
+    }
+
+    /**
+     * Provide an instance. If you don't have a no-args constructor use this
+     * @param keyDeSer key deserializer
+     * @param valDeSer value deserializer
+     * @return this
+     */
+    public KafkaConsumerBuilder<K, V> withDeserializers(Deserializer<K> keyDeSer, Deserializer<V> valDeSer) {
+        this.keyDeserializerInstance = keyDeSer;
+        this.valueDeserializerInstance = valDeSer;
+        this.keyDe = null;
+        this.valueDe = null;
         return this;
     }
 
@@ -189,7 +215,7 @@ public class KafkaConsumerBuilder<K, V>  {
         // Merge in common and user supplied properties.
         kafkaBaseBuilder.finishBuild();
         kafkaBaseBuilder.cantBeNull(ConsumerConfig.PARTITION_ASSIGNMENT_STRATEGY_CONFIG, "Partition assignment strategy can't be null");
-        return kafkaBaseBuilder.consumer();
+        return kafkaBaseBuilder.consumer(keyDeserializerInstance, valueDeserializerInstance);
     }
 
     public enum AutoOffsetResetType {

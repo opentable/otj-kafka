@@ -30,6 +30,8 @@ import org.apache.kafka.clients.CommonClientConfigs;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.common.security.auth.SecurityProtocol;
+import org.apache.kafka.common.serialization.Deserializer;
+import org.apache.kafka.common.serialization.Serializer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -131,14 +133,14 @@ class KafkaBaseBuilder {
         loggingSampleRate = rate;
     }
 
-    <CK,CV> KafkaConsumer<CK,CV> consumer() {
+    <CK,CV> KafkaConsumer<CK,CV> consumer(Deserializer<CK> keyDeserializer, Deserializer<CV> valuedeserializer) {
         LOG.trace("Building KafkaConsumer with props {}", finalProperties);
-        return new KafkaConsumer<>(finalProperties);
+        return new KafkaConsumer<>(finalProperties, keyDeserializer, valuedeserializer);
     }
 
-    <PK,PV> KafkaProducer<PK,PV> producer() {
+    <PK,PV> KafkaProducer<PK,PV> producer(Serializer<PK> keySerializer, Serializer<PV> valueSerializer) {
         LOG.trace("Building KafkaProducer with props {}", finalProperties);
-        return new KafkaProducer<>(finalProperties);
+        return new KafkaProducer<>(finalProperties, keySerializer, valueSerializer);
     }
 
 
