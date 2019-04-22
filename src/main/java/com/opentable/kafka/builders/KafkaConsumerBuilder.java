@@ -14,6 +14,7 @@
 package com.opentable.kafka.builders;
 
 import java.time.Duration;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -223,6 +224,11 @@ public class KafkaConsumerBuilder<K, V>  {
         final String value;
         AutoOffsetResetType(String value) {
             this.value = value;
+        }
+
+        public static AutoOffsetResetType fromString(String c) {
+            return Arrays.stream(values()).filter(t -> t.value.equalsIgnoreCase(c))
+                    .findFirst().orElseThrow(() -> new IllegalArgumentException("Can't convert " + c));
         }
     }
 }
