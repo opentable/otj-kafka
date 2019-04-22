@@ -39,11 +39,11 @@ public enum OTKafkaHeaders {
     @SuppressWarnings("OptionalUsedAsFieldOrParameterType")
     private Optional<ConservedHeader> conservedHeader;
 
-    private OTKafkaHeaders(String kafkaName) {
+    OTKafkaHeaders(String kafkaName) {
         this(kafkaName, null);
     }
 
-    private OTKafkaHeaders(String kafkaName,ConservedHeader conservedHeaderName) {
+    OTKafkaHeaders(String kafkaName, ConservedHeader conservedHeaderName) {
         this.kafkaName = kafkaName;
         this.conservedHeader = Optional.ofNullable(conservedHeaderName);
     }
