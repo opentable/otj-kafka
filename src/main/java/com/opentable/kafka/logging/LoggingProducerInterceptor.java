@@ -37,7 +37,7 @@ public class LoggingProducerInterceptor implements ProducerInterceptor<Object, O
     private Bucket bucket;
 
 
-    public LoggingProducerInterceptor() {
+    public LoggingProducerInterceptor() { //NOPMD
         /* noargs needed for kafka */
     }
 

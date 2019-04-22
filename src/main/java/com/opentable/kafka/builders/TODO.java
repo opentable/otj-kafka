@@ -80,8 +80,11 @@ public class TODO {
      *  one later - they would be locked in. [or have to change alerts])
      *
      *  https://github.com/apakulov/kafka-graphite/blob/master/kafka-graphite-clients/src/main/java/org/apache/kafka/common/metrics/GraphiteReporter.java
+     *  shows some sanitation of keys and values
      *
      *  https://github.com/RTBHOUSE/kafka-graphite-reporter/blob/master/src/main/java/com/rtbhouse/reporter/KafkaClientMetricsReporter.java
+     *
+     *  shows some checking of values
      *
      * 6. I've noted in the code several hot spots in metrics that I worry about performance wise. Also I synchronized all methods, because
      * I see no guarantee of thread safety

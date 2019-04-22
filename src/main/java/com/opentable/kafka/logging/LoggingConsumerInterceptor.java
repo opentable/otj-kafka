@@ -40,7 +40,7 @@ public class LoggingConsumerInterceptor<K, V> implements ConsumerInterceptor<K, 
     private LoggingUtils loggingUtils;
     private Bucket bucket;
 
-    public LoggingConsumerInterceptor() {
+    public LoggingConsumerInterceptor() { //NOPMD
         /* noargs needed for kafka */
     }
 

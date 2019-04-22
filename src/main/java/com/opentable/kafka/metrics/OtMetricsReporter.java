@@ -45,7 +45,7 @@ public class OtMetricsReporter implements MetricsReporter {
     private final Set<String> metricMatchers = new HashSet<>();
     private final AntPathMatcher matcher = new AntPathMatcher("-");
 
-    public OtMetricsReporter() {
+    public OtMetricsReporter() { //NOPMD
         /* no args needed for kafka */
     }
 
