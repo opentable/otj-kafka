@@ -16,13 +16,18 @@ package com.opentable.kafka.logging;
 import com.opentable.logging.CommonLogFields;
 
 public final class OTKafkaHeaders {
-    public static final String REFERRING_HOST = "ot-referring-host";
-    public static final String REFERRING_INSTANCE_NO = "ot-referring-instance_no";
-    public static final String REFERRING_SERVICE = "ot-referring-service";
-    public static final String REQUEST_ID = CommonLogFields.REQUEST_ID_KEY;
-    public static final String TRACE_FLAG = "ot-trace-flag";
-    public static final String ENV = "ot-env";
-    public static final String ENV_FLAVOR = "ot-env-flavor";
+    // The namespacing logic is as follows
+    // 1. All library usage (this library or others) preface with ot-
+    // 2. Then the library name (kafkalibrary in this case)
+    // 3. Then whatever you want
+    // 4. This helps prevent collision
+    public static final String REFERRING_HOST = "ot-kafkalibrary-referring-host";
+    public static final String REFERRING_INSTANCE_NO = "ot-kafkalibrary-referring-instance_no";
+    public static final String REFERRING_SERVICE = "ot-kafkalibrary-referring-service";
+    public static final String REQUEST_ID = "otkafkalibrary-request-id";
+    public static final String TRACE_FLAG = "ot-kafkalibrary-trace-flag";
+    public static final String ENV = "ot-kafkalibrary-env";
+    public static final String ENV_FLAVOR = "ot-kafkalibrary-env-flavor";
 
     private OTKafkaHeaders() {
     }
