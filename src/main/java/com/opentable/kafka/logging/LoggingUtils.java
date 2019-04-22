@@ -140,10 +140,14 @@ public class LoggingUtils {
                 .uuid(UUID.randomUUID())
                 .timestamp(Instant.now())
                 .serviceType(CommonLogHolder.getServiceType())
-                .requestId(ensureUUID(headers.map(h -> h.lastHeader((OTKafkaHeaders.REQUEST_ID))).map(Header::value).map(String::new).orElse(null)))
-                .referringService(headers.map(h -> h.lastHeader((OTKafkaHeaders.REFERRING_SERVICE))).map(Header::value).map(String::new).orElse(null))
-                .referringHost(headers.map(h -> h.lastHeader((OTKafkaHeaders.REFERRING_HOST))).map(Header::value).map(String::new).orElse(null))
+                .requestId(ensureUUID(headers.map(h -> h.lastHeader((kn(OTKafkaHeaders.REQUEST_ID)))).map(Header::value).map(String::new).orElse(null)))
+                .referringService(headers.map(h -> h.lastHeader((kn(OTKafkaHeaders.REFERRING_SERVICE)))).map(Header::value).map(String::new).orElse(null))
+                .referringHost(headers.map(h -> h.lastHeader((kn(OTKafkaHeaders.REFERRING_HOST)))).map(Header::value).map(String::new).orElse(null))
                 ;
+    }
+
+    private String kn(final OTKafkaHeaders otKafkaHeaders) {
+        return otKafkaHeaders.getKafkaName();
     }
 
     @Nonnull
@@ -241,9 +245,9 @@ public class LoggingUtils {
      * @param headerName name
      * @param value value
      */
-    private void setKafkaHeader(Headers headers, String headerName, String value) {
+    private void setKafkaHeader(Headers headers, OTKafkaHeaders headerName, String value) {
         if (value != null && headers != null && headerName != null) {
-            headers.add(headerName, value.getBytes(CHARSET));
+            headers.add(headerName.getKafkaName(), value.getBytes(CHARSET));
         }
     }
 
@@ -253,7 +257,7 @@ public class LoggingUtils {
      * @param headerName name
      * @param value value
      */
-    private void setKafkaHeader(Headers headers, String headerName, Integer value) {
+    private void setKafkaHeader(Headers headers, OTKafkaHeaders headerName, Integer value) {
         if (value != null && (headerName != null)) {
             setKafkaHeader(headers, headerName, String.valueOf(value));
         }
@@ -267,12 +271,13 @@ public class LoggingUtils {
      * @param headers headers of record. These will be mutated.
      */
     <K, V> void setTracingHeaderf(Bucket bucket, Headers headers) {
-        if (!headers.headers(OTKafkaHeaders.TRACE_FLAG).iterator().hasNext()) {
+        final String traceFlag = kn(OTKafkaHeaders.TRACE_FLAG);
+        if (!headers.headers(traceFlag).iterator().hasNext()) {
             // If header not present, make decision our self and set it
             if (bucket.tryConsume(1)) {
-                headers.add(OTKafkaHeaders.TRACE_FLAG, TRUE);
+                headers.add(traceFlag, TRUE);
             } else {
-                headers.add(OTKafkaHeaders.TRACE_FLAG, FALSE);
+                headers.add(traceFlag, FALSE);
             }
         }
     }
@@ -287,7 +292,7 @@ public class LoggingUtils {
      */
     private <K, V> boolean isLoggingNeeded(ProducerRecord<K, V> record) {
         final Headers headers = record.headers();
-        return StreamSupport.stream(headers.headers(OTKafkaHeaders.TRACE_FLAG).spliterator(), false)
+        return StreamSupport.stream(headers.headers(kn(OTKafkaHeaders.TRACE_FLAG)).spliterator(), false)
             .map(h -> new String(h.value(), CHARSET))
             .map("true"::equals)
             .filter(v -> v)

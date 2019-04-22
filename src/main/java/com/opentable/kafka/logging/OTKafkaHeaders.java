@@ -13,22 +13,46 @@
  */
 package com.opentable.kafka.logging;
 
-import com.opentable.logging.CommonLogFields;
+import java.util.Optional;
 
-public final class OTKafkaHeaders {
+import com.opentable.conservedheaders.ConservedHeader;
+
+/**
+ * Represents the names of various headers in Kafka. Ones marked appropriately map to a conserved header
+ */
+public enum OTKafkaHeaders {
+    REFERRING_HOST("ot-kafkalibrary-referring-host"),
+    REFERRING_INSTANCE_NO("ot-kafkalibrary-referring-instance-no"),
+    REFERRING_SERVICE("ot-kafkalibrary-referring-service"),
+    REQUEST_ID("otkafkalibrary-request-id", ConservedHeader.REQUEST_ID),
+    TRACE_FLAG("ot-kafkalibrary-trace-flag"),
+    ENV("ot-kafkalibrary-env"),
+    ENV_FLAVOR("ot-kafkalibrary-env-flavor")
+    ;
+
     // The namespacing logic is as follows
     // 1. All library usage (this library or others) preface with ot-
     // 2. Then the library name (kafkalibrary in this case)
     // 3. Then whatever you want
     // 4. This helps prevent collision
-    public static final String REFERRING_HOST = "ot-kafkalibrary-referring-host";
-    public static final String REFERRING_INSTANCE_NO = "ot-kafkalibrary-referring-instance_no";
-    public static final String REFERRING_SERVICE = "ot-kafkalibrary-referring-service";
-    public static final String REQUEST_ID = "otkafkalibrary-request-id";
-    public static final String TRACE_FLAG = "ot-kafkalibrary-trace-flag";
-    public static final String ENV = "ot-kafkalibrary-env";
-    public static final String ENV_FLAVOR = "ot-kafkalibrary-env-flavor";
+    private String kafkaName;
+    @SuppressWarnings("OptionalUsedAsFieldOrParameterType")
+    private Optional<ConservedHeader> conservedHeader;
 
-    private OTKafkaHeaders() {
+    private OTKafkaHeaders(String kafkaName) {
+        this(kafkaName, null);
+    }
+
+    private OTKafkaHeaders(String kafkaName,ConservedHeader conservedHeaderName) {
+        this.kafkaName = kafkaName;
+        this.conservedHeader = Optional.ofNullable(conservedHeaderName);
+    }
+
+    public String getKafkaName() {
+        return kafkaName;
+    }
+
+    public Optional<ConservedHeader> getConservedHeader() {
+        return conservedHeader;
     }
 }
