@@ -196,6 +196,11 @@ public class KafkaConsumerBuilder<K, V>  {
         return this;
     }
 
+    public KafkaConsumerBuilder<K, V> disableMetrics() {
+        kafkaBaseBuilder.withMetrics(false);
+        return this;
+    }
+
     public KafkaConsumer<K, V> build() {
         if (partitionStrategy != null) {
             kafkaBaseBuilder.addProperty(ConsumerConfig.PARTITION_ASSIGNMENT_STRATEGY_CONFIG, partitionStrategy.getName());

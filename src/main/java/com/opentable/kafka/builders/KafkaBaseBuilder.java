@@ -59,6 +59,7 @@ class KafkaBaseBuilder {
     private Optional<String> clientId = Optional.empty();
     private Optional<SecurityProtocol> securityProtocol = Optional.empty();
     private Optional<MetricRegistry> metricRegistry;
+    private boolean enableMetrics = true;
 
     KafkaBaseBuilder(Map<String, Object> props, EnvironmentProvider environmentProvider) {
         this.seedProperties = props;
@@ -126,6 +127,10 @@ class KafkaBaseBuilder {
         this.metricRegistry = Optional.ofNullable(metricRegistry);
     }
 
+    void withMetrics(final boolean enabled) {
+        this.enableMetrics = enabled;
+    }
+
     void withLogging(boolean enabled) {
         enableLoggingInterceptor = enabled;
     }
@@ -143,7 +148,6 @@ class KafkaBaseBuilder {
         return new KafkaProducer<>(finalProperties, keySerializer, valueSerializer);
     }
 
-
     void finishBuild() {
         if (!bootStrapServers.isEmpty()) {
             addProperty(CommonClientConfigs.BOOTSTRAP_SERVERS_CONFIG, bootStrapServers.stream().distinct().collect(Collectors.joining(",")));
@@ -160,8 +164,10 @@ class KafkaBaseBuilder {
     private void setupMetrics() {
         final List<String> metricReporters = mergeListProperty(CommonClientConfigs.METRIC_REPORTER_CLASSES_CONFIG);
         metricRegistry.ifPresent(mr -> {
-            metricReporters.add(OtMetricsReporter.class.getName());
-            addProperty(OtMetricsReporterConfig.METRIC_REGISTRY_REF_CONFIG, mr);
+           if (enableMetrics) {
+               metricReporters.add(OtMetricsReporter.class.getName());
+               addProperty(OtMetricsReporterConfig.METRIC_REGISTRY_REF_CONFIG, mr);
+           }
         });
         if (!metricReporters.isEmpty()) {
             addProperty(CommonClientConfigs.METRIC_REPORTER_CLASSES_CONFIG, metricReporters.stream().distinct().collect(Collectors.joining(",")));

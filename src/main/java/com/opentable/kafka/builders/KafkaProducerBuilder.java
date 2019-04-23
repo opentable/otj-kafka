@@ -76,6 +76,12 @@ public class KafkaProducerBuilder<K, V> {
         return this;
     }
 
+    public KafkaProducerBuilder<K, V> disableMetrics() {
+        kafkaBaseBuilder.withMetrics(false);
+        return this;
+    }
+
+
     public KafkaProducerBuilder<K, V> withLoggingSampleRate(int rate) {
         kafkaBaseBuilder.withSamplingRatePer10Seconds(rate);
         return this;
