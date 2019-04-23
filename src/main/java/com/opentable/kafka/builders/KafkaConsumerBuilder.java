@@ -95,7 +95,7 @@ public class KafkaConsumerBuilder<K, V>  {
         return this;
     }
 
-    public KafkaConsumerBuilder<K, V> withOffsetReset(AutoOffsetResetType val) {
+    public KafkaConsumerBuilder<K, V> withAutoOffsetReset(AutoOffsetResetType val) {
         autoOffsetResetType = val == null ? AutoOffsetResetType.None : autoOffsetResetType;
         return this;
     }
