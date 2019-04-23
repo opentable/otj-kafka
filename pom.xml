@@ -33,6 +33,8 @@
   <properties>
     <!-- remove once parent updates -->
     <dep.bucket4j.version>4.4.1</dep.bucket4j.version>
+    <!-- remove once parent updates -->
+    <dep.otj-logging.version>3.0.4</dep.otj-logging.version>
     <!-- remove (and replace snapshot) -->
     <dep.otj-otl.version>0.8.19-SNAPSHOT</dep.otj-otl.version>
 
