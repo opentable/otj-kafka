@@ -21,6 +21,7 @@ import java.util.Optional;
 import java.util.OptionalInt;
 
 import com.codahale.metrics.MetricRegistry;
+import com.google.common.annotations.VisibleForTesting;
 
 import org.apache.kafka.clients.CommonClientConfigs;
 import org.apache.kafka.clients.producer.KafkaProducer;
@@ -193,10 +194,10 @@ public class KafkaProducerBuilder<K, V> {
         ackType.ifPresent(ack -> kafkaBaseBuilder.addProperty(ProducerConfig.ACKS_CONFIG, ack.value));
         retries.ifPresent(retries -> kafkaBaseBuilder.addProperty(CommonClientConfigs.RETRIES_CONFIG, retries));
         if (keySe != null) {
-            kafkaBaseBuilder.addProperty(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, keySe);
+            kafkaBaseBuilder.addProperty(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, keySe.getName());
         }
         if (valueSe != null) {
-            kafkaBaseBuilder.addProperty(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, valueSe);
+            kafkaBaseBuilder.addProperty(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, valueSe.getName());
         }
 
         // merge in common and seed properties
@@ -216,4 +217,8 @@ public class KafkaProducerBuilder<K, V> {
         }
     }
 
+    @VisibleForTesting
+    KafkaBaseBuilder getKafkaBaseBuilder() {
+        return kafkaBaseBuilder;
+    }
 }

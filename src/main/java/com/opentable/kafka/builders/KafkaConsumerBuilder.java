@@ -23,6 +23,7 @@ import java.util.OptionalInt;
 import java.util.OptionalLong;
 
 import com.codahale.metrics.MetricRegistry;
+import com.google.common.annotations.VisibleForTesting;
 
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.consumer.ConsumerInterceptor;
@@ -213,10 +214,10 @@ public class KafkaConsumerBuilder<K, V>  {
         kafkaBaseBuilder.addProperty(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, autoOffsetResetType.value);
         maxPollRecords.ifPresent(mpr -> kafkaBaseBuilder.addProperty(ConsumerConfig.MAX_POLL_RECORDS_CONFIG, mpr));
         if (keyDe != null) {
-            kafkaBaseBuilder.addProperty(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, keyDe);
+            kafkaBaseBuilder.addProperty(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, keyDe.getName());
         }
         if (valueDe != null) {
-            kafkaBaseBuilder.addProperty(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, valueDe);
+            kafkaBaseBuilder.addProperty(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, valueDe.getName());
         }
         // Merge in common and user supplied properties.
         kafkaBaseBuilder.finishBuild();
@@ -235,5 +236,10 @@ public class KafkaConsumerBuilder<K, V>  {
             return Arrays.stream(values()).filter(t -> t.value.equalsIgnoreCase(c))
                     .findFirst().orElseThrow(() -> new IllegalArgumentException("Can't convert " + c));
         }
+    }
+
+    @VisibleForTesting
+    KafkaBaseBuilder getKafkaBaseBuilder() {
+        return kafkaBaseBuilder;
     }
 }

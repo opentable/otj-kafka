@@ -13,12 +13,20 @@
  */
 package com.opentable.kafka.builders;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import java.lang.management.ManagementFactory;
+import java.util.Map;
 
 import javax.inject.Inject;
 import javax.management.MBeanServer;
 
+import com.codahale.metrics.MetricRegistry;
+
+import org.apache.kafka.clients.CommonClientConfigs;
+import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
+import org.apache.kafka.clients.consumer.RangeAssignor;
 import org.apache.kafka.common.serialization.IntegerDeserializer;
 import org.apache.kafka.common.serialization.StringDeserializer;
 import org.junit.Test;
@@ -35,6 +43,11 @@ import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.junit4.SpringRunner;
 
 import com.opentable.kafka.builders.KafkaConsumerBuilder.AutoOffsetResetType;
+import com.opentable.kafka.logging.LoggingConsumerInterceptor;
+import com.opentable.kafka.logging.LoggingInterceptorConfig;
+import com.opentable.kafka.logging.LoggingUtils;
+import com.opentable.kafka.metrics.OtMetricsReporter;
+import com.opentable.kafka.metrics.OtMetricsReporterConfig;
 import com.opentable.metrics.DefaultMetricsConfiguration;
 import com.opentable.service.ServiceInfo;
 
@@ -52,21 +65,61 @@ public class KafkaConsumerBuilderTest {
     @Inject
     private KafkaConsumerBuilderFactoryBean builderFactoryBean;
 
+    @Inject
+    private MetricRegistry metricRegistry;
+
     @Test
     public void builderTest() {
-        KafkaConsumerBuilder<Integer, String> builder = builderFactoryBean.builder("consumer", Integer.class, String.class)
+        KafkaConsumerBuilder<Integer, String> builder = getBuilder();
+        KafkaConsumer<Integer, String> c = builder
+                .build();
+        Map<String, Object> finalProperties = builder.getKafkaBaseBuilder().getFinalProperties();
+        assertThat(finalProperties).isNotEmpty();
+        assertThat(finalProperties.get(CommonClientConfigs.BOOTSTRAP_SERVERS_CONFIG)).isEqualTo("localhost:8080");
+        assertThat(finalProperties).doesNotContainKeys("blah");
+        assertThat(finalProperties.get(CommonClientConfigs.CLIENT_ID_CONFIG)).isEqualTo("test-consomer-01");
+        assertThat(finalProperties.get("blah2")).isEqualTo("blah2");
+        assertThat(finalProperties.get(ConsumerConfig.GROUP_ID_CONFIG)).isEqualTo("test");
+        assertThat(finalProperties.get(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG)).isEqualTo(IntegerDeserializer.class.getName());
+        assertThat(finalProperties.get(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG)).isEqualTo(StringDeserializer.class.getName());
+        assertThat(finalProperties.get(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG)).isEqualTo(AutoOffsetResetType.Latest.value);
+        assertThat(finalProperties.get(ConsumerConfig.PARTITION_ASSIGNMENT_STRATEGY_CONFIG)).isEqualTo(RangeAssignor.class.getName());
+        assertThat(finalProperties).doesNotContainKeys(ConsumerConfig.MAX_POLL_INTERVAL_MS_CONFIG, ConsumerConfig.SESSION_TIMEOUT_MS_CONFIG, ConsumerConfig.MAX_POLL_RECORDS_CONFIG);
+        assertThat(finalProperties.get(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG)).isEqualTo("true");
+        assertThat(finalProperties).doesNotContainKeys(CommonClientConfigs.REQUEST_TIMEOUT_MS_CONFIG, CommonClientConfigs.RETRY_BACKOFF_MS_CONFIG, CommonClientConfigs.SECURITY_PROTOCOL_CONFIG);
+        // metrics, logging, overriding properties
+        assertThat(finalProperties.get(CommonClientConfigs.METRIC_REPORTER_CLASSES_CONFIG)).isEqualTo(OtMetricsReporter.class.getName());
+        assertThat(finalProperties.get(OtMetricsReporterConfig.METRIC_REGISTRY_REF_CONFIG)).isSameAs(metricRegistry);
+        assertThat(finalProperties.get(LoggingInterceptorConfig.LOGGING_REF)).isInstanceOf(LoggingUtils.class);
+        assertThat(finalProperties.get(LoggingInterceptorConfig.SAMPLE_RATE_PCT_CONFIG)).isEqualTo(3);
+        assertThat(finalProperties.get(ConsumerConfig.INTERCEPTOR_CLASSES_CONFIG)).isEqualTo(LoggingConsumerInterceptor.class.getName());
+        assertThat(finalProperties.get("check.crcs")).isEqualTo("false");
+    }
+
+    @Test
+    public void withoutLoggingOrMetrics() {
+        KafkaConsumerBuilder<Integer, String> builder = getBuilder().disableLogging().disableMetrics();
+        KafkaConsumer<Integer, String> c = builder
+                .build();
+        Map<String, Object> finalProperties = builder.getKafkaBaseBuilder().getFinalProperties();
+        assertThat(finalProperties).doesNotContainKeys(OtMetricsReporterConfig.METRIC_REGISTRY_REF_CONFIG,
+                CommonClientConfigs.METRIC_REPORTER_CLASSES_CONFIG, ConsumerConfig.INTERCEPTOR_CLASSES_CONFIG,
+                LoggingInterceptorConfig.LOGGING_REF, LoggingInterceptorConfig.SAMPLE_RATE_PCT_CONFIG );
+    }
+
+
+
+    private KafkaConsumerBuilder<Integer, String> getBuilder() {
+        return builderFactoryBean.builder("consumer", Integer.class, String.class)
                 .withBootstrapServer("localhost:8080")
                 .withProperty("blah", "blah")
                 .removeProperty("blah")
                 .withClientId("test-consomer-01")
                 .withProperty("blah2", "blah2")
-                .removeProperty("blah2")
                 .withGroupId("test")
                 .withDeserializers(IntegerDeserializer.class, StringDeserializer.class)
                 .withAutoOffsetReset(AutoOffsetResetType.Latest)
                 .withLoggingSampleRate(3);
-        KafkaConsumer<Integer, String> c = builder
-                .build();
     }
 
     @Configuration

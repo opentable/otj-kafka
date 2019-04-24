@@ -13,13 +13,21 @@
  */
 package com.opentable.kafka.builders;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import java.lang.management.ManagementFactory;
 import java.time.Duration;
+import java.util.Map;
 
 import javax.inject.Inject;
 import javax.management.MBeanServer;
 
+import com.codahale.metrics.MetricRegistry;
+
+import org.apache.kafka.clients.CommonClientConfigs;
 import org.apache.kafka.clients.producer.KafkaProducer;
+import org.apache.kafka.clients.producer.ProducerConfig;
+import org.apache.kafka.clients.producer.internals.DefaultPartitioner;
 import org.apache.kafka.common.security.auth.SecurityProtocol;
 import org.apache.kafka.common.serialization.IntegerSerializer;
 import org.apache.kafka.common.serialization.StringSerializer;
@@ -37,6 +45,11 @@ import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.junit4.SpringRunner;
 
 import com.opentable.kafka.builders.KafkaProducerBuilder.AckType;
+import com.opentable.kafka.logging.LoggingInterceptorConfig;
+import com.opentable.kafka.logging.LoggingProducerInterceptor;
+import com.opentable.kafka.logging.LoggingUtils;
+import com.opentable.kafka.metrics.OtMetricsReporter;
+import com.opentable.kafka.metrics.OtMetricsReporterConfig;
 import com.opentable.metrics.DefaultMetricsConfiguration;
 import com.opentable.service.ServiceInfo;
 
@@ -55,24 +68,65 @@ public class KafkaProducerBuilderTest {
     @Inject
     private KafkaProducerBuilderFactoryBean builderFactoryBean;
 
+    @Inject
+    private MetricRegistry metricRegistry;
+
     @Test
     public void builderTest() {
-        KafkaProducerBuilder<Integer, String> builder = builderFactoryBean.builder("producer", Integer.class, String.class)
-            .withBootstrapServer("localhost:8080")
-            .withProperty("blah", "blah")
-            .removeProperty("blah")
-            .withClientId("test-producer-01")
-            .withProperty("blah2", "blah2")
-            .removeProperty("blah2")
-            .withAcks(AckType.none)
-            .withRetries(5)
-            .withMaxInFlightRequests(5)
-            .withRequestTimeoutMs(Duration.ofSeconds(30))
-            .withSecurityProtocol(SecurityProtocol.PLAINTEXT)
-            .withSerializers(IntegerSerializer.class, StringSerializer.class)
-            .withLoggingSampleRate(3);
+        KafkaProducerBuilder<Integer, String> builder = getBuilder();
         KafkaProducer<Integer, String> p = builder
-            .build();
+                .build();
+        Map<String, Object> finalProperties = builder.getKafkaBaseBuilder().getFinalProperties();
+        assertThat(finalProperties).isNotEmpty();
+        assertThat(finalProperties.get(CommonClientConfigs.BOOTSTRAP_SERVERS_CONFIG)).isEqualTo("localhost:8080");
+        assertThat(finalProperties).doesNotContainKeys("blah");
+        assertThat(finalProperties.get(CommonClientConfigs.CLIENT_ID_CONFIG)).isEqualTo("test-producer-01");
+        assertThat(finalProperties.get("blah2")).isEqualTo("blah2");
+        assertThat(finalProperties.get(CommonClientConfigs.REQUEST_TIMEOUT_MS_CONFIG)).isEqualTo("30000");
+        assertThat(finalProperties.get(CommonClientConfigs.SECURITY_PROTOCOL_CONFIG)).isEqualTo(SecurityProtocol.PLAINTEXT.name);
+        assertThat(finalProperties.get( ProducerConfig.ACKS_CONFIG)).isEqualTo(AckType.none.value);
+        assertThat(finalProperties.get(CommonClientConfigs.RETRIES_CONFIG)).isEqualTo(5);
+        assertThat(finalProperties).doesNotContainKeys( CommonClientConfigs.RETRY_BACKOFF_MS_CONFIG);
+        // metrics, logging, overriding properties
+        assertThat(finalProperties.get(CommonClientConfigs.METRIC_REPORTER_CLASSES_CONFIG)).isEqualTo(OtMetricsReporter.class.getName());
+        assertThat(finalProperties.get(OtMetricsReporterConfig.METRIC_REGISTRY_REF_CONFIG)).isSameAs(metricRegistry);
+        assertThat(finalProperties.get(LoggingInterceptorConfig.LOGGING_REF)).isInstanceOf(LoggingUtils.class);
+        assertThat(finalProperties.get(LoggingInterceptorConfig.SAMPLE_RATE_PCT_CONFIG)).isEqualTo(3);
+        assertThat(finalProperties.get("linger.ms")).isEqualTo("20");
+        assertThat(finalProperties.get(ProducerConfig.INTERCEPTOR_CLASSES_CONFIG)).isEqualTo(LoggingProducerInterceptor.class.getName());
+        assertThat(finalProperties.get(ProducerConfig.PARTITIONER_CLASS_CONFIG)).isEqualTo(DefaultPartitioner.class.getName());
+        assertThat(finalProperties.get(ProducerConfig.MAX_IN_FLIGHT_REQUESTS_PER_CONNECTION)).isEqualTo(5);
+        assertThat(finalProperties.get(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG)).isEqualTo(StringSerializer.class.getName());
+        assertThat(finalProperties.get(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG)).isEqualTo(IntegerSerializer.class.getName());
+    }
+
+    @Test
+    public void withoutMetricsAndLogging() {
+        KafkaProducerBuilder<Integer, String> builder = getBuilder();
+        KafkaProducer<Integer, String> p = builder.disableLogging().disableMetrics()
+                .build();
+        Map<String, Object> finalProperties = builder.getKafkaBaseBuilder().getFinalProperties();
+        assertThat(finalProperties).doesNotContainKeys(OtMetricsReporterConfig.METRIC_REGISTRY_REF_CONFIG,
+                ProducerConfig.INTERCEPTOR_CLASSES_CONFIG,
+                CommonClientConfigs.METRIC_REPORTER_CLASSES_CONFIG,
+                LoggingInterceptorConfig.LOGGING_REF, LoggingInterceptorConfig.SAMPLE_RATE_PCT_CONFIG );
+    }
+
+    private KafkaProducerBuilder<Integer, String> getBuilder() {
+        return builderFactoryBean.builder("producer", Integer.class, String.class)
+                    .withBootstrapServer("localhost:8080")
+                    .withProperty("blah", "blah")
+                    .withProperty("linger.ms", "99") // this will be overwritten
+                    .removeProperty("blah")
+                    .withClientId("test-producer-01")
+                    .withProperty("blah2", "blah2")
+                    .withAcks(AckType.none)
+                    .withRetries(5)
+                    .withMaxInFlightRequests(5)
+                    .withRequestTimeoutMs(Duration.ofSeconds(30))
+                    .withSecurityProtocol(SecurityProtocol.PLAINTEXT)
+                    .withSerializers(IntegerSerializer.class, StringSerializer.class)
+                    .withLoggingSampleRate(3);
     }
 
     @Configuration

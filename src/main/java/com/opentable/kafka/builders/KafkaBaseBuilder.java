@@ -24,6 +24,7 @@ import java.util.OptionalLong;
 import java.util.stream.Collectors;
 
 import com.codahale.metrics.MetricRegistry;
+import com.google.common.annotations.VisibleForTesting;
 
 import org.apache.commons.lang3.StringUtils;
 import org.apache.kafka.clients.CommonClientConfigs;
@@ -198,4 +199,8 @@ class KafkaBaseBuilder {
         seedProperties.forEach(finalProperties::put);
     }
 
+    @VisibleForTesting
+    Map<String, Object> getFinalProperties() {
+        return finalProperties;
+    }
 }
