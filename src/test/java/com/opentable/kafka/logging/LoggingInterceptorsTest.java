@@ -160,15 +160,18 @@ public class LoggingInterceptorsTest {
         final int numTestRecords = 100;
         final UUID req = UUID.randomUUID();
         MDC.put(ConservedHeader.REQUEST_ID.getHeaderName(), req.toString());
+        MDC.put(ConservedHeader.CORRELATION_ID.getHeaderName(), "foo");
         writeTestRecords(1, numTestRecords);
         ConsumerRecords<String, String> r = readTestRecords(numTestRecords);
 
+        // We demonstrate here that conserved headers + environment + a random added header all propagate.
         int expected = 1;
         for (ConsumerRecord<String, String> rec : r) {
             Headers headers = rec.headers();
 
             Assertions.assertThat(Integer.parseInt(new String(headers.lastHeader("myIndex").value(), StandardCharsets.UTF_8))).isEqualTo(expected);
             expected++;
+            Assertions.assertThat(new String(headers.lastHeader(ConservedHeader.CORRELATION_ID.getHeaderName()).value(), StandardCharsets.UTF_8)).isEqualTo("foo");
             Assertions.assertThat(getHeaderValue(headers, OTKafkaHeaders.REFERRING_SERVICE)).isEqualTo(environmentProvider.getReferringService());
             Assertions.assertThat(getHeaderValue(headers, OTKafkaHeaders.ENV)).isEqualTo(environmentProvider.getEnvironment());
             Assertions.assertThat(getHeaderValue(headers, OTKafkaHeaders.ENV_FLAVOR)).isEqualTo(environmentProvider.getEnvironmentFlavor());
