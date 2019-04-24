@@ -13,21 +13,26 @@
  */
 package com.opentable.kafka.logging;
 
+import java.nio.charset.StandardCharsets;
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.Collections;
+import java.util.List;
 import java.util.Map;
-import java.util.Properties;
 import java.util.UUID;
 
 import javax.inject.Inject;
 
 import org.apache.kafka.clients.consumer.Consumer;
-import org.apache.kafka.clients.consumer.ConsumerConfig;
+import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.clients.producer.Producer;
 import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.clients.producer.ProducerRecord;
+import org.apache.kafka.common.header.Header;
+import org.apache.kafka.common.header.Headers;
+import org.apache.kafka.common.header.internals.RecordHeader;
 import org.apache.kafka.common.serialization.Deserializer;
 import org.apache.kafka.common.serialization.Serializer;
 import org.apache.kafka.common.serialization.StringDeserializer;
@@ -55,6 +60,7 @@ import com.opentable.kafka.builders.KafkaProducerBuilder;
 import com.opentable.kafka.builders.KafkaProducerBuilderFactoryBean;
 import com.opentable.kafka.builders.SettableEnvironmentProvider;
 import com.opentable.kafka.util.ReadWriteRule;
+import com.opentable.logging.CommonLogHolder;
 import com.opentable.service.ServiceInfo;
 
 @RunWith(SpringRunner.class)
@@ -94,28 +100,24 @@ public class LoggingInterceptorsTest {
     public void writeTestRecords(final int lo, final int hi) {
         try (Producer<String, String> producer = createProducer(StringSerializer.class, StringSerializer.class)) {
             for (int i = lo; i <= hi; ++i) {
+                List<Header> headers = new ArrayList<>();
+                headers.add(new RecordHeader("myIndex", String.valueOf(i).getBytes(StandardCharsets.UTF_8)));
                 MDC.put(REQUEST_ID_KEY, UUID.randomUUID().toString());
                 producer.send(new ProducerRecord<>(
                         rw.getTopicName(),
+                        null,
+                        null,
                         String.format("key-%d", i),
-                        String.format("value-%d", i)));
+                        String.format("value-%d", i),
+                        headers
+                        )
+                );
             }
             producer.flush();
         }
     }
 
     public <K, V> Consumer<K, V> createConsumer(String groupId, Class<? extends Deserializer<K>> keySer, Class<? extends Deserializer<V>> valueSer) {
-        /*
-        Properties props = rw.getEkb().baseConsumerProperties(groupId);
-        props.put("key.deserializer", keySer.getName());
-        props.put("value.deserializer", valueSer.getName());
-        props.put(ConsumerConfig.INTERCEPTOR_CLASSES_CONFIG, LoggingConsumerInterceptor.class.getCanonicalName());
-        props.put(LoggingInterceptorConfig.LOGGING_REF, new LoggingUtils(environmentProvider));
-        //put logger here
-
-        return new KafkaConsumer<>(props)
-         */
-
         Map<String,Object> props = rw.getEkb().baseConsumerMap(groupId);
         KafkaConsumerBuilder<K,V> builder = kafkaConsumerBuilderFactoryBean.<K,V>builder("consumer")
                 .withDeserializers(keySer, valueSer).disableMetrics();
@@ -124,7 +126,7 @@ public class LoggingInterceptorsTest {
         return b;
     }
 
-    public void readTestRecords(final int expect) {
+    public ConsumerRecords<String, String> readTestRecords(final int expect) {
         try (Consumer<String, String> consumer = createConsumer("test", StringDeserializer.class, StringDeserializer.class)) {
             consumer.subscribe(Collections.singleton(rw.getTopicName()));
             ConsumerRecords<String, String> records;
@@ -137,6 +139,7 @@ public class LoggingInterceptorsTest {
             Assertions.assertThat(records.count()).isEqualTo(expect);
             // Commit offsets.
             consumer.commitSync();
+            return records;
         }
     }
 
@@ -148,11 +151,31 @@ public class LoggingInterceptorsTest {
         rw.readTestRecords(numTestRecords);
     }
 
+    private String getHeaderValue(Headers headers, OTKafkaHeaders headerName) {
+        return new String(headers.lastHeader(headerName.getKafkaName()).value(), StandardCharsets.UTF_8);
+    }
+
     @Test(timeout = 60_000)
     public void consumerTest() {
         final int numTestRecords = 100;
+        final UUID req = UUID.randomUUID();
+        MDC.put(ConservedHeader.REQUEST_ID.getHeaderName(), req.toString());
         writeTestRecords(1, numTestRecords);
-        readTestRecords(numTestRecords);
+        ConsumerRecords<String, String> r = readTestRecords(numTestRecords);
+
+        int expected = 1;
+        for (ConsumerRecord<String, String> rec : r) {
+            Headers headers = rec.headers();
+
+            Assertions.assertThat(Integer.parseInt(new String(headers.lastHeader("myIndex").value(), StandardCharsets.UTF_8))).isEqualTo(expected);
+            expected++;
+            Assertions.assertThat(getHeaderValue(headers, OTKafkaHeaders.REFERRING_SERVICE)).isEqualTo(environmentProvider.getReferringService());
+            Assertions.assertThat(getHeaderValue(headers, OTKafkaHeaders.ENV)).isEqualTo(environmentProvider.getEnvironment());
+            Assertions.assertThat(getHeaderValue(headers, OTKafkaHeaders.ENV_FLAVOR)).isEqualTo(environmentProvider.getEnvironmentFlavor());
+            Assertions.assertThat(Integer.parseInt(getHeaderValue(headers, OTKafkaHeaders.REFERRING_INSTANCE_NO))).isEqualTo(environmentProvider.getReferringInstanceNumber());
+            Assertions.assertThat(getHeaderValue(headers, OTKafkaHeaders.REQUEST_ID)).isEqualTo(req.toString());
+            //TODO: Discuss logName vs headerName withh Scott.
+        }
     }
 
     @Configuration
