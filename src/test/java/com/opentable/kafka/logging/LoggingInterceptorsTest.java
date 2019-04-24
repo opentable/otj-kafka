@@ -102,7 +102,6 @@ public class LoggingInterceptorsTest {
             for (int i = lo; i <= hi; ++i) {
                 List<Header> headers = new ArrayList<>();
                 headers.add(new RecordHeader("myIndex", String.valueOf(i).getBytes(StandardCharsets.UTF_8)));
-                MDC.put(REQUEST_ID_KEY, UUID.randomUUID().toString());
                 producer.send(new ProducerRecord<>(
                         rw.getTopicName(),
                         null,
@@ -159,11 +158,10 @@ public class LoggingInterceptorsTest {
     public void consumerTest() {
         final int numTestRecords = 100;
         final UUID req = UUID.randomUUID();
-        MDC.put(ConservedHeader.REQUEST_ID.getHeaderName(), req.toString());
-        MDC.put(ConservedHeader.CORRELATION_ID.getHeaderName(), "foo");
+        MDC.put(ConservedHeader.REQUEST_ID.getLogName(), req.toString());
+        MDC.put(ConservedHeader.CORRELATION_ID.getLogName(), "foo");
         writeTestRecords(1, numTestRecords);
         ConsumerRecords<String, String> r = readTestRecords(numTestRecords);
-
         // We demonstrate here that conserved headers + environment + a random added header all propagate.
         int expected = 1;
         for (ConsumerRecord<String, String> rec : r) {
@@ -171,13 +169,12 @@ public class LoggingInterceptorsTest {
 
             Assertions.assertThat(Integer.parseInt(new String(headers.lastHeader("myIndex").value(), StandardCharsets.UTF_8))).isEqualTo(expected);
             expected++;
-            Assertions.assertThat(new String(headers.lastHeader(ConservedHeader.CORRELATION_ID.getHeaderName()).value(), StandardCharsets.UTF_8)).isEqualTo("foo");
+            Assertions.assertThat(new String(headers.lastHeader(ConservedHeader.CORRELATION_ID.getLogName()).value(), StandardCharsets.UTF_8)).isEqualTo("foo");
             Assertions.assertThat(getHeaderValue(headers, OTKafkaHeaders.REFERRING_SERVICE)).isEqualTo(environmentProvider.getReferringService());
             Assertions.assertThat(getHeaderValue(headers, OTKafkaHeaders.ENV)).isEqualTo(environmentProvider.getEnvironment());
             Assertions.assertThat(getHeaderValue(headers, OTKafkaHeaders.ENV_FLAVOR)).isEqualTo(environmentProvider.getEnvironmentFlavor());
             Assertions.assertThat(Integer.parseInt(getHeaderValue(headers, OTKafkaHeaders.REFERRING_INSTANCE_NO))).isEqualTo(environmentProvider.getReferringInstanceNumber());
             Assertions.assertThat(getHeaderValue(headers, OTKafkaHeaders.REQUEST_ID)).isEqualTo(req.toString());
-            //TODO: Discuss logName vs headerName withh Scott.
         }
     }
 

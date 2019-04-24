@@ -202,7 +202,7 @@ public class LoggingUtils {
      * @return value
      */
     private String getHeaderValue(final ConservedHeader header) {
-        return MDC.get(header.getHeaderName());
+        return MDC.get(header.getLogName());
     }
 
     /**
@@ -229,7 +229,7 @@ public class LoggingUtils {
         final Headers headers = record.headers();
         Arrays.asList(ConservedHeader.values()).forEach((header) -> {
             if (getHeaderValue(header) != null) {
-                headers.add(header.getHeaderName(), getHeaderValue(header).getBytes(CHARSET));
+                headers.add(header.getLogName(), getHeaderValue(header).getBytes(CHARSET));
             }
         });
         setKafkaHeader(headers, OTKafkaHeaders.REFERRING_SERVICE, environmentProvider.getReferringService());
