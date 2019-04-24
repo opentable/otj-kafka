@@ -15,6 +15,7 @@ package com.opentable.kafka.logging;
 
 import java.time.Duration;
 import java.util.Collections;
+import java.util.Map;
 import java.util.Properties;
 import java.util.UUID;
 
@@ -24,7 +25,6 @@ import org.apache.kafka.clients.consumer.Consumer;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
-import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.Producer;
 import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.clients.producer.ProducerRecord;
@@ -41,7 +41,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.Import;
+import org.springframework.context.annotation.Primary;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.junit4.SpringRunner;
@@ -49,7 +49,11 @@ import org.springframework.test.context.junit4.SpringRunner;
 import com.opentable.conservedheaders.ConservedHeader;
 import com.opentable.kafka.builders.EnvironmentProvider;
 import com.opentable.kafka.builders.InjectKafkaBuilderBeans;
-import com.opentable.kafka.builders.KafkaBuilderConfiguration;
+import com.opentable.kafka.builders.KafkaConsumerBuilder;
+import com.opentable.kafka.builders.KafkaConsumerBuilderFactoryBean;
+import com.opentable.kafka.builders.KafkaProducerBuilder;
+import com.opentable.kafka.builders.KafkaProducerBuilderFactoryBean;
+import com.opentable.kafka.builders.SettableEnvironmentProvider;
 import com.opentable.kafka.util.ReadWriteRule;
 import com.opentable.service.ServiceInfo;
 
@@ -69,16 +73,23 @@ public class LoggingInterceptorsTest {
     @Inject
     EnvironmentProvider environmentProvider;
 
+    @Inject
+    KafkaConsumerBuilderFactoryBean kafkaConsumerBuilderFactoryBean;
+
+    @Inject
+    KafkaProducerBuilderFactoryBean kafkaProducerBuilderFactoryBean;
+
     public <K, V> Producer<K, V> createProducer(Class<? extends Serializer<K>> keySer, Class<? extends Serializer<V>> valueSer) {
-        Properties props = rw.getEkb().baseProducerProperties();
-        props.put("key.serializer", keySer.getName());
-        props.put("value.serializer", valueSer.getName());
-        props.put(ProducerConfig.INTERCEPTOR_CLASSES_CONFIG, LoggingProducerInterceptor.class.getCanonicalName());
-        props.put(LoggingInterceptorConfig.LOGGING_REF, new LoggingUtils(environmentProvider));
-        props.put(ProducerConfig.LINGER_MS_CONFIG, "200");
-        //put logger here
-        return new KafkaProducer<>(props);
-    }
+
+        KafkaProducerBuilder<K,V> builder =  kafkaProducerBuilderFactoryBean.<K,V>builder("producer")
+                .withSerializers(keySer, valueSer)
+                .withProperty(ProducerConfig.LINGER_MS_CONFIG, "200")
+                .disableMetrics();
+        Map<String,Object> map = rw.getEkb().baseProducerMap();
+        map.forEach(builder::withProperty);
+        return builder.build();
+
+        }
 
     public void writeTestRecords(final int lo, final int hi) {
         try (Producer<String, String> producer = createProducer(StringSerializer.class, StringSerializer.class)) {
@@ -94,13 +105,23 @@ public class LoggingInterceptorsTest {
     }
 
     public <K, V> Consumer<K, V> createConsumer(String groupId, Class<? extends Deserializer<K>> keySer, Class<? extends Deserializer<V>> valueSer) {
+        /*
         Properties props = rw.getEkb().baseConsumerProperties(groupId);
         props.put("key.deserializer", keySer.getName());
         props.put("value.deserializer", valueSer.getName());
         props.put(ConsumerConfig.INTERCEPTOR_CLASSES_CONFIG, LoggingConsumerInterceptor.class.getCanonicalName());
         props.put(LoggingInterceptorConfig.LOGGING_REF, new LoggingUtils(environmentProvider));
         //put logger here
-        return new KafkaConsumer<>(props);
+
+        return new KafkaConsumer<>(props)
+         */
+
+        Map<String,Object> props = rw.getEkb().baseConsumerMap(groupId);
+        KafkaConsumerBuilder<K,V> builder = kafkaConsumerBuilderFactoryBean.<K,V>builder("consumer")
+                .withDeserializers(keySer, valueSer).disableMetrics();
+        props.forEach(builder::withProperty);
+        KafkaConsumer<K,V> b =  builder.build();
+        return b;
     }
 
     public void readTestRecords(final int expect) {
@@ -140,6 +161,12 @@ public class LoggingInterceptorsTest {
         @Bean
         ServiceInfo serviceInfo(@Value("${info.component:test-service}") final String serviceType) {
             return () -> serviceType;
+        }
+
+        @Bean(name="testEnvironmentProvider")
+        @Primary
+        public EnvironmentProvider environmentProvider() {
+            return new SettableEnvironmentProvider("myService", "myHost", 5, "myEnv", "myFlavor");
         }
     }
 }

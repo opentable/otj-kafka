@@ -270,10 +270,10 @@ public class LoggingUtils {
      * @param bucket token bucket
      * @param headers headers of record. These will be mutated.
      */
-    <K, V> void setTracingHeaderf(Bucket bucket, Headers headers) {
+    <K, V> void setTracingHeader(Bucket bucket, Headers headers) {
         final String traceFlag = kn(OTKafkaHeaders.TRACE_FLAG);
         if (!headers.headers(traceFlag).iterator().hasNext()) {
-            // If header not present, make decision our self and set it
+            // If header not present, make decision ourself and set it if not rate limited
             if (bucket.tryConsume(1)) {
                 headers.add(traceFlag, TRUE);
             } else {
@@ -291,13 +291,17 @@ public class LoggingUtils {
      * @return true, if logging is needed.
      */
     private <K, V> boolean isLoggingNeeded(ProducerRecord<K, V> record) {
-        final Headers headers = record.headers();
-        return StreamSupport.stream(headers.headers(kn(OTKafkaHeaders.TRACE_FLAG)).spliterator(), false)
-            .map(h -> new String(h.value(), CHARSET))
-            .map("true"::equals)
-            .filter(v -> v)
-            .findFirst()
-            .orElse(false);
+        return isTraceFlagEnabled(record.headers());
+    }
+
+    private <K, V> boolean isTraceFlagEnabled(Headers headers) {
+        final String traceFlag = kn(OTKafkaHeaders.TRACE_FLAG);
+        return StreamSupport.stream(headers.headers(traceFlag).spliterator(), false)
+                .map(h -> new String(h.value(), CHARSET))
+                .map("true"::equals)
+                .filter(v -> v)
+                .findFirst()
+                .orElse(false);
     }
 
     /**
@@ -318,19 +322,15 @@ public class LoggingUtils {
     }
 
     /**
-     * Check if the trace flag is set
-     * @param record consumer recod
+     * Check if the trace flag is set. This convenience method compensates
+     * for the fact that Kafka doesn't have any base class for xxxRecords.
+     * @param record consumer record
      * @param <K> key
      * @param <V> value
      * @return true, if trace flag set
      */
     private <K, V> boolean isTraceFlagEnabled(ConsumerRecord<K, V> record) {
-        final Headers headers = record.headers();
-        return StreamSupport.stream(headers.headers("ot-trace-message").spliterator(), false)
-            .map(h -> new String(h.value(), CHARSET))
-            .map("true"::equals)
-            .findFirst()
-            .orElse(false);
+        return isTraceFlagEnabled(record.headers());
     }
 
     /**

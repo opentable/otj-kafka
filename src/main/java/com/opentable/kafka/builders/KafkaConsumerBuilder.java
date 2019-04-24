@@ -45,11 +45,11 @@ public class KafkaConsumerBuilder<K, V>  {
 
     private final KafkaBaseBuilder kafkaBaseBuilder;
     private Optional<String> groupId = Optional.empty();
-    private boolean enableAutoCommit = true;
+    private Optional<Boolean> enableAutoCommit = Optional.empty();
     private OptionalInt maxPollRecords = OptionalInt.empty();
     private OptionalLong sessionTimeoutMs = OptionalLong.empty();
     private OptionalLong maxPollIntervalMs = OptionalLong.empty();
-    private AutoOffsetResetType autoOffsetResetType = AutoOffsetResetType.Latest;
+    private Optional<AutoOffsetResetType> autoOffsetResetType = Optional.empty();
     private Class<? extends PartitionAssignor> partitionStrategy = RangeAssignor.class;
     // Kafka is really stupid. In the properties you can only configure a no-args
     // and then they hack around it if you have one supplied
@@ -97,7 +97,7 @@ public class KafkaConsumerBuilder<K, V>  {
     }
 
     public KafkaConsumerBuilder<K, V> withAutoOffsetReset(AutoOffsetResetType val) {
-        autoOffsetResetType = val == null ? AutoOffsetResetType.None : autoOffsetResetType;
+        autoOffsetResetType = Optional.ofNullable(val);
         return this;
     }
 
@@ -155,7 +155,7 @@ public class KafkaConsumerBuilder<K, V>  {
     }
 
     public KafkaConsumerBuilder<K, V> withAutoCommit(boolean val) {
-        enableAutoCommit = val;
+        enableAutoCommit = Optional.of(val);
         return this;
     }
 
@@ -208,10 +208,10 @@ public class KafkaConsumerBuilder<K, V>  {
         }
         maxPollIntervalMs.ifPresent(m -> kafkaBaseBuilder.addProperty(ConsumerConfig.MAX_POLL_INTERVAL_MS_CONFIG, String.valueOf(m)));
         sessionTimeoutMs.ifPresent(s -> kafkaBaseBuilder.addProperty(ConsumerConfig.SESSION_TIMEOUT_MS_CONFIG, String.valueOf(s)));
-        kafkaBaseBuilder.addProperty(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG, String.valueOf(enableAutoCommit));
+        enableAutoCommit.ifPresent(e -> kafkaBaseBuilder.addProperty(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG, String.valueOf(e)));
         kafkaBaseBuilder.setupInterceptors(ConsumerConfig.INTERCEPTOR_CLASSES_CONFIG, LoggingConsumerInterceptor.class.getName());
         groupId.ifPresent(gid -> kafkaBaseBuilder.addProperty(ConsumerConfig.GROUP_ID_CONFIG, gid));
-        kafkaBaseBuilder.addProperty(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, autoOffsetResetType.value);
+        autoOffsetResetType.ifPresent(a -> kafkaBaseBuilder.addProperty(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, a.value));
         maxPollRecords.ifPresent(mpr -> kafkaBaseBuilder.addProperty(ConsumerConfig.MAX_POLL_RECORDS_CONFIG, mpr));
         if (keyDe != null) {
             kafkaBaseBuilder.addProperty(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, keyDe.getName());

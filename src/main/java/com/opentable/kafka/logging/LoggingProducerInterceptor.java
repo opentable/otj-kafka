@@ -44,7 +44,7 @@ public class LoggingProducerInterceptor implements ProducerInterceptor<Object, O
     @Override
     public ProducerRecord<Object, Object> onSend(ProducerRecord<Object, Object> record) {
         loggingUtils.addHeaders(record);
-        loggingUtils.setTracingHeaderf(bucket, record.headers());
+        loggingUtils.setTracingHeader(bucket, record.headers());
         loggingUtils.maybeLogProducer(LOG, interceptorClientId, record);
         return record;
     }

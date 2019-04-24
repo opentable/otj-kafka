@@ -85,8 +85,8 @@ public class KafkaConsumerBuilderTest {
         assertThat(finalProperties.get(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG)).isEqualTo(AutoOffsetResetType.Latest.value);
         assertThat(finalProperties.get(ConsumerConfig.PARTITION_ASSIGNMENT_STRATEGY_CONFIG)).isEqualTo(RangeAssignor.class.getName());
         assertThat(finalProperties).doesNotContainKeys(ConsumerConfig.MAX_POLL_INTERVAL_MS_CONFIG, ConsumerConfig.SESSION_TIMEOUT_MS_CONFIG, ConsumerConfig.MAX_POLL_RECORDS_CONFIG);
-        assertThat(finalProperties.get(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG)).isEqualTo("true");
-        assertThat(finalProperties).doesNotContainKeys(CommonClientConfigs.REQUEST_TIMEOUT_MS_CONFIG, CommonClientConfigs.RETRY_BACKOFF_MS_CONFIG, CommonClientConfigs.SECURITY_PROTOCOL_CONFIG);
+        assertThat(finalProperties).doesNotContainKeys(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG,
+                CommonClientConfigs.REQUEST_TIMEOUT_MS_CONFIG, CommonClientConfigs.RETRY_BACKOFF_MS_CONFIG, CommonClientConfigs.SECURITY_PROTOCOL_CONFIG);
         // metrics, logging, overriding properties
         assertThat(finalProperties.get(CommonClientConfigs.METRIC_REPORTER_CLASSES_CONFIG)).isEqualTo(OtMetricsReporter.class.getName());
         assertThat(finalProperties.get(OtMetricsReporterConfig.METRIC_REGISTRY_REF_CONFIG)).isSameAs(metricRegistry);
@@ -94,6 +94,7 @@ public class KafkaConsumerBuilderTest {
         assertThat(finalProperties.get(LoggingInterceptorConfig.SAMPLE_RATE_PCT_CONFIG)).isEqualTo(3);
         assertThat(finalProperties.get(ConsumerConfig.INTERCEPTOR_CLASSES_CONFIG)).isEqualTo(LoggingConsumerInterceptor.class.getName());
         assertThat(finalProperties.get("check.crcs")).isEqualTo("false");
+        c.close();
     }
 
     @Test
@@ -105,6 +106,7 @@ public class KafkaConsumerBuilderTest {
         assertThat(finalProperties).doesNotContainKeys(OtMetricsReporterConfig.METRIC_REGISTRY_REF_CONFIG,
                 CommonClientConfigs.METRIC_REPORTER_CLASSES_CONFIG, ConsumerConfig.INTERCEPTOR_CLASSES_CONFIG,
                 LoggingInterceptorConfig.LOGGING_REF, LoggingInterceptorConfig.SAMPLE_RATE_PCT_CONFIG );
+        c.close();
     }
 
 

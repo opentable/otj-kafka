@@ -85,17 +85,25 @@ class KafkaBaseBuilder {
             interceptors.add(loggingInterceptorName);
         }
         // Copy over any injected properties, then remove the seed property
-        interceptors.addAll(mergeListProperty(interceptorConfigName));
-        if (!interceptors.isEmpty()) {
-            addProperty(interceptorConfigName, interceptors.stream().distinct().collect(Collectors.joining(",")));
-            if (interceptors.contains(loggingInterceptorName)) {
-                addProperty(LoggingInterceptorConfig.LOGGING_REF,  loggingUtils);
-                addProperty(LoggingInterceptorConfig.SAMPLE_RATE_PCT_CONFIG, loggingSampleRate);
-            }
+        List<String> merged = merge(interceptors, interceptorConfigName);
+        if (merged.contains(loggingInterceptorName)) {
+            addProperty(LoggingInterceptorConfig.LOGGING_REF, loggingUtils);
+            addProperty(LoggingInterceptorConfig.SAMPLE_RATE_PCT_CONFIG, loggingSampleRate);
         }
     }
 
+    void setupBootstrap() {
+        merge(bootStrapServers,CommonClientConfigs.BOOTSTRAP_SERVERS_CONFIG);
+    }
 
+    List<String> merge(List<String> root, String mergePropertyName) {
+        // Copy over any injected properties, then remove the seed property
+        root.addAll(mergeListProperty(mergePropertyName));
+        if (!root.isEmpty()) {
+            addProperty(mergePropertyName, root.stream().distinct().collect(Collectors.joining(",")));
+        }
+        return root;
+    }
 
     void removeProperty(String key) {
         finalProperties.remove(key);
@@ -150,9 +158,7 @@ class KafkaBaseBuilder {
     }
 
     void finishBuild() {
-        if (!bootStrapServers.isEmpty()) {
-            addProperty(CommonClientConfigs.BOOTSTRAP_SERVERS_CONFIG, bootStrapServers.stream().distinct().collect(Collectors.joining(",")));
-        }
+        setupBootstrap();
         requestTimeout.ifPresent(i -> addProperty(CommonClientConfigs.REQUEST_TIMEOUT_MS_CONFIG, String.valueOf(i)));
         retryBackoff.ifPresent(i -> addProperty(CommonClientConfigs.RETRY_BACKOFF_MS_CONFIG, String.valueOf(i)));
         clientId.ifPresent(cid -> addProperty(CommonClientConfigs.CLIENT_ID_CONFIG, cid));

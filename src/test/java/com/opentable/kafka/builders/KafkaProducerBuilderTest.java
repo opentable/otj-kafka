@@ -65,6 +65,7 @@ import com.opentable.service.ServiceInfo;
     "info.component=test",
     "ot.kafka.default.linger.ms=10",
     "ot.kafka.producer.linger.ms=20",
+    "ot.kafka.funky.interceptor.classes=com.opentable.kafka.builders.KafkaProducerBuilderTest$Foo"
 })
 public class KafkaProducerBuilderTest {
 
@@ -78,7 +79,7 @@ public class KafkaProducerBuilderTest {
 
     @Test
     public void builderTest() {
-        KafkaProducerBuilder<Integer, String> builder = getBuilder();
+        KafkaProducerBuilder<Integer, String> builder = getBuilder("producer");
         KafkaProducer<Integer, String> p = builder
                 .build();
         Map<String, Object> finalProperties = builder.getKafkaBaseBuilder().getFinalProperties();
@@ -103,13 +104,16 @@ public class KafkaProducerBuilderTest {
         assertThat(finalProperties.get(ProducerConfig.MAX_IN_FLIGHT_REQUESTS_PER_CONNECTION)).isEqualTo(5);
         assertThat(finalProperties.get(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG)).isEqualTo(StringSerializer.class.getName());
         assertThat(finalProperties.get(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG)).isEqualTo(IntegerSerializer.class.getName());
+        p.close();
+
     }
 
     @Test
     public void withoutMetricsAndLogging() {
-        KafkaProducerBuilder<Integer, String> builder = getBuilder();
+        KafkaProducerBuilder<Integer, String> builder = getBuilder("producer");
         KafkaProducer<Integer, String> p = builder.disableLogging().disableMetrics()
                 .build();
+        p.close();
         Map<String, Object> finalProperties = builder.getKafkaBaseBuilder().getFinalProperties();
         assertThat(finalProperties).doesNotContainKeys(OtMetricsReporterConfig.METRIC_REGISTRY_REF_CONFIG,
                 ProducerConfig.INTERCEPTOR_CLASSES_CONFIG,
@@ -119,17 +123,35 @@ public class KafkaProducerBuilderTest {
 
     @Test
     public void customInterceptor() {
-        KafkaProducerBuilder<Integer, String> builder = getBuilder();
+        KafkaProducerBuilder<Integer, String> builder = getBuilder("producer");
         KafkaProducer<Integer, String> p = builder
                 .withInterceptor(Foo.class)
                 .build();
+        p.close();
         Map<String, Object> finalProperties = builder.getKafkaBaseBuilder().getFinalProperties();
         assertThat(finalProperties.get(ProducerConfig.INTERCEPTOR_CLASSES_CONFIG)).isEqualTo(Foo.class.getName() + "," + LoggingProducerInterceptor.class.getName());
 
+        // Also works with a property
+        builder = getBuilder("funky");
+         p = builder
+                .build();
+        p.close();
+        finalProperties = builder.getKafkaBaseBuilder().getFinalProperties();
+        assertThat(finalProperties.get(ProducerConfig.INTERCEPTOR_CLASSES_CONFIG)).isEqualTo(LoggingProducerInterceptor.class.getName() + "," + Foo.class.getName());
+
+
+        // Also works with no logging
+        builder = getBuilder("funky");
+        p = builder.disableLogging()
+                .build();
+        p.close();
+        finalProperties = builder.getKafkaBaseBuilder().getFinalProperties();
+        assertThat(finalProperties.get(ProducerConfig.INTERCEPTOR_CLASSES_CONFIG)).isEqualTo(Foo.class.getName());
+
     }
 
-    private KafkaProducerBuilder<Integer, String> getBuilder() {
-        return builderFactoryBean.builder("producer", Integer.class, String.class)
+    private KafkaProducerBuilder<Integer, String> getBuilder(String name) {
+        return builderFactoryBean.builder(name, Integer.class, String.class)
                     .withBootstrapServer("localhost:8080")
                     .withProperty("blah", "blah")
                     .withProperty("linger.ms", "99") // this will be overwritten

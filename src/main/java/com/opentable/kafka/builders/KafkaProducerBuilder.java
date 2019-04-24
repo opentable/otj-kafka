@@ -40,7 +40,7 @@ public class KafkaProducerBuilder<K, V> {
     private final KafkaBaseBuilder kafkaBaseBuilder;
     private Optional<AckType> ackType = Optional.empty();
     private OptionalInt retries = OptionalInt.empty();
-    private int maxInfFlight = 5;
+    private OptionalInt maxInfFlight = OptionalInt.empty();
     private Class<? extends Partitioner> partitioner = DefaultPartitioner.class;
 
     private Class<? extends Serializer<K>> keySe;
@@ -104,7 +104,7 @@ public class KafkaProducerBuilder<K, V> {
     }
 
     public KafkaProducerBuilder<K, V> withMaxInFlightRequests(int val) {
-        this.maxInfFlight = val;
+        this.maxInfFlight = OptionalInt.of(val);
         return this;
     }
 
@@ -190,7 +190,7 @@ public class KafkaProducerBuilder<K, V> {
     public KafkaProducer<K, V> build() {
         kafkaBaseBuilder.addProperty(ProducerConfig.PARTITIONER_CLASS_CONFIG, partitioner.getName());
         kafkaBaseBuilder.setupInterceptors(ProducerConfig.INTERCEPTOR_CLASSES_CONFIG, LoggingProducerInterceptor.class.getName());
-        kafkaBaseBuilder.addProperty(ProducerConfig.MAX_IN_FLIGHT_REQUESTS_PER_CONNECTION, maxInfFlight);
+        maxInfFlight.ifPresent(m -> kafkaBaseBuilder.addProperty(ProducerConfig.MAX_IN_FLIGHT_REQUESTS_PER_CONNECTION, m));
         ackType.ifPresent(ack -> kafkaBaseBuilder.addProperty(ProducerConfig.ACKS_CONFIG, ack.value));
         retries.ifPresent(retries -> kafkaBaseBuilder.addProperty(CommonClientConfigs.RETRIES_CONFIG, retries));
         if (keySe != null) {
