@@ -27,10 +27,14 @@ import com.codahale.metrics.MetricRegistry;
 import org.apache.kafka.clients.CommonClientConfigs;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerConfig;
+import org.apache.kafka.clients.producer.ProducerInterceptor;
+import org.apache.kafka.clients.producer.ProducerRecord;
+import org.apache.kafka.clients.producer.RecordMetadata;
 import org.apache.kafka.clients.producer.internals.DefaultPartitioner;
 import org.apache.kafka.common.security.auth.SecurityProtocol;
 import org.apache.kafka.common.serialization.IntegerSerializer;
 import org.apache.kafka.common.serialization.StringSerializer;
+import org.apache.kafka.test.MockProducerInterceptor;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.slf4j.Logger;
@@ -40,6 +44,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
+import org.springframework.mock.env.MockPropertySource;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.junit4.SpringRunner;
@@ -112,6 +117,17 @@ public class KafkaProducerBuilderTest {
                 LoggingInterceptorConfig.LOGGING_REF, LoggingInterceptorConfig.SAMPLE_RATE_PCT_CONFIG );
     }
 
+    @Test
+    public void customInterceptor() {
+        KafkaProducerBuilder<Integer, String> builder = getBuilder();
+        KafkaProducer<Integer, String> p = builder
+                .withInterceptor(Foo.class)
+                .build();
+        Map<String, Object> finalProperties = builder.getKafkaBaseBuilder().getFinalProperties();
+        assertThat(finalProperties.get(ProducerConfig.INTERCEPTOR_CLASSES_CONFIG)).isEqualTo(Foo.class.getName() + "," + LoggingProducerInterceptor.class.getName());
+
+    }
+
     private KafkaProducerBuilder<Integer, String> getBuilder() {
         return builderFactoryBean.builder("producer", Integer.class, String.class)
                     .withBootstrapServer("localhost:8080")
@@ -142,6 +158,29 @@ public class KafkaProducerBuilderTest {
         @Bean
         public MBeanServer getMBeanServer() {
             return ManagementFactory.getPlatformMBeanServer();
+        }
+    }
+
+    public static class Foo implements ProducerInterceptor<Integer, String> {
+
+        @Override
+        public ProducerRecord<Integer, String> onSend(final ProducerRecord<Integer, String> record) {
+            return record;
+        }
+
+        @Override
+        public void onAcknowledgement(final RecordMetadata metadata, final Exception exception) {
+
+        }
+
+        @Override
+        public void close() {
+
+        }
+
+        @Override
+        public void configure(final Map<String, ?> configs) {
+
         }
     }
 }
