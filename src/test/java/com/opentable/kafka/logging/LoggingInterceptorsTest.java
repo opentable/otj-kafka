@@ -199,6 +199,8 @@ public class LoggingInterceptorsTest {
 
     private void commonLoggingAssertions(EdaMessageTraceV1 edaMessageTraceV1, String expectedLogName, String expectedClientId,
                                          UUID requestID, int index, BiConsumer<EdaMessageTraceV1, Integer> additionalAssertions) {
+        Assertions.assertThat(edaMessageTraceV1.getTimestamp()).isNotNull();
+        Assertions.assertThat(edaMessageTraceV1.getUuid()).isNotNull();
         Assertions.assertThat(edaMessageTraceV1.getKafkaClientId()).isEqualTo(expectedClientId);
         Assertions.assertThat(edaMessageTraceV1.getLogName()).isEqualTo(expectedLogName);
         Assertions.assertThat(edaMessageTraceV1.getRequestId()).isEqualTo(requestID);
@@ -239,7 +241,6 @@ public class LoggingInterceptorsTest {
         int expected = 1;
         for (ConsumerRecord<String, String> rec : r) {
             Headers headers = rec.headers();
-
             Assertions.assertThat(Integer.parseInt(new String(headers.lastHeader("myIndex").value(), StandardCharsets.UTF_8))).isEqualTo(expected);
             expected++;
             Assertions.assertThat(new String(headers.lastHeader(ConservedHeader.CORRELATION_ID.getLogName()).value(), StandardCharsets.UTF_8)).isEqualTo("foo");
@@ -271,7 +272,19 @@ public class LoggingInterceptorsTest {
         int index = 1;
         List<EdaMessageTraceV1> edaMessageTraceV1List = loggingUtils.getMessageTraceV1s();
         for (EdaMessageTraceV1 t : edaMessageTraceV1List) {
-            commonLoggingAssertions(t, "kafka-consumer", "consumer-test", req, index, (o, o2) -> { });
+            commonLoggingAssertions(t, "kafka-consumer", "consumer-test", req, index, new BiConsumer<EdaMessageTraceV1, Integer>() {
+                @Override
+                public void accept(final EdaMessageTraceV1 edaMessageTraceV1, final Integer index) {
+                    Assertions.assertThat(edaMessageTraceV1.getKafkaGroupId()).isEqualTo("test");
+                    Assertions.assertThat(edaMessageTraceV1.getKafkaRecordKeySize()).isEqualTo(("key-" +index).length()); // techhnically assumes no compression single byte etc
+                    Assertions.assertThat(edaMessageTraceV1.getKafkaRecordValueSize()).isEqualTo(("value-" + index).length());
+                    Assertions.assertThat(edaMessageTraceV1.getTimestamp()).isNotNull();
+                    Assertions.assertThat(edaMessageTraceV1.getKafkaRecordTimestampType()).isEqualTo("CreateTime");
+                    Assertions.assertThat(edaMessageTraceV1.getKafkaPartition()).isEqualTo(0); // I think embedded only makes one partition\
+                    Assertions.assertThat(edaMessageTraceV1.getKafkaOffset()).isEqualTo(index -1);
+
+                }
+            });
             index++;
             // Unfortunately I note keysize, valuesize, timestamp, and partition aren't available since they are "post commit"
             // Until or unless we figure out how to correlate the postcommit, there's no good option. IIRC the kip doesn't guarantee anything about thread, so
