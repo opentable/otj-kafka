@@ -13,6 +13,7 @@
  */
 package com.opentable.kafka.logging;
 
+import java.lang.management.ManagementFactory;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.ArrayList;
@@ -24,6 +25,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.BiConsumer;
 
 import javax.inject.Inject;
+import javax.management.MBeanServer;
 
 import com.google.common.collect.ImmutableMap;
 
@@ -186,60 +188,39 @@ public class LoggingInterceptorsTest {
         Assertions.assertThat(edaMessageTraceV1s).hasSize(numTestRecords);
         int index = 1;
         for (EdaMessageTraceV1 t : edaMessageTraceV1s) {
-            Assertions.assertThat(t.getKafkaClientId()).isEqualTo("producer-test");
-            Assertions.assertThat(t.getLogName()).isEqualTo("kafka-producer");
-            Assertions.assertThat(t.getRequestId()).isEqualTo(req);
-
-            Assertions.assertThat(t.getKafkaRecordKey()).isEqualTo("key-" + index);
-            Assertions.assertThat(t.getKafkaRecordValue()).isEqualTo("value-" + index);
-            Assertions.assertThat(t.getKafkaTopic()).isEqualTo("topic-1");
+            commonLoggingAssertions(t, "kafka-producer", "producer-test", req, index, (o, o2) -> { });
             index++;
-            Assertions.assertThat(t.getKafkaVersion()).isNotNull();
-            Assertions.assertThat(t.getKafkaClientVersion()).isNotNull();
-            Assertions.assertThat(t.getKafkaClientName()).isEqualTo("otj-kafka");
-            Assertions.assertThat(t.getKafkaClientPlatform()).isEqualTo("java");
-
-            Assertions.assertThat(t.getKafkaClientPlaformVersion()).isNotNull();
-            Assertions.assertThat(t.getKafkaClientOs()).isNotNull();
-
-            Assertions.assertThat(t.getReferringHost()).isEqualTo("myHost");
-            Assertions.assertThat(t.getReferringService()).isEqualTo("myService");
-            Assertions.assertThat(t.getOtEnv()).isEqualTo("myEnv");
-            Assertions.assertThat(t.getOtEnvFlavor()).isEqualTo("myFlavor");
-            Assertions.assertThat(t.getReferringHost()).isEqualTo("myHost");
-
             // Unfortunately I note keysize, valuesize, timestamp, and partition aren't available since they are "post commit"
             // Until or unless we figure out how to correlate the postcommit, there's no good option. IIRC the kip doesn't guarantee anything about thread, so
             // it's pretty hard
-
-
         }
         rw.readTestRecords(numTestRecords);
     }
 
-    private void commonLoggingAssertions(EdaMessageTraceV1 t, UUID requestID, int index, BiConsumer<EdaMessageTraceV1, Integer> additionalAssertions) {
-        Assertions.assertThat(t.getKafkaClientId()).isEqualTo("producer-test");
-        Assertions.assertThat(t.getLogName()).isEqualTo("kafka-producer");
-        Assertions.assertThat(t.getRequestId()).isEqualTo(requestID);
+    private void commonLoggingAssertions(EdaMessageTraceV1 edaMessageTraceV1, String expectedLogName, String expectedClientId,
+                                         UUID requestID, int index, BiConsumer<EdaMessageTraceV1, Integer> additionalAssertions) {
+        Assertions.assertThat(edaMessageTraceV1.getKafkaClientId()).isEqualTo(expectedClientId);
+        Assertions.assertThat(edaMessageTraceV1.getLogName()).isEqualTo(expectedLogName);
+        Assertions.assertThat(edaMessageTraceV1.getRequestId()).isEqualTo(requestID);
 
-        Assertions.assertThat(t.getKafkaRecordKey()).isEqualTo("key-" + index);
-        Assertions.assertThat(t.getKafkaRecordValue()).isEqualTo("value-" + index);
-        Assertions.assertThat(t.getKafkaTopic()).isEqualTo("topic-1");
-        Assertions.assertThat(t.getKafkaVersion()).isNotNull();
-        Assertions.assertThat(t.getKafkaClientVersion()).isNotNull();
-        Assertions.assertThat(t.getKafkaClientName()).isEqualTo("otj-kafka");
-        Assertions.assertThat(t.getKafkaClientPlatform()).isEqualTo("java");
+        Assertions.assertThat(edaMessageTraceV1.getKafkaRecordKey()).isEqualTo("key-" + index);
+        Assertions.assertThat(edaMessageTraceV1.getKafkaRecordValue()).isEqualTo("value-" + index);
+        Assertions.assertThat(edaMessageTraceV1.getKafkaTopic()).isEqualTo("topic-1");
+        Assertions.assertThat(edaMessageTraceV1.getKafkaVersion()).isNotNull();
+        Assertions.assertThat(edaMessageTraceV1.getKafkaClientVersion()).isNotNull();
+        Assertions.assertThat(edaMessageTraceV1.getKafkaClientName()).isEqualTo("otj-kafka");
+        Assertions.assertThat(edaMessageTraceV1.getKafkaClientPlatform()).isEqualTo("java");
 
-        Assertions.assertThat(t.getKafkaClientPlaformVersion()).isNotNull();
-        Assertions.assertThat(t.getKafkaClientOs()).isNotNull();
+        Assertions.assertThat(edaMessageTraceV1.getKafkaClientPlaformVersion()).isNotNull();
+        Assertions.assertThat(edaMessageTraceV1.getKafkaClientOs()).isNotNull();
 
-        Assertions.assertThat(t.getReferringHost()).isEqualTo("myHost");
-        Assertions.assertThat(t.getReferringService()).isEqualTo("myService");
-        Assertions.assertThat(t.getOtEnv()).isEqualTo("myEnv");
-        Assertions.assertThat(t.getOtEnvFlavor()).isEqualTo("myFlavor");
-        Assertions.assertThat(t.getReferringHost()).isEqualTo("myHost");
+        Assertions.assertThat(edaMessageTraceV1.getReferringHost()).isEqualTo("myHost");
+        Assertions.assertThat(edaMessageTraceV1.getReferringService()).isEqualTo("myService");
+        Assertions.assertThat(edaMessageTraceV1.getOtEnv()).isEqualTo("myEnv");
+        Assertions.assertThat(edaMessageTraceV1.getOtEnvFlavor()).isEqualTo("myFlavor");
+        Assertions.assertThat(edaMessageTraceV1.getReferringHost()).isEqualTo("myHost");
 
-
+        additionalAssertions.accept(edaMessageTraceV1, index);
     }
 
     private String getHeaderValue(Headers headers, OTKafkaHeaders headerName) {
@@ -298,6 +279,11 @@ public class LoggingInterceptorsTest {
         @Bean
         ServiceInfo serviceInfo(@Value("${info.component:test-service}") final String serviceType) {
             return () -> serviceType;
+        }
+
+        @Bean
+        public MBeanServer getMBeanServer() {
+            return ManagementFactory.getPlatformMBeanServer();
         }
 
         @Bean(name="testEnvironmentProvider")
