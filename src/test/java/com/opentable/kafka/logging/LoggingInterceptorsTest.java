@@ -213,7 +213,7 @@ public class LoggingInterceptorsTest {
         Assertions.assertThat(edaMessageTraceV1.getKafkaClientName()).isEqualTo("otj-kafka");
         Assertions.assertThat(edaMessageTraceV1.getKafkaClientPlatform()).isEqualTo("java");
 
-        Assertions.assertThat(edaMessageTraceV1.getKafkaClientPlaformVersion()).isNotNull();
+        Assertions.assertThat(edaMessageTraceV1.getKafkaClientPlatformVersion()).isNotNull();
         Assertions.assertThat(edaMessageTraceV1.getKafkaClientOs()).isNotNull();
 
         Assertions.assertThat(edaMessageTraceV1.getReferringHost()).isEqualTo("myHost");

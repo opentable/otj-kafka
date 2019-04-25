@@ -135,7 +135,7 @@ public class LoggingUtils {
                 .kafkaClientName(ARTIFACT_ID)
                 .kafkaClientVersion(libraryVersion)
                 .kafkaClientPlatform("java")
-                .kafkaClientPlaformVersion(javaVersion)
+                .kafkaClientPlatformVersion(javaVersion)
                 .kafkaClientOs(os)
                 .uuid(UUID.randomUUID())
                 .timestamp(Instant.now())
