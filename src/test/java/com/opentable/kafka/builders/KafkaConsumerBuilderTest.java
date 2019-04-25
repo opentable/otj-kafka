@@ -24,8 +24,8 @@ import javax.management.MBeanServer;
 import com.codahale.metrics.MetricRegistry;
 
 import org.apache.kafka.clients.CommonClientConfigs;
+import org.apache.kafka.clients.consumer.Consumer;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
-import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.clients.consumer.RangeAssignor;
 import org.apache.kafka.common.serialization.IntegerDeserializer;
 import org.apache.kafka.common.serialization.StringDeserializer;
@@ -71,7 +71,7 @@ public class KafkaConsumerBuilderTest {
     @Test
     public void builderTest() {
         KafkaConsumerBuilder<Integer, String> builder = getBuilder();
-        KafkaConsumer<Integer, String> c = builder
+        Consumer<Integer, String> c = builder
                 .build();
         Map<String, Object> finalProperties = builder.getKafkaBaseBuilder().getFinalProperties();
         assertThat(finalProperties).isNotEmpty();
@@ -100,7 +100,7 @@ public class KafkaConsumerBuilderTest {
     @Test
     public void withoutLoggingOrMetrics() {
         KafkaConsumerBuilder<Integer, String> builder = getBuilder().disableLogging().disableMetrics();
-        KafkaConsumer<Integer, String> c = builder
+        Consumer<Integer, String> c = builder
                 .build();
         Map<String, Object> finalProperties = builder.getKafkaBaseBuilder().getFinalProperties();
         assertThat(finalProperties).doesNotContainKeys(OtMetricsReporterConfig.METRIC_REGISTRY_REF_CONFIG,

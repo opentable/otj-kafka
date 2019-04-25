@@ -21,16 +21,16 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.function.BiConsumer;
 
 import javax.inject.Inject;
 
 import com.google.common.collect.ImmutableMap;
 
 import org.apache.kafka.clients.consumer.Consumer;
+import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
-import org.apache.kafka.clients.consumer.KafkaConsumer;
-import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.Producer;
 import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.clients.producer.ProducerRecord;
@@ -74,8 +74,6 @@ import com.opentable.service.ServiceInfo;
     "info.component=test",
 })
 public class LoggingInterceptorsTest {
-
-    public static final String REQUEST_ID_KEY = ConservedHeader.REQUEST_ID.getLogName();
 
     @Rule
     public final ReadWriteRule rw = new ReadWriteRule();
@@ -129,16 +127,19 @@ public class LoggingInterceptorsTest {
     }
 
     public <K, V> Consumer<K, V> createConsumer(String groupId, Class<? extends Deserializer<K>> keySer, Class<? extends Deserializer<V>> valueSer) {
+        return createConsumerBuilder(groupId, keySer, valueSer).build();
+    }
+
+    public <K, V>  KafkaConsumerBuilder<K,V> createConsumerBuilder(String groupId, Class<? extends Deserializer<K>> keySer, Class<? extends Deserializer<V>> valueSer) {
         Map<String,Object> props = rw.getEkb().baseConsumerMap(groupId);
         KafkaConsumerBuilder<K,V> builder = kafkaConsumerBuilderFactoryBean.<K,V>builder("consumer")
                 .withDeserializers(keySer, valueSer).disableMetrics();
         props.forEach(builder::withProperty);
-        KafkaConsumer<K,V> b =  builder.build();
-        return b;
+        return builder;
     }
 
-    public ConsumerRecords<String, String> readTestRecords(final int expect) {
-        try (Consumer<String, String> consumer = createConsumer("test", StringDeserializer.class, StringDeserializer.class)) {
+    public ConsumerRecords<String, String> readTestRecords(final int expect, Consumer<String, String> consumer) {
+        try {
             consumer.subscribe(Collections.singleton(rw.getTopicName()));
             ConsumerRecords<String, String> records;
             while (true) {
@@ -151,6 +152,8 @@ public class LoggingInterceptorsTest {
             // Commit offsets.
             consumer.commitSync();
             return records;
+        } finally {
+            consumer.close();
         }
     }
 
@@ -175,7 +178,7 @@ public class LoggingInterceptorsTest {
         KafkaProducerBuilder<String, String> builder = createProducerBuilder(StringSerializer.class, StringSerializer.class)
                 .disableLogging(); // this fools the builder so we can put a custom loggingutils instance.
         props.forEach(builder::withProperty);
-        KafkaProducer<String, String> producer = builder.build();
+        Producer<String, String> producer = builder.build();
         final UUID req = UUID.randomUUID();
         MDC.put(ConservedHeader.REQUEST_ID.getLogName(), req.toString());
         writeTestRecords(1, numTestRecords, producer);
@@ -214,6 +217,31 @@ public class LoggingInterceptorsTest {
         rw.readTestRecords(numTestRecords);
     }
 
+    private void commonLoggingAssertions(EdaMessageTraceV1 t, UUID requestID, int index, BiConsumer<EdaMessageTraceV1, Integer> additionalAssertions) {
+        Assertions.assertThat(t.getKafkaClientId()).isEqualTo("producer-test");
+        Assertions.assertThat(t.getLogName()).isEqualTo("kafka-producer");
+        Assertions.assertThat(t.getRequestId()).isEqualTo(requestID);
+
+        Assertions.assertThat(t.getKafkaRecordKey()).isEqualTo("key-" + index);
+        Assertions.assertThat(t.getKafkaRecordValue()).isEqualTo("value-" + index);
+        Assertions.assertThat(t.getKafkaTopic()).isEqualTo("topic-1");
+        Assertions.assertThat(t.getKafkaVersion()).isNotNull();
+        Assertions.assertThat(t.getKafkaClientVersion()).isNotNull();
+        Assertions.assertThat(t.getKafkaClientName()).isEqualTo("otj-kafka");
+        Assertions.assertThat(t.getKafkaClientPlatform()).isEqualTo("java");
+
+        Assertions.assertThat(t.getKafkaClientPlaformVersion()).isNotNull();
+        Assertions.assertThat(t.getKafkaClientOs()).isNotNull();
+
+        Assertions.assertThat(t.getReferringHost()).isEqualTo("myHost");
+        Assertions.assertThat(t.getReferringService()).isEqualTo("myService");
+        Assertions.assertThat(t.getOtEnv()).isEqualTo("myEnv");
+        Assertions.assertThat(t.getOtEnvFlavor()).isEqualTo("myFlavor");
+        Assertions.assertThat(t.getReferringHost()).isEqualTo("myHost");
+
+
+    }
+
     private String getHeaderValue(Headers headers, OTKafkaHeaders headerName) {
         return new String(headers.lastHeader(headerName.getKafkaName()).value(), StandardCharsets.UTF_8);
     }
@@ -225,7 +253,7 @@ public class LoggingInterceptorsTest {
         MDC.put(ConservedHeader.REQUEST_ID.getLogName(), req.toString());
         MDC.put(ConservedHeader.CORRELATION_ID.getLogName(), "foo");
         writeTestRecords(1, numTestRecords, createProducer(StringSerializer.class, StringSerializer.class));
-        ConsumerRecords<String, String> r = readTestRecords(numTestRecords);
+        ConsumerRecords<String, String> r = readTestRecords(numTestRecords, createConsumer("test", StringDeserializer.class, StringDeserializer.class));
         // We demonstrate here that conserved headers + environment + a random added header all propagate.
         int expected = 1;
         for (ConsumerRecord<String, String> rec : r) {
@@ -240,6 +268,28 @@ public class LoggingInterceptorsTest {
             Assertions.assertThat(Integer.parseInt(getHeaderValue(headers, OTKafkaHeaders.REFERRING_INSTANCE_NO))).isEqualTo(environmentProvider.getReferringInstanceNumber());
             Assertions.assertThat(getHeaderValue(headers, OTKafkaHeaders.REQUEST_ID)).isEqualTo(req.toString());
         }
+    }
+
+    @Test(timeout = 60_000)
+    public void consumerLoggingTest() {
+        final int numTestRecords = 100;
+        final UUID req = UUID.randomUUID();
+        loggingUtils = new CapturingLoggingUtils(environmentProvider);
+        MDC.put(ConservedHeader.REQUEST_ID.getLogName(), req.toString());
+        writeTestRecords(1, numTestRecords, createProducer(StringSerializer.class, StringSerializer.class));
+        Map<String, Object> props = ImmutableMap.of(
+                LoggingInterceptorConfig.LOGGING_REF, loggingUtils,
+                LoggingInterceptorConfig.SAMPLE_RATE_PCT_CONFIG, Integer.MAX_VALUE, // effectively rate-unlimited
+                ConsumerConfig.INTERCEPTOR_CLASSES_CONFIG, LoggingConsumerInterceptor.class.getName()
+
+        );
+        KafkaConsumerBuilder<String, String> builder = createConsumerBuilder("test", StringDeserializer.class, StringDeserializer.class)
+                .disableLogging();
+        props.forEach(builder::withProperty);
+        ConsumerRecords<String, String> r = readTestRecords(numTestRecords, builder.build());
+        int expected = 1;
+        List<EdaMessageTraceV1> edaMessageTraceV1List = loggingUtils.getMessageTraceV1s();
+
     }
 
     @Configuration

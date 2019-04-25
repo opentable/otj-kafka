@@ -25,7 +25,7 @@ import javax.management.MBeanServer;
 import com.codahale.metrics.MetricRegistry;
 
 import org.apache.kafka.clients.CommonClientConfigs;
-import org.apache.kafka.clients.producer.KafkaProducer;
+import org.apache.kafka.clients.producer.Producer;
 import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.clients.producer.ProducerInterceptor;
 import org.apache.kafka.clients.producer.ProducerRecord;
@@ -34,7 +34,6 @@ import org.apache.kafka.clients.producer.internals.DefaultPartitioner;
 import org.apache.kafka.common.security.auth.SecurityProtocol;
 import org.apache.kafka.common.serialization.IntegerSerializer;
 import org.apache.kafka.common.serialization.StringSerializer;
-import org.apache.kafka.test.MockProducerInterceptor;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.slf4j.Logger;
@@ -44,7 +43,6 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
-import org.springframework.mock.env.MockPropertySource;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.junit4.SpringRunner;
@@ -80,7 +78,7 @@ public class KafkaProducerBuilderTest {
     @Test
     public void builderTest() {
         KafkaProducerBuilder<Integer, String> builder = getBuilder("producer");
-        KafkaProducer<Integer, String> p = builder
+        Producer<Integer, String> p = builder
                 .build();
         Map<String, Object> finalProperties = builder.getKafkaBaseBuilder().getFinalProperties();
         assertThat(finalProperties).isNotEmpty();
@@ -111,7 +109,7 @@ public class KafkaProducerBuilderTest {
     @Test
     public void withoutMetricsAndLogging() {
         KafkaProducerBuilder<Integer, String> builder = getBuilder("producer");
-        KafkaProducer<Integer, String> p = builder.disableLogging().disableMetrics()
+        Producer<Integer, String> p = builder.disableLogging().disableMetrics()
                 .build();
         p.close();
         Map<String, Object> finalProperties = builder.getKafkaBaseBuilder().getFinalProperties();
@@ -124,7 +122,7 @@ public class KafkaProducerBuilderTest {
     @Test
     public void customInterceptor() {
         KafkaProducerBuilder<Integer, String> builder = getBuilder("producer");
-        KafkaProducer<Integer, String> p = builder
+        Producer<Integer, String> p = builder
                 .withInterceptor(Foo.class)
                 .build();
         p.close();

@@ -28,8 +28,10 @@ import com.google.common.annotations.VisibleForTesting;
 
 import org.apache.commons.lang3.StringUtils;
 import org.apache.kafka.clients.CommonClientConfigs;
+import org.apache.kafka.clients.consumer.Consumer;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.clients.producer.KafkaProducer;
+import org.apache.kafka.clients.producer.Producer;
 import org.apache.kafka.common.security.auth.SecurityProtocol;
 import org.apache.kafka.common.serialization.Deserializer;
 import org.apache.kafka.common.serialization.Serializer;
@@ -147,12 +149,12 @@ class KafkaBaseBuilder {
         loggingSampleRate = rate;
     }
 
-    <CK,CV> KafkaConsumer<CK,CV> consumer(Deserializer<CK> keyDeserializer, Deserializer<CV> valuedeserializer) {
+    <CK,CV> Consumer<CK,CV> consumer(Deserializer<CK> keyDeserializer, Deserializer<CV> valuedeserializer) {
         LOG.trace("Building KafkaConsumer with props {}", finalProperties);
         return new KafkaConsumer<>(finalProperties, keyDeserializer, valuedeserializer);
     }
 
-    <PK,PV> KafkaProducer<PK,PV> producer(Serializer<PK> keySerializer, Serializer<PV> valueSerializer) {
+    <PK,PV> Producer<PK,PV> producer(Serializer<PK> keySerializer, Serializer<PV> valueSerializer) {
         LOG.trace("Building KafkaProducer with props {}", finalProperties);
         return new KafkaProducer<>(finalProperties, keySerializer, valueSerializer);
     }

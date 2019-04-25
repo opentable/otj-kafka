@@ -22,7 +22,7 @@ Add `@InjectKafkaBuilderBeans` to any Configuration class. You'll now have two b
 You may inject them into any class, and use them. The general idiom they follow looks something like this
 
 ```
- final KafkaConsumer<byte[], ABEvent> consumer = kafkaConsumerBuilderFactoryBean.<byte[],ABEvent>
+ final Consumer<byte[], ABEvent> consumer = kafkaConsumerBuilderFactoryBean.<byte[],ABEvent>
                 builder("myuniquenameperconsumerpermachine) // name must be unique per machine. This works because of the deterministic setup
                 .withBootstrapServers(Arrays.asList(brokerList().split(",")))
                 .withAutoCommit(false)
@@ -43,7 +43,7 @@ will take precedence over the fluent api
 * Wire in metrics and logging. To disable these use `disableLogging()` and/or `disableMetrics()`. The logging only
 kicks in once per 10 seconds, but you may change this rate via `withLoggingSampleRate()` (for example setting to 10 will make it rate limit
 once per second, changing to 100 will have a rate limit of 10 per second, etc) - mind our logging cluster though!
-* Return the Kafka consumer/producer
+* Return the Kafka consumer/producer (we return the interface type Consumer/Producer instead of the implementations KafkaConsumer/KafkaProducer)
 
 The BuilderFactoryBean is thread safe, but the underlying Builder is NOT.
 
