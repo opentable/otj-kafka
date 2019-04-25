@@ -268,8 +268,15 @@ public class LoggingInterceptorsTest {
                 .disableLogging();
         props.forEach(builder::withProperty);
         ConsumerRecords<String, String> r = readTestRecords(numTestRecords, builder.build());
-        int expected = 1;
+        int index = 1;
         List<EdaMessageTraceV1> edaMessageTraceV1List = loggingUtils.getMessageTraceV1s();
+        for (EdaMessageTraceV1 t : edaMessageTraceV1List) {
+            commonLoggingAssertions(t, "kafka-consumer", "consumer-test", req, index, (o, o2) -> { });
+            index++;
+            // Unfortunately I note keysize, valuesize, timestamp, and partition aren't available since they are "post commit"
+            // Until or unless we figure out how to correlate the postcommit, there's no good option. IIRC the kip doesn't guarantee anything about thread, so
+            // it's pretty hard
+        }
 
     }
 
