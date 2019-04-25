@@ -34,7 +34,7 @@ public class TODO {
      *
      * 3. improve tests
      *
-     * They need more robust testing and look a bit incomplete
+     * I've greatly improved all except the MetricsReporterTest, which needs love (pending discussion of point below), but a review would be awesome.
      *
      * 4. Discuss MDC put behavior. I've removed all of this.
      *
@@ -86,7 +86,14 @@ public class TODO {
      *
      *  shows some checking of values
      *
+     *  So sanitization needs to be discussed.
+     *
      * 6. I've noted in the code several hot spots in metrics that I worry about performance wise. Also I synchronized all methods, because
-     * I see no guarantee of thread safety
+     * I see no guarantee of thread safety. That's a bit of a hammer that makes that worry worse.
+     *
+     * 7. We need to see how this feels in EDA Client replacement. I've tested elsewhere and it "felt good" - but I didn't actually RUN
+     * much. Running stuff would be good.
+     *
+     * 8. Part of the EDA client weaknesses is NO TESTS. We gotta do one.
      */
 }
