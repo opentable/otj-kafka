@@ -20,13 +20,17 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 import javax.inject.Inject;
+
+import com.google.common.collect.ImmutableMap;
 
 import org.apache.kafka.clients.consumer.Consumer;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
+import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.Producer;
 import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.clients.producer.ProducerRecord;
@@ -60,7 +64,7 @@ import com.opentable.kafka.builders.KafkaProducerBuilder;
 import com.opentable.kafka.builders.KafkaProducerBuilderFactoryBean;
 import com.opentable.kafka.builders.SettableEnvironmentProvider;
 import com.opentable.kafka.util.ReadWriteRule;
-import com.opentable.logging.CommonLogHolder;
+import com.opentable.logging.otl.EdaMessageTraceV1;
 import com.opentable.service.ServiceInfo;
 
 @RunWith(SpringRunner.class)
@@ -85,20 +89,26 @@ public class LoggingInterceptorsTest {
     @Inject
     KafkaProducerBuilderFactoryBean kafkaProducerBuilderFactoryBean;
 
-    public <K, V> Producer<K, V> createProducer(Class<? extends Serializer<K>> keySer, Class<? extends Serializer<V>> valueSer) {
+    private CapturingLoggingUtils loggingUtils;
 
-        KafkaProducerBuilder<K,V> builder =  kafkaProducerBuilderFactoryBean.<K,V>builder("producer")
+    public <K, V> Producer<K, V> createProducer(Class<? extends Serializer<K>> keySer, Class<? extends Serializer<V>> valueSer) {
+        final KafkaProducerBuilder<K,V> builder =  createProducerBuilder(keySer, valueSer);
+        return builder.build();
+    }
+
+    public <K, V> KafkaProducerBuilder<K, V> createProducerBuilder(Class<? extends Serializer<K>> keySer, Class<? extends Serializer<V>> valueSer) {
+        final KafkaProducerBuilder<K,V> builder =  kafkaProducerBuilderFactoryBean.<K,V>builder("producer")
                 .withSerializers(keySer, valueSer)
                 .withProperty(ProducerConfig.LINGER_MS_CONFIG, "200")
                 .disableMetrics();
         Map<String,Object> map = rw.getEkb().baseProducerMap();
         map.forEach(builder::withProperty);
-        return builder.build();
+        return builder;
+    }
 
-        }
-
-    public void writeTestRecords(final int lo, final int hi) {
-        try (Producer<String, String> producer = createProducer(StringSerializer.class, StringSerializer.class)) {
+    public void writeTestRecords(final int lo, final int hi, Producer<String, String> producer) {
+        //try (Producer<String, String> producer = createProducer(StringSerializer.class, StringSerializer.class)) {
+         try {
             for (int i = lo; i <= hi; ++i) {
                 List<Header> headers = new ArrayList<>();
                 headers.add(new RecordHeader("myIndex", String.valueOf(i).getBytes(StandardCharsets.UTF_8)));
@@ -113,7 +123,9 @@ public class LoggingInterceptorsTest {
                 );
             }
             producer.flush();
-        }
+        } finally {
+             producer.close();
+         }
     }
 
     public <K, V> Consumer<K, V> createConsumer(String groupId, Class<? extends Deserializer<K>> keySer, Class<? extends Deserializer<V>> valueSer) {
@@ -146,7 +158,59 @@ public class LoggingInterceptorsTest {
     @Test(timeout = 60_000)
     public void producerTest() {
         final int numTestRecords = 100;
-        writeTestRecords(1, numTestRecords);
+        writeTestRecords(1, numTestRecords, createProducer(StringSerializer.class, StringSerializer.class));
+        rw.readTestRecords(numTestRecords);
+    }
+
+    @Test(timeout = 60_000)
+    public void producerLoggingTest() {
+        final int numTestRecords = 100;
+        loggingUtils = new CapturingLoggingUtils(environmentProvider);
+        Map<String, Object> props = ImmutableMap.of(
+                LoggingInterceptorConfig.LOGGING_REF, loggingUtils,
+                LoggingInterceptorConfig.SAMPLE_RATE_PCT_CONFIG, Integer.MAX_VALUE, // effectively rate-unlimited
+                ProducerConfig.INTERCEPTOR_CLASSES_CONFIG, LoggingProducerInterceptor.class.getName()
+
+        );
+        KafkaProducerBuilder<String, String> builder = createProducerBuilder(StringSerializer.class, StringSerializer.class)
+                .disableLogging(); // this fools the builder so we can put a custom loggingutils instance.
+        props.forEach(builder::withProperty);
+        KafkaProducer<String, String> producer = builder.build();
+        final UUID req = UUID.randomUUID();
+        MDC.put(ConservedHeader.REQUEST_ID.getLogName(), req.toString());
+        writeTestRecords(1, numTestRecords, producer);
+        List<EdaMessageTraceV1> edaMessageTraceV1s = loggingUtils.getMessageTraceV1s();
+        Assertions.assertThat(edaMessageTraceV1s).hasSize(numTestRecords);
+        int index = 1;
+        for (EdaMessageTraceV1 t : edaMessageTraceV1s) {
+            Assertions.assertThat(t.getKafkaClientId()).isEqualTo("producer-test");
+            Assertions.assertThat(t.getLogName()).isEqualTo("kafka-producer");
+            Assertions.assertThat(t.getRequestId()).isEqualTo(req);
+
+            Assertions.assertThat(t.getKafkaRecordKey()).isEqualTo("key-" + index);
+            Assertions.assertThat(t.getKafkaRecordValue()).isEqualTo("value-" + index);
+            Assertions.assertThat(t.getKafkaTopic()).isEqualTo("topic-1");
+            index++;
+            Assertions.assertThat(t.getKafkaVersion()).isNotNull();
+            Assertions.assertThat(t.getKafkaClientVersion()).isNotNull();
+            Assertions.assertThat(t.getKafkaClientName()).isEqualTo("otj-kafka");
+            Assertions.assertThat(t.getKafkaClientPlatform()).isEqualTo("java");
+
+            Assertions.assertThat(t.getKafkaClientPlaformVersion()).isNotNull();
+            Assertions.assertThat(t.getKafkaClientOs()).isNotNull();
+
+            Assertions.assertThat(t.getReferringHost()).isEqualTo("myHost");
+            Assertions.assertThat(t.getReferringService()).isEqualTo("myService");
+            Assertions.assertThat(t.getOtEnv()).isEqualTo("myEnv");
+            Assertions.assertThat(t.getOtEnvFlavor()).isEqualTo("myFlavor");
+            Assertions.assertThat(t.getReferringHost()).isEqualTo("myHost");
+
+            // Unfortunately I note keysize, valuesize, timestamp, and partition aren't available since they are "post commit"
+            // Until or unless we figure out how to correlate the postcommit, there's no good option. IIRC the kip doesn't guarantee anything about thread, so
+            // it's pretty hard
+
+
+        }
         rw.readTestRecords(numTestRecords);
     }
 
@@ -160,7 +224,7 @@ public class LoggingInterceptorsTest {
         final UUID req = UUID.randomUUID();
         MDC.put(ConservedHeader.REQUEST_ID.getLogName(), req.toString());
         MDC.put(ConservedHeader.CORRELATION_ID.getLogName(), "foo");
-        writeTestRecords(1, numTestRecords);
+        writeTestRecords(1, numTestRecords, createProducer(StringSerializer.class, StringSerializer.class));
         ConsumerRecords<String, String> r = readTestRecords(numTestRecords);
         // We demonstrate here that conserved headers + environment + a random added header all propagate.
         int expected = 1;
@@ -190,6 +254,22 @@ public class LoggingInterceptorsTest {
         @Primary
         public EnvironmentProvider environmentProvider() {
             return new SettableEnvironmentProvider("myService", "myHost", 5, "myEnv", "myFlavor");
+        }
+    }
+
+    public static class CapturingLoggingUtils extends LoggingUtils {
+        List<EdaMessageTraceV1> messageTraceV1s = new CopyOnWriteArrayList<>();
+        public CapturingLoggingUtils(final EnvironmentProvider environmentProvider) {
+            super(environmentProvider);
+        }
+
+        @Override
+        protected void debugEvent(final EdaMessageTraceV1 edaMessageTraceV1) {
+            messageTraceV1s.add(edaMessageTraceV1);
+        }
+
+        public List<EdaMessageTraceV1> getMessageTraceV1s() {
+            return messageTraceV1s;
         }
     }
 }

@@ -143,7 +143,22 @@ public class LoggingUtils {
                 .requestId(ensureUUID(headers.map(h -> h.lastHeader((kn(OTKafkaHeaders.REQUEST_ID)))).map(Header::value).map(String::new).orElse(null)))
                 .referringService(headers.map(h -> h.lastHeader((kn(OTKafkaHeaders.REFERRING_SERVICE)))).map(Header::value).map(String::new).orElse(null))
                 .referringHost(headers.map(h -> h.lastHeader((kn(OTKafkaHeaders.REFERRING_HOST)))).map(Header::value).map(String::new).orElse(null))
+                .otEnv(headers.map(h -> h.lastHeader((kn(OTKafkaHeaders.ENV)))).map(Header::value).map(String::new).orElse(null))
+                .otEnvFlavor(headers.map(h -> h.lastHeader((kn(OTKafkaHeaders.ENV_FLAVOR)))).map(Header::value).map(String::new).orElse(null))
+                .instanceNo(headers.map(h -> h.lastHeader((kn(OTKafkaHeaders.REFERRING_INSTANCE_NO))))
+                        .map(Header::value).map(String::new).map(this::parse).orElse(null))
+
+
+
                 ;
+    }
+
+    private Integer parse(final String t) {
+        try {
+            return Integer.parseInt(t);
+        } catch (RuntimeException e) {
+            return null;
+        }
     }
 
     private String kn(final OTKafkaHeaders otKafkaHeaders) {
@@ -153,7 +168,7 @@ public class LoggingUtils {
     @Nonnull
     private <K, V> MsgV1 producerEvent(ProducerRecord<K, V> record, String clientId) {
         final Optional<Headers> headers = Optional.ofNullable(record.headers());
-        return builder(headers)
+        final EdaMessageTraceV1 edaMessageTraceV1 = builder(headers)
                 // msg-v1
                 .logName("kafka-producer")
                 .incoming(false)
@@ -171,12 +186,14 @@ public class LoggingUtils {
                 //.recordValueSize((record.serializedValueSize())
                 //.offset(record.offset())
                 .build();
+        debugEvent(edaMessageTraceV1);
+        return edaMessageTraceV1;
     }
 
     @Nonnull
     private <K, V> MsgV1 consumerEvent(ConsumerRecord<K, V> record, String groupId, String clientId) {
         final Optional<Headers> headers = Optional.ofNullable(record.headers());
-        return builder(headers)
+        final EdaMessageTraceV1 edaMessageTraceV1 = builder(headers)
             // msg-v1
             .logName("kafka-consumer")
             .incoming(true)
@@ -194,6 +211,12 @@ public class LoggingUtils {
             .kafkaRecordTimestamp(record.timestamp())
             .kafkaRecordTimestampType(record.timestampType() == null ? TimestampType.NO_TIMESTAMP_TYPE.name : record.timestampType().name)
             .build();
+        debugEvent(edaMessageTraceV1);
+        return edaMessageTraceV1;
+    }
+
+    protected void debugEvent(final EdaMessageTraceV1 edaMessageTraceV1) {
+        /* do nothing */
     }
 
     /**
