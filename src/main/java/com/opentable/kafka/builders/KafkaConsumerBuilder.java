@@ -47,6 +47,7 @@ public class KafkaConsumerBuilder<K, V>  {
     private Optional<String> groupId = Optional.empty();
     private Optional<Boolean> enableAutoCommit = Optional.empty();
     private OptionalInt maxPollRecords = OptionalInt.empty();
+    private OptionalInt maxPartitionFetch = OptionalInt.empty();
     private OptionalLong sessionTimeoutMs = OptionalLong.empty();
     private OptionalLong maxPollIntervalMs = OptionalLong.empty();
     private Optional<AutoOffsetResetType> autoOffsetResetType = Optional.empty();
@@ -171,6 +172,11 @@ public class KafkaConsumerBuilder<K, V>  {
         return this;
     }
 
+    public KafkaConsumerBuilder<K, V> withMaxPartitionFetchBytes(int bytes) {
+        this.maxPartitionFetch = OptionalInt.of(bytes);
+        return this;
+    }
+
     public KafkaConsumerBuilder<K, V> withRetryBackoff(Duration duration) {
         if (duration != null) {
             kafkaBaseBuilder.withRetryBackOff(duration);
@@ -206,6 +212,7 @@ public class KafkaConsumerBuilder<K, V>  {
         if (partitionStrategy != null) {
             kafkaBaseBuilder.addProperty(ConsumerConfig.PARTITION_ASSIGNMENT_STRATEGY_CONFIG, partitionStrategy.getName());
         }
+        maxPartitionFetch.ifPresent(m -> kafkaBaseBuilder.addProperty(ConsumerConfig.MAX_PARTITION_FETCH_BYTES_CONFIG, String.valueOf(m)));
         maxPollIntervalMs.ifPresent(m -> kafkaBaseBuilder.addProperty(ConsumerConfig.MAX_POLL_INTERVAL_MS_CONFIG, String.valueOf(m)));
         sessionTimeoutMs.ifPresent(s -> kafkaBaseBuilder.addProperty(ConsumerConfig.SESSION_TIMEOUT_MS_CONFIG, String.valueOf(s)));
         enableAutoCommit.ifPresent(e -> kafkaBaseBuilder.addProperty(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG, String.valueOf(e)));

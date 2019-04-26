@@ -19,6 +19,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.OptionalInt;
+import java.util.OptionalLong;
 
 import com.codahale.metrics.MetricRegistry;
 import com.google.common.annotations.VisibleForTesting;
@@ -40,9 +41,11 @@ public class KafkaProducerBuilder<K, V> {
     private final KafkaBaseBuilder kafkaBaseBuilder;
     private Optional<AckType> ackType = Optional.empty();
     private OptionalInt retries = OptionalInt.empty();
+    private OptionalInt batchSize = OptionalInt.empty();
     private OptionalInt maxInfFlight = OptionalInt.empty();
+    private OptionalLong lingerMS = OptionalLong.empty();
+    private OptionalLong bufferMemory = OptionalLong.empty();
     private Class<? extends Partitioner> partitioner = DefaultPartitioner.class;
-
     private Class<? extends Serializer<K>> keySe;
     private Class<? extends Serializer<V>> valueSe;
     private Serializer<K> keySerializer;
@@ -108,6 +111,11 @@ public class KafkaProducerBuilder<K, V> {
         return this;
     }
 
+    public KafkaProducerBuilder<K, V> withBatchSize(int val) {
+        this.batchSize = OptionalInt.of(val);
+        return this;
+    }
+
     /**
      * Provide an class. If you have a no-args constructor use this
      * @param keySer key serializer
@@ -164,6 +172,20 @@ public class KafkaProducerBuilder<K, V> {
         return this;
     }
 
+    public KafkaProducerBuilder<K, V> withLingerMs(Duration duration) {
+        if (duration != null) {
+            lingerMS = OptionalLong.of(duration.toMillis());
+        } else {
+            lingerMS = OptionalLong.empty();
+        }
+        return this;
+    }
+
+    public KafkaProducerBuilder<K, V> withBufferMemory(long size) {
+        this.bufferMemory = OptionalLong.of(size);
+        return this;
+    }
+
     public KafkaProducerBuilder<K, V> withRequestTimeoutMs(Duration duration) {
         if (duration != null) {
             kafkaBaseBuilder.withRequestTimeoutMs(duration);
@@ -191,6 +213,9 @@ public class KafkaProducerBuilder<K, V> {
         kafkaBaseBuilder.addProperty(ProducerConfig.PARTITIONER_CLASS_CONFIG, partitioner.getName());
         kafkaBaseBuilder.setupInterceptors(ProducerConfig.INTERCEPTOR_CLASSES_CONFIG, LoggingProducerInterceptor.class.getName());
         maxInfFlight.ifPresent(m -> kafkaBaseBuilder.addProperty(ProducerConfig.MAX_IN_FLIGHT_REQUESTS_PER_CONNECTION, m));
+        bufferMemory.ifPresent(b -> kafkaBaseBuilder.addProperty(ProducerConfig.BUFFER_MEMORY_CONFIG, b));
+        batchSize.ifPresent(b -> kafkaBaseBuilder.addProperty(ProducerConfig.BATCH_SIZE_CONFIG, b));
+        lingerMS.ifPresent(l -> kafkaBaseBuilder.addProperty(ProducerConfig.LINGER_MS_CONFIG, l));
         ackType.ifPresent(ack -> kafkaBaseBuilder.addProperty(ProducerConfig.ACKS_CONFIG, ack.value));
         retries.ifPresent(retries -> kafkaBaseBuilder.addProperty(CommonClientConfigs.RETRIES_CONFIG, retries));
         if (keySe != null) {
