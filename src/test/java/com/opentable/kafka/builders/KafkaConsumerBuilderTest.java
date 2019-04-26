@@ -112,7 +112,7 @@ public class KafkaConsumerBuilderTest {
 
 
     private KafkaConsumerBuilder<Integer, String> getBuilder() {
-        return builderFactoryBean.builder("consumer", Integer.class, String.class)
+        return builderFactoryBean.<Integer,String>builder("consumer")
                 .withBootstrapServer("localhost:8080")
                 .withProperty("blah", "blah")
                 .removeProperty("blah")

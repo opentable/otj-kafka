@@ -39,17 +39,6 @@ public class KafkaConsumerBuilderFactoryBean extends KafkaBaseBuilderFactoryBean
         super(environmentProvider, env, serviceInfo, metricRegistry);
     }
 
-
-    // This exists only because the generics  notation (bean.<Integer,String>builder("goo") is awkward and this is easier to remember
-    public <K,V> KafkaConsumerBuilder<K,V> builder(Class<K> keyClass, Class<V> valueClass) {
-        return builder();
-    }
-
-    // This exists only because the generics  notation (bean.<Integer,String>builder("goo") is awkward and this is easier to remember
-    public <K,V> KafkaConsumerBuilder<K,V> builder(String name, Class<K> keyClass, Class<V> valueClass) {
-        return builder(name);
-    }
-
     public <K,V> KafkaConsumerBuilder<K,V> builder() {
         return builder(DEFAULT);
     }

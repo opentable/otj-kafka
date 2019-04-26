@@ -149,7 +149,7 @@ public class KafkaProducerBuilderTest {
     }
 
     private KafkaProducerBuilder<Integer, String> getBuilder(String name) {
-        return builderFactoryBean.builder(name, Integer.class, String.class)
+        return builderFactoryBean.<Integer, String>builder(name)
                     .withBootstrapServer("localhost:8080")
                     .withProperty("blah", "blah")
                     .withProperty("linger.ms", "99") // this will be overwritten
