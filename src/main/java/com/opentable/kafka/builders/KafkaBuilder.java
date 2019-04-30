@@ -1,5 +1,6 @@
 package com.opentable.kafka.builders;
 
+import java.time.Duration;
 import java.util.Arrays;
 import java.util.Properties;
 import java.util.stream.Collectors;
@@ -14,7 +15,7 @@ import org.apache.kafka.clients.consumer.ConsumerConfig;
 import com.opentable.kafka.metrics.OtMetricsReporter;
 import com.opentable.kafka.metrics.OtMetricsReporterConfig;
 
-public class KafkaBuilder {
+public abstract class KafkaBuilder<SELF extends KafkaBuilder<SELF>> extends SelfTyped<SELF> {
 
     final Properties prop;
 
@@ -26,53 +27,53 @@ public class KafkaBuilder {
         return prop;
     }
 
-    public static KafkaBuilder builder() {
-        return new KafkaBuilder(new Properties());
-    }
-
-    public static KafkaBuilder builder(Properties props) {
-        return new KafkaBuilder(props);
-    }
-
-    public KafkaBuilder withProp(String key, Object value) {
+    public SELF withProperty(String key, Object value) {
         prop.put(key, value);
-        return this;
+        return self();
     }
 
-    public KafkaBuilder withoutProp(String key) {
+    public SELF removeProperty(String key) {
         prop.remove(key);
-        return this;
+        return self();
     }
 
-    public KafkaBuilder withBootstrapServers(String val) {
-        return withProp(CommonClientConfigs.BOOTSTRAP_SERVERS_CONFIG, val);
+    public SELF withBootstrapServers(String val) {
+        return withProperty(CommonClientConfigs.BOOTSTRAP_SERVERS_CONFIG, val);
     }
 
-    public KafkaBuilder withBootstrapServer(String val) {
+    public SELF withBootstrapServer(String val) {
         setListPropItem(CommonClientConfigs.BOOTSTRAP_SERVERS_CONFIG, val);
-        return this;
+        return self();
     }
-    public KafkaBuilder withClientId(String val) {
-        return withProp(CommonClientConfigs.CLIENT_ID_CONFIG, val);
-    }
-
-    public KafkaBuilder withSecurityProtocol(String val) {
-        return withProp(CommonClientConfigs.SECURITY_PROTOCOL_CONFIG, val);
+    public SELF withClientId(String val) {
+        return withProperty(CommonClientConfigs.CLIENT_ID_CONFIG, val);
     }
 
-    public KafkaBuilder withMetricReporter(MetricRegistry metricRegistry) {
+    public SELF withSecurityProtocol(String val) {
+        return withProperty(CommonClientConfigs.SECURITY_PROTOCOL_CONFIG, val);
+    }
+
+    public SELF withMetricReporter(MetricRegistry metricRegistry) {
         setListPropItem(ConsumerConfig.METRIC_REPORTER_CLASSES_CONFIG, OtMetricsReporter.class.getName());
-        return withProp(OtMetricsReporterConfig.METRIC_REGISTRY_REF_CONFIG, metricRegistry);
+        return withProperty(OtMetricsReporterConfig.METRIC_REGISTRY_REF_CONFIG, metricRegistry);
     }
 
-    public KafkaBuilder withMetricReporter() {
-        setListPropItem(ConsumerConfig.METRIC_REPORTER_CLASSES_CONFIG, OtMetricsReporter.class.getName());
-        return this;
+    public SELF withMetricReporter() {
+        setListPropItem(CommonClientConfigs.METRIC_REPORTER_CLASSES_CONFIG, OtMetricsReporter.class.getName());
+        return self();
     }
 
-    public KafkaBuilder withoutMetricReporter() {
-        removeListPropItem(ConsumerConfig.METRIC_REPORTER_CLASSES_CONFIG, OtMetricsReporter.class.getName());
-        return this;
+    public SELF disableMetricReporter() {
+        removeListPropItem(CommonClientConfigs.METRIC_REPORTER_CLASSES_CONFIG, OtMetricsReporter.class.getName());
+        return self();
+    }
+
+    public SELF withRequestTimeout(Duration val) {
+        return withProperty(CommonClientConfigs.REQUEST_TIMEOUT_MS_CONFIG, val.toMillis());
+    }
+
+    public SELF withRetryBackoff(Duration val) {
+        return withProperty(CommonClientConfigs.RETRY_BACKOFF_MS_CONFIG, val.toMillis());
     }
 
     protected void setListPropItem(String key, String val) {
@@ -91,14 +92,6 @@ public class KafkaBuilder {
                 .filter(s -> !s.equals(val))
                 .distinct()
                 .collect(Collectors.joining(",")));
-    }
-
-    public KafkaProducerBuilder<?, ?> producer() {
-        return new KafkaProducerBuilder<>(prop);
-    }
-
-    public KafkaConsumerBuilder<?, ?> consumer() {
-        return new KafkaConsumerBuilder<>(prop);
     }
 
 }

@@ -44,14 +44,13 @@ public class KafkaProducerBuilderTest {
 
     @Test
     public void builderTest() {
-        KafkaProducerBuilder<Integer, String> builder = builderFactoryBean.builder("producer")
+        KafkaProducerBuilder<Integer, String> builder = builderFactoryBean.producerBuilder("producer")
             .withBootstrapServers("localhost:8080")
-            .withProp("blah", "blah")
-            .withoutProp("blah")
+            .withProperty("blah", "blah")
+            .removeProperty("blah")
             .withClientId("test-producer-01")
-            .producer()
-            .withProp("blah2", "blah2")
-            .withoutProp("blah2")
+            .withProperty("blah2", "blah2")
+            .removeProperty("blah2")
             .withAcks(AckType.none)
             .withRetries(5)
             .withSerializers(IntegerSerializer.class, StringSerializer.class)

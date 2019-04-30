@@ -1,5 +1,6 @@
 package com.opentable.kafka.builders;
 
+import java.time.Duration;
 import java.util.Properties;
 
 import org.apache.kafka.clients.consumer.ConsumerConfig;
@@ -10,7 +11,7 @@ import org.apache.kafka.common.serialization.Deserializer;
 import com.opentable.kafka.logging.LoggingConsumerInterceptor;
 import com.opentable.kafka.logging.LoggingInterceptorConfig;
 
-public class KafkaConsumerBuilder <K, V> extends KafkaBuilder {
+public class KafkaConsumerBuilder<K, V> extends KafkaBuilder<KafkaConsumerBuilder<K, V>> {
 
     KafkaConsumerBuilder(Properties prop) {
         super(prop);
@@ -18,15 +19,16 @@ public class KafkaConsumerBuilder <K, V> extends KafkaBuilder {
     }
 
     @Override
-    public KafkaConsumerBuilder<K, V> withProp(String key, Object value) {
-        super.withProp(key, value);
+    KafkaConsumerBuilder<K, V> self() {
         return this;
     }
 
-    @Override
-    public KafkaConsumerBuilder<K, V> withoutProp(String key) {
-        super.withoutProp(key);
-        return this;
+    public static  KafkaConsumerBuilder<?, ?> builder() {
+        return new KafkaConsumerBuilder<>(new Properties());
+    }
+
+    public static KafkaConsumerBuilder<?, ?> builder(Properties props) {
+        return new KafkaConsumerBuilder<>(props);
     }
 
     public KafkaConsumerBuilder<K, V> withLogging() {
@@ -34,13 +36,13 @@ public class KafkaConsumerBuilder <K, V> extends KafkaBuilder {
         return this;
     }
 
-    public KafkaConsumerBuilder<K, V> withoutLogging() {
+    public KafkaConsumerBuilder<K, V> disableLogging() {
         removeListPropItem(ConsumerConfig.INTERCEPTOR_CLASSES_CONFIG, LoggingConsumerInterceptor.class.getName());
         return this;
     }
 
     public KafkaConsumerBuilder<K, V> withLoggingSampleRate(Double rate) {
-        return withProp(LoggingInterceptorConfig.SAMPLE_RATE_PCT_CONFIG, rate);
+        return withProperty(LoggingInterceptorConfig.SAMPLE_RATE_PCT_CONFIG, rate);
     }
 
     public KafkaConsumerBuilder<K, V> withInterceptor(Class<? extends ConsumerInterceptor<K, V>> clazz) {
@@ -49,15 +51,15 @@ public class KafkaConsumerBuilder <K, V> extends KafkaBuilder {
     }
 
     public KafkaConsumerBuilder<K, V> withGroupId(String val) {
-        return withProp(ConsumerConfig.GROUP_ID_CONFIG, val);
+        return withProperty(ConsumerConfig.GROUP_ID_CONFIG, val);
     }
 
     public KafkaConsumerBuilder<K, V> withOffsetReset(AutoOffsetResetType val) {
-        return withProp(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, val.value);
+        return withProperty(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, val.value);
     }
 
     public KafkaConsumerBuilder<K, V> withMaxPollRecords(int val) {
-        return withProp(ConsumerConfig.MAX_POLL_RECORDS_CONFIG, val);
+        return withProperty(ConsumerConfig.MAX_POLL_RECORDS_CONFIG, val);
     }
 
     public <K2, V2> KafkaConsumerBuilder<K2, V2> withDeserializers(Class<? extends Deserializer<K2>> keyDeSer, Class<? extends Deserializer<V2>> valDeSer) {
@@ -66,9 +68,30 @@ public class KafkaConsumerBuilder <K, V> extends KafkaBuilder {
         return new KafkaConsumerBuilder<>(prop);
     }
 
+    public KafkaConsumerBuilder<K, V> withAutoCommit(boolean val) {
+        return withProperty(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG, val);
+    }
+
+    public KafkaConsumerBuilder<K, V> withSessionTimeoutMs(Duration val) {
+        return withProperty(ConsumerConfig.SESSION_TIMEOUT_MS_CONFIG, val.toMillis());
+    }
+
+    public KafkaConsumerBuilder<K, V> withMaxPartitionFetchBytes(int val) {
+        return withProperty(ConsumerConfig.MAX_PARTITION_FETCH_BYTES_CONFIG, val);
+    }
+
+    public KafkaConsumerBuilder<K, V> withPollInterval(Duration val) {
+        return withProperty(ConsumerConfig.MAX_POLL_INTERVAL_MS_CONFIG, val.toMillis());
+    }
+
     public KafkaConsumer<K, V> build() {
         // TODO: add checks here
         return new KafkaConsumer<>(prop);
+    }
+
+    public <K2, V2> KafkaConsumer<K2, V2> build(Deserializer<K2> keyDeSer, Deserializer<V2> valDeSer) {
+        // TODO: add checks here
+        return new KafkaConsumer<>(prop, keyDeSer, valDeSer);
     }
 
     public enum AutoOffsetResetType {

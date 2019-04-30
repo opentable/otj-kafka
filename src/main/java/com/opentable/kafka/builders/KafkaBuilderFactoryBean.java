@@ -29,14 +29,26 @@ public class KafkaBuilderFactoryBean {
         this.metricRegistry = metricRegistry;
     }
 
-    public KafkaBuilder builder() {
-        return builder(DEFAULT);
+    public KafkaConsumerBuilder<?, ?> consumerBuilder() {
+        return consumerBuilder(DEFAULT);
     }
 
-    public KafkaBuilder builder(String name) {
-        final KafkaBuilder res = KafkaBuilder.builder((getProperties(name, getProperties(DEFAULT, new Properties()))));
-        return metricRegistry.map(res::withMetricReporter).orElse(res);
+    public KafkaConsumerBuilder<?, ?> consumerBuilder(String name) {
+        final KafkaConsumerBuilder<?, ?> res = KafkaConsumerBuilder.builder((getProperties(name, getProperties(DEFAULT, new Properties()))));
+        metricRegistry.ifPresent(res::withMetricReporter);
+        return res;
     }
+
+    public KafkaProducerBuilder<?, ?> producerBuilder() {
+        return producerBuilder(DEFAULT);
+    }
+
+    public KafkaProducerBuilder<?, ?> producerBuilder(String name) {
+        final KafkaProducerBuilder<?, ?> res = KafkaProducerBuilder.builder((getProperties(name, getProperties(DEFAULT, new Properties()))));
+        metricRegistry.ifPresent(res::withMetricReporter);
+        return res;
+    }
+
 
     private Properties getProperties(final String nameSpace, final Properties res) {
         res.putAll(

@@ -43,14 +43,14 @@ public class KafkaConsumerBuilderTest {
 
     @Test
     public void builderTest() {
-        KafkaConsumerBuilder<Integer, String> builder = builderFactoryBean.builder("consumer")
+        KafkaConsumerBuilder<Integer, String> builder = builderFactoryBean.consumerBuilder("consumer")
             .withBootstrapServers("localhost:8080")
-            .withProp("blah", "blah")
-            .withoutProp("blah")
+            .withProperty("blah", "blah")
+            .removeProperty("blah")
             .withClientId("test-consomer-01")
-            .consumer()
-            .withProp("blah2", "blah2")
-            .withoutProp("blah2")
+            .withProperty("blah2", "blah2")
+            .withGroupId("test")
+            .removeProperty("blah2")
             .withGroupId("test")
             .withDeserializers(IntegerDeserializer.class, StringDeserializer.class)
             .withOffsetReset(AutoOffsetResetType.Latest)
