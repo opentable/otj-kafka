@@ -14,7 +14,6 @@
 package com.opentable.kafka.logging;
 
 import java.util.Map;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.clients.producer.ProducerInterceptor;
@@ -23,51 +22,53 @@ import org.apache.kafka.clients.producer.RecordMetadata;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.opentable.kafka.util.LogSamplerRandom;
+import io.github.bucket4j.Bucket;
 
+/**
+ * Intercepts all KafkaProducer traffic and applies otl-standardized logging and metrics to them
+ */
 public class LoggingProducerInterceptor implements ProducerInterceptor<Object, Object> {
 
     private static final Logger LOG = LoggerFactory.getLogger(LoggingProducerInterceptor.class);
 
+    // see configure()
     private String interceptorClientId;
-    private LoggingInterceptorConfig conf;
-    private LogSamplerRandom sampler;
+    private LoggingUtils loggingUtils;
+    private Bucket bucket;
+
+
+    public LoggingProducerInterceptor() { //NOPMD
+        /* noargs needed for kafka */
+    }
 
     @Override
     public ProducerRecord<Object, Object> onSend(ProducerRecord<Object, Object> record) {
-        LoggingUtils.setupHeaders(record);
-        LoggingUtils.setupTracing(sampler, record);
-        LoggingUtils.trace(LOG, interceptorClientId, record);
+        loggingUtils.addHeaders(record);
+        loggingUtils.setTracingHeader(bucket, record.headers());
+        loggingUtils.maybeLogProducer(LOG, interceptorClientId, record);
         return record;
     }
 
     @Override
     public void onAcknowledgement(RecordMetadata metadata, Exception e) {
-        //LOG.info("metadata: {}", metadata);
         if (e != null) {
-            LOG.error("", e);
+            LOG.error("Error occurred during acknowledgement {}", metadata, e);
         }
     }
 
     @Override
     public void close() {
-
+        LOG.debug("Shutting down LoggingProducerInterceptor");
     }
 
     @Override
     public void configure(Map<String, ?> config) {
-        conf = new LoggingInterceptorConfig(config);
-        this.sampler = new LogSamplerRandom(conf.getDouble(LoggingInterceptorConfig.SAMPLE_RATE_PCT_CONFIG));
-        String originalsClientId = (String) config.get(ProducerConfig.CLIENT_ID_CONFIG);
-        this.interceptorClientId = (originalsClientId == null) ? "interceptor-producer-" + ClientIdGenerator.nextClientId() : originalsClientId;
+        final LoggingInterceptorConfig conf = new LoggingInterceptorConfig(config);
+        final String originalsClientId = (String) config.get(ProducerConfig.CLIENT_ID_CONFIG);
+        loggingUtils = (LoggingUtils) config.get(LoggingInterceptorConfig.LOGGING_REF);
+        bucket = loggingUtils.getBucket(conf);
+        this.interceptorClientId = (originalsClientId == null) ? "interceptor-producer-" + LoggingUtils.ClientIdGenerator.INSTANCE.nextPublisherId() : originalsClientId;
         LOG.info("LoggingProducerInterceptor is configured for client: {}", interceptorClientId);
-    }
-
-    private static class ClientIdGenerator {
-        private static final AtomicInteger IDS = new AtomicInteger(0);
-        static int nextClientId() {
-            return IDS.getAndIncrement();
-        }
     }
 
 }

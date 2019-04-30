@@ -14,7 +14,6 @@
 package com.opentable.kafka.logging;
 
 import java.util.Map;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.consumer.ConsumerInterceptor;
@@ -24,47 +23,51 @@ import org.apache.kafka.common.TopicPartition;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.opentable.kafka.util.LogSamplerRandom;
+import io.github.bucket4j.Bucket;
 
+/**
+ * Logging interceptor to add otl based logging
+ * @param <K> key
+ * @param <V> value
+ */
 public class LoggingConsumerInterceptor<K, V> implements ConsumerInterceptor<K, V> {
 
     private static final Logger LOG = LoggerFactory.getLogger(LoggingConsumerInterceptor.class);
 
+    // See configure()
     private String interceptorClientId;
     private String groupId;
-    private LoggingInterceptorConfig conf;
-    private LogSamplerRandom sampler;
+    private LoggingUtils loggingUtils;
+    private Bucket bucket;
+
+    public LoggingConsumerInterceptor() { //NOPMD
+        /* noargs needed for kafka */
+    }
 
     @Override
     public ConsumerRecords<K, V> onConsume(ConsumerRecords<K, V> records) {
-        records.forEach(record -> LoggingUtils.trace(LOG, interceptorClientId, groupId, sampler, record));
+        records.forEach(record -> loggingUtils.maybeLogConsumer(LOG, interceptorClientId, groupId, bucket, record));
         return records;
     }
 
     @Override
     public void onCommit(Map<TopicPartition, OffsetAndMetadata> offsets) {
-
+        /* no op */
     }
 
     @Override
     public void close() {
-
+        LOG.debug("Shutting down LoggingConsumerInterceptor");
     }
 
     @Override
     public void configure(Map<String, ?> config) {
-        conf = new LoggingInterceptorConfig(config);
-        this.sampler = new LogSamplerRandom(conf.getDouble(LoggingInterceptorConfig.SAMPLE_RATE_PCT_CONFIG));
+        final LoggingInterceptorConfig conf = new LoggingInterceptorConfig(config);
         String originalsClientId = (String) config.get(ConsumerConfig.CLIENT_ID_CONFIG);
         groupId  = (String) config.get(ConsumerConfig.GROUP_ID_CONFIG);
-        interceptorClientId = (originalsClientId == null) ? "interceptor-consumer-" + ClientIdGenerator.nextClientId() : originalsClientId;
+        loggingUtils = (LoggingUtils) config.get(LoggingInterceptorConfig.LOGGING_REF);
+        bucket = loggingUtils.getBucket(conf);
+        interceptorClientId = (originalsClientId == null) ? "interceptor-consumer-" + LoggingUtils.ClientIdGenerator.INSTANCE.nextConsumerId() : originalsClientId;
         LOG.info("LoggingConsumerInterceptor is configured for client: {}, group-id: {}", interceptorClientId, groupId);
-    }
-
-    private static class ClientIdGenerator {
-        private static final AtomicInteger IDS = new AtomicInteger(0);
-        static int nextClientId() {
-            return IDS.getAndIncrement();
-        }
     }
 }

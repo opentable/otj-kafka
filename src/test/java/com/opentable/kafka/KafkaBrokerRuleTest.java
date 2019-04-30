@@ -43,7 +43,7 @@ public class KafkaBrokerRuleTest {
         EmbeddedKafkaBroker ekb = kb.getBroker();
 
         try (KafkaProducer<String, String> producer = ekb.createProducer()) {
-            producer.send(new ProducerRecord<String, String>(TEST_TOPIC, TEST_VALUE));
+            producer.send(new ProducerRecord<>(TEST_TOPIC, TEST_VALUE));
         }
 
         try (KafkaConsumer<String, String> consumer = ekb.createConsumer("test")) {

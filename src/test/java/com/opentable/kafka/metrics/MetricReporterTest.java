@@ -16,24 +16,19 @@ package com.opentable.kafka.metrics;
 import java.lang.management.ManagementFactory;
 import java.time.Duration;
 import java.util.Collections;
-import java.util.Properties;
 import java.util.UUID;
 
+import javax.inject.Inject;
 import javax.management.MBeanServer;
 
-import com.codahale.metrics.Counting;
 import com.codahale.metrics.Gauge;
 import com.codahale.metrics.MetricRegistry;
 
 import org.apache.kafka.clients.consumer.Consumer;
-import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
-import org.apache.kafka.clients.consumer.KafkaConsumer;
-import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.Producer;
 import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.clients.producer.ProducerRecord;
-import org.apache.kafka.common.metrics.MetricsReporter;
 import org.apache.kafka.common.serialization.Deserializer;
 import org.apache.kafka.common.serialization.Serializer;
 import org.apache.kafka.common.serialization.StringDeserializer;
@@ -43,7 +38,6 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.slf4j.MDC;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Bean;
@@ -54,14 +48,13 @@ import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.junit4.SpringRunner;
 
 import com.opentable.conservedheaders.ConservedHeader;
-import com.opentable.kafka.builders.KafkaBuilder;
-import com.opentable.kafka.logging.LoggingConsumerInterceptor;
-import com.opentable.kafka.logging.LoggingProducerInterceptor;
-import com.opentable.kafka.util.OffsetMetrics;
+import com.opentable.kafka.builders.EnvironmentProvider;
+import com.opentable.kafka.builders.InjectKafkaBuilderBeans;
+import com.opentable.kafka.builders.KafkaBuilderConfiguration;
+import com.opentable.kafka.builders.KafkaConsumerBuilder;
+import com.opentable.kafka.builders.KafkaProducerBuilder;
 import com.opentable.kafka.util.ReadWriteRule;
 import com.opentable.metrics.DefaultMetricsConfiguration;
-import com.opentable.service.AppInfo;
-import com.opentable.service.EnvInfo;
 import com.opentable.service.ServiceInfo;
 
 @RunWith(SpringRunner.class)
@@ -77,16 +70,18 @@ public class MetricReporterTest {
     @Rule
     public final ReadWriteRule rw = new ReadWriteRule();
 
-    @Autowired
+    @Inject
     private MetricRegistry metricRegistry;
 
+    @Inject
+    private EnvironmentProvider environmentProvider;
+
     public <K, V> Producer<K, V> createProducer(Class<? extends Serializer<K>> keySer, Class<? extends Serializer<V>> valueSer) {
-        return KafkaBuilder.builder(rw.getEkb().baseProducerProperties())
+        return new KafkaProducerBuilder<K,V>(rw.getEkb().baseProducerMap(), environmentProvider)
             .withClientId("producer-metrics-01")
-            .withMetricReporter(metricRegistry)
-            .producer()
+            .withMetricRegistry(metricRegistry)
             .withSerializers(keySer, valueSer)
-            .withProp(ProducerConfig.LINGER_MS_CONFIG, "200")
+            .withProperty(ProducerConfig.LINGER_MS_CONFIG, "200")
             .build();
     }
 
@@ -104,10 +99,9 @@ public class MetricReporterTest {
     }
 
     public <K, V> Consumer<K, V> createConsumer(String groupId, Class<? extends Deserializer<K>> keySer, Class<? extends Deserializer<V>> valueSer) {
-        return KafkaBuilder.builder(rw.getEkb().baseConsumerProperties(groupId))
+        return new KafkaConsumerBuilder<K,V>(rw.getEkb().baseConsumerMap(groupId), environmentProvider)
             .withClientId("consumer-metrics-01")
-            .withMetricReporter(metricRegistry)
-            .consumer()
+            .withMetricRegistry(metricRegistry)
             .withGroupId(groupId)
             .withMaxPollRecords(1)
             .withDeserializers(keySer, valueSer)
@@ -172,11 +166,8 @@ public class MetricReporterTest {
     }
 
     @Configuration
-    @Import({
-        AppInfo.class,
-        EnvInfo.class,
-        DefaultMetricsConfiguration.class,
-    })
+    @InjectKafkaBuilderBeans
+    @Import(DefaultMetricsConfiguration.class)
     public static class Config {
         @Bean
         public MBeanServer getMBeanServer() {

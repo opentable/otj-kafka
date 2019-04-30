@@ -19,7 +19,7 @@
   <parent>
     <groupId>com.opentable</groupId>
     <artifactId>otj-parent-spring</artifactId>
-    <version>184</version>
+    <version>199</version>
   </parent>
 
 
@@ -31,15 +31,22 @@
   </scm>
 
   <properties>
-      <basepom.oss.skip-scala-doc>true</basepom.oss.skip-scala-doc>
-      <basepom.check.skip-javadoc>false</basepom.check.skip-javadoc>
-      <basepom.check.fail-javadoc>false</basepom.check.fail-javadoc>
-      <dep.otj-otl.version>0.8.19-SNAPSHOT</dep.otj-otl.version>
+    <!-- remove once parent updates -->
+    <dep.bucket4j.version>4.4.1</dep.bucket4j.version>
+    <!-- remove once parent updates -->
+    <dep.otj-logging.version>3.0.4</dep.otj-logging.version>
+    <!-- remove once parent updates -->
+    <dep.otj-otl.version>0.8.19</dep.otj-otl.version>
+
+    <basepom.oss.skip-scala-doc>true</basepom.oss.skip-scala-doc>
+    <basepom.check.skip-javadoc>false</basepom.check.skip-javadoc>
+    <basepom.check.fail-javadoc>false</basepom.check.fail-javadoc>
+    <dep.curator.version>2.13.0</dep.curator.version>
   </properties>
 
   <groupId>com.opentable.components</groupId>
   <artifactId>otj-kafka</artifactId>
-  <version>3.1.4-SNAPSHOT</version>
+  <version>3.2.0-SNAPSHOT</version>
   <description>Kafka integrations component</description>
 
   <dependencies>
@@ -64,6 +71,7 @@
       <groupId>com.opentable.components</groupId>
       <artifactId>otj-core</artifactId>
     </dependency>
+
     <dependency>
       <groupId>com.opentable.components</groupId>
       <artifactId>otj-metrics-core</artifactId>
@@ -99,9 +107,14 @@
     </dependency>
 
     <dependency>
+      <groupId>javax.annotation</groupId>
+      <artifactId>javax.annotation-api</artifactId>
+    </dependency>
+
+    <dependency>
       <groupId>org.apache.curator</groupId>
       <artifactId>curator-test</artifactId>
-      <version>2.6.0</version>
+      <version>${dep.curator.version}</version>
     </dependency>
 
     <dependency>
@@ -129,6 +142,28 @@
     </dependency>
 
     <dependency>
+      <groupId>com.opentable.logging</groupId>
+      <artifactId>otj-otl</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework</groupId>
+      <artifactId>spring-context</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>com.opentable.components</groupId>
+      <artifactId>otj-conservedheaders-core</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework</groupId>
+      <artifactId>spring-beans</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework</groupId>
+      <artifactId>spring-core</artifactId>
+    </dependency>
+
+
+    <dependency>
       <groupId>org.apache.commons</groupId>
       <artifactId>commons-lang3</artifactId>
     </dependency>
@@ -142,7 +177,7 @@
     <dependency>
       <groupId>com.github.vladimir-bukhtoyarov</groupId>
       <artifactId>bucket4j-core</artifactId>
-      <version>3.1.0</version>
+      <version>${dep.bucket4j.version}</version>
     </dependency>
 
     <dependency>
@@ -150,7 +185,6 @@
       <artifactId>junit</artifactId>
       <optional>true</optional>
     </dependency>
-
 
     <dependency>
       <groupId>ch.qos.logback</groupId>
@@ -160,12 +194,6 @@
       <groupId>ch.qos.logback</groupId>
       <artifactId>logback-classic</artifactId>
     </dependency>
-    <dependency>
-      <groupId>org.codehaus.janino</groupId>
-      <artifactId>janino</artifactId>
-      <scope>test</scope>
-    </dependency>
-
 
     <dependency>
       <groupId>org.assertj</groupId>

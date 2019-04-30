@@ -48,6 +48,7 @@ public class KafkaAppenderTest
     private final LoggerContext context = new LoggerContext();
     private final ObjectMapper mapper = new ObjectMapper().registerModule(new MrBeanModule());
 
+    @SuppressWarnings("UnstableApiUsage")
     @Before
     public void addHandler() throws Exception
     {

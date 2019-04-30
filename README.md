@@ -1,5 +1,52 @@
 Kafka integrations and convenience libraries.
 
+Kafka Builders
+--------------
+
+We provide builders for KafkaConsumer and KafkaProducer.
+Why would you use them?
+
+* Spring friendly
+* Fluent API, to make most Kafka properties a little more readable and strongly typed
+* Integration with metrics - automatically forwards Kafka metrics to graphite
+* OTL logging - on a sampled basis.
+* Support for injecting raw properties via Spring configuration files.
+
+Usage:
+
+Add `@InjectKafkaBuilderBeans` to any Configuration class. You'll now have two beans in your context:
+
+* KafkaConsumerBuilderFactoryBean
+* KafkaProducerBuilderFactoryBean
+
+You may inject them into any class, and use them. The general idiom they follow looks something like this
+
+```
+ final Consumer<byte[], ABEvent> consumer = kafkaConsumerBuilderFactoryBean.<byte[],ABEvent>
+                builder("myuniquenameperconsumerpermachine) // name must be unique per machine. This works because of the deterministic setup
+                .withBootstrapServers(Arrays.asList(brokerList().split(",")))
+                .withAutoCommit(false)
+                .withClientId(makeClientId(topicPartition))
+                .withGroupId(getKafkaGroupId())
+                .withAutoOffsetReset(autoOffsetResetMode.getType())
+                .withDeserializers(keyDeserializer, abEventDeserializer)
+                .build();
+                ;
+
+```
+
+This will build the Kafka producer/consumer using the following logic:
+
+* If there's any ot.kafka.myuniquenameperconsumerpermachine namespaced configuration properties, use these. They
+will take precedence over the fluent api
+* Add in any thing specified in the fluent api
+* Wire in metrics and logging. To disable these use `disableLogging()` and/or `disableMetrics()`. The logging only
+kicks in once per 10 seconds, but you may change this rate via `withLoggingSampleRate()` (for example setting to 10 will make it rate limit
+once per second, changing to 100 will have a rate limit of 10 per second, etc) - mind our logging cluster though!
+* Return the Kafka consumer/producer (we return the interface type Consumer/Producer instead of the implementations KafkaConsumer/KafkaProducer)
+
+The BuilderFactoryBean is thread safe, but the underlying Builder is NOT.
+
 Offset Metrics
 --------------
 

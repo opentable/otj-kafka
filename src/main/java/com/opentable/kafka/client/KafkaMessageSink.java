@@ -92,7 +92,7 @@ public final class KafkaMessageSink<K, V> implements MessageSink<K, V, Callback>
     public void send(String topic, K key, V message, Callback callback) {
         final Future<RecordMetadata> result =
             producer.send(
-                new ProducerRecord<K, V>(topic, key, message),
+                    new ProducerRecord<>(topic, key, message),
                 callback);
 
         trackResult(result);

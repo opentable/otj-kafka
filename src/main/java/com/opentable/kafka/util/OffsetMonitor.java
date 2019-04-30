@@ -41,7 +41,8 @@ public class OffsetMonitor implements Closeable {
     private final AdminClient adminClient;
 
     /**
-     * Namespace the consumer created by this class; for example, pass your application name.
+     * @param  consumerNamespace Namespace the consumer created by this class; for example, pass your application name.
+     * @param brokerList list of kafka brokers, in the traditional comma delmited fashion
      */
     public OffsetMonitor(final String consumerNamespace, final String brokerList) {
         consumerGroupId = consumerNamespace + "-offset-monitor";

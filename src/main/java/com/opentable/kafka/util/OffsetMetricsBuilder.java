@@ -72,13 +72,17 @@ public class OffsetMetricsBuilder {
     /**
      * Customize the histogram reservoirs if you like; low-rate topics may benefit from a sliding time window reservoir
      * instead of an exponentially-decaying one, especially if you are adding alerts based on these metrics.
+     * @param reservoirSupplier supplier
      */
     public OffsetMetricsBuilder withReservoirs(final Supplier<Reservoir> reservoirSupplier) {
         this.reservoirSupplier = reservoirSupplier;
         return this;
     }
 
-    /** Use this if you are managing your own offsets. Given a topic, the map should yield partition -> offset. */
+    /**
+     * Use this if you are managing your own offsets. Given a topic, the map should yield partition to offset.
+     * @param offsetsSupplier topic ... map(partition, offset)
+     */
     public OffsetMetricsBuilder withOffsetsSupplier(final Function<String, Map<Integer, Long>> offsetsSupplier) {
         this.offsetsSupplier = offsetsSupplier;
         return this;

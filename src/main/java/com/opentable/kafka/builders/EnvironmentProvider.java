@@ -11,18 +11,21 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.opentable.kafka.util;
+package com.opentable.kafka.builders;
 
-public class LogSamplerRandom {
+import com.opentable.logging.CommonLogHolder;
 
-    private final double mark;
-
-    public LogSamplerRandom(double pct) {
-        this.mark = pct / 100.00;
+/**
+ * Normally a thin wrapper around AppInfo/Envinfo in Spring, this allows
+ * alternative implementationd
+ */
+public interface EnvironmentProvider {
+    default String getReferringService() {
+        return CommonLogHolder.getServiceType();
     }
-
-    public boolean mark(String key) {
-        return Math.random() < mark;
-    }
+    String getReferringHost();
+    Integer getReferringInstanceNumber();
+    String getEnvironment();
+    String getEnvironmentFlavor();
 
 }

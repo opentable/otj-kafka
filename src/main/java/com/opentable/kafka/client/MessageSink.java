@@ -33,7 +33,7 @@ public interface MessageSink<K, V, CallbackType> extends Closeable {
 
     /**
      * Flush outstanding messages synchronously.  If we fail to do so,
-     * throw an exception and {@link reset} any other sent
+     * throw an exception and reset() any other sent
      * but unacknowledged batches -- the caller is expected to rewind and retry.
      */
     void flush();
@@ -44,6 +44,10 @@ public interface MessageSink<K, V, CallbackType> extends Closeable {
     /**
      * Offer a message to the destination.  May throw delayed exceptions from any message
      * previously offered due to batching.
+     * @param topic The kafka topic
+     * @param key The key
+     * @param message the value
+     * @param callback callback
      */
     void send(String topic, K key, V message, CallbackType callback);
 }

@@ -76,7 +76,7 @@ public class MultiOffsetMonitorTest {
                 KafkaProducer<byte[], byte[]> producer = ekr.getBroker().createProducer(ser, ser);
                 KafkaConsumer<byte[], byte[]> consumer = new KafkaConsumer<>(props, deser, deser);
                 OffsetMonitor mon1 = new OffsetMonitor(NAMESPACE, brokerList);
-                OffsetMonitor mon2 = new OffsetMonitor(NAMESPACE, brokerList);
+                OffsetMonitor mon2 = new OffsetMonitor(NAMESPACE, brokerList)
         ) {
             final List<Future<?>> futures = new ArrayList<>();
             for (int i = 0; i < 10_000; ++i) {
