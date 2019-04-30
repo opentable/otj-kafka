@@ -29,6 +29,8 @@ import com.opentable.service.ServiceInfo;
  */
 public class KafkaConsumerBuilderFactoryBean extends KafkaBaseBuilderFactoryBean {
 
+    private final String prefix;
+
     @SuppressWarnings("OptionalUsedAsFieldOrParameterType")
     @Inject
     public KafkaConsumerBuilderFactoryBean(
@@ -37,6 +39,7 @@ public class KafkaConsumerBuilderFactoryBean extends KafkaBaseBuilderFactoryBean
                                            final Optional<ServiceInfo> serviceInfo,
                                            final Optional<MetricRegistry> metricRegistry) {
         super(environmentProvider, env, serviceInfo, metricRegistry);
+        this.prefix = PREFIX + "consumer.";
     }
 
     public <K,V> KafkaConsumerBuilder<K,V> builder() {
@@ -45,8 +48,8 @@ public class KafkaConsumerBuilderFactoryBean extends KafkaBaseBuilderFactoryBean
 
     public <K,V> KafkaConsumerBuilder<K,V> builder(String name) {
         final Map<String, Object> mergedSeedProperties = mergeProperties(
-                getProperties(DEFAULT),
-                name
+                getProperties(DEFAULT, prefix),
+                name, prefix
         );
         final KafkaConsumerBuilder<K,V> res = new KafkaConsumerBuilder<>(mergedSeedProperties, environmentProvider);
         metricRegistry.ifPresent(res::withMetricRegistry);

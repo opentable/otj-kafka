@@ -31,7 +31,7 @@ import com.opentable.spring.PropertySourceUtil;
 @SuppressWarnings("OptionalUsedAsFieldOrParameterType")
 class KafkaBaseBuilderFactoryBean {
 
-    private static final String PREFIX = "ot.kafka.";
+    protected static final String PREFIX = "ot.kafka.";
     static final String DEFAULT = "default";
 
     private final ConfigurableEnvironment env;
@@ -51,8 +51,8 @@ class KafkaBaseBuilderFactoryBean {
     }
 
     // These take precedence. One minor flaw is list properties are not currently combined, these replace all
-    Map<String, Object> getProperties(final String nameSpace) {
-        return PropertySourceUtil.getProperties(env, PREFIX + nameSpace)
+    Map<String, Object> getProperties(final String nameSpace, final String prefix) {
+        return PropertySourceUtil.getProperties(env, prefix + nameSpace)
                 .entrySet()
                 .stream()
                 .collect(Collectors.toMap(o -> (String) o.getKey(), Map.Entry::getValue));
@@ -60,9 +60,9 @@ class KafkaBaseBuilderFactoryBean {
     }
 
     // merge properties in, given the officially namespaced properties get precedence
-    Map<String, Object> mergeProperties(final Map<String, Object> originalProperties, final String namespace) {
+    Map<String, Object> mergeProperties(final Map<String, Object> originalProperties, final String namespace, final String prefix) {
         final Map<String, Object> originalMap = new HashMap<>(originalProperties);
-        final Map<String, Object> mergeMap = getProperties(namespace);
+        final Map<String, Object> mergeMap = getProperties(namespace, prefix);
         originalMap.putAll(mergeMap);
         return originalMap;
     }

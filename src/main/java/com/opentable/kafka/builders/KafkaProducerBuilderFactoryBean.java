@@ -29,6 +29,7 @@ import com.opentable.service.ServiceInfo;
  */
 public class KafkaProducerBuilderFactoryBean extends KafkaBaseBuilderFactoryBean {
 
+    private final String prefix;
     @SuppressWarnings("OptionalUsedAsFieldOrParameterType")
     @Inject
     public KafkaProducerBuilderFactoryBean(
@@ -37,6 +38,7 @@ public class KafkaProducerBuilderFactoryBean extends KafkaBaseBuilderFactoryBean
                                            final Optional<ServiceInfo> serviceInfo,
                                            final Optional<MetricRegistry> metricRegistry) {
         super(environmentProvider, env, serviceInfo, metricRegistry);
+        this.prefix = PREFIX + "producer.";
     }
 
     public <K,V> KafkaProducerBuilder<K,V> builder() {
@@ -45,8 +47,8 @@ public class KafkaProducerBuilderFactoryBean extends KafkaBaseBuilderFactoryBean
 
     public <K,V> KafkaProducerBuilder<K,V> builder(String name) {
         final Map<String, Object> mergedSeedProperties = mergeProperties(
-                getProperties(DEFAULT),
-                name
+                getProperties(DEFAULT, this.prefix),
+                name, prefix
         );
         final KafkaProducerBuilder<K,V> res = new KafkaProducerBuilder<>(mergedSeedProperties, environmentProvider);
         metricRegistry.ifPresent(res::withMetricRegistry);

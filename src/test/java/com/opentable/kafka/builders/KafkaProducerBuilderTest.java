@@ -61,9 +61,9 @@ import com.opentable.service.ServiceInfo;
 @ActiveProfiles(profiles = "test")
 @TestPropertySource(properties = {
     "info.component=test",
-    "ot.kafka.default.linger.ms=10",
-    "ot.kafka.producer.linger.ms=20",
-    "ot.kafka.funky.interceptor.classes=com.opentable.kafka.builders.KafkaProducerBuilderTest$Foo"
+    "ot.kafka.producer.default.linger.ms=10",
+    "ot.kafka.producer.testme.linger.ms=20",
+    "ot.kafka.producer.funky.interceptor.classes=com.opentable.kafka.builders.KafkaProducerBuilderTest$Foo"
 })
 public class KafkaProducerBuilderTest {
 
@@ -77,7 +77,7 @@ public class KafkaProducerBuilderTest {
 
     @Test
     public void builderTest() {
-        KafkaProducerBuilder<Integer, String> builder = getBuilder("producer");
+        KafkaProducerBuilder<Integer, String> builder = getBuilder("testme");
         Producer<Integer, String> p = builder
                 .build();
         Map<String, Object> finalProperties = builder.getKafkaBaseBuilder().getFinalProperties();
