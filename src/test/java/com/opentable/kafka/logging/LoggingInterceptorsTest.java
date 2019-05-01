@@ -59,7 +59,7 @@ import org.springframework.test.context.junit4.SpringRunner;
 
 import com.opentable.conservedheaders.ConservedHeader;
 import com.opentable.kafka.builders.EnvironmentProvider;
-import com.opentable.kafka.builders.InjectKafkaBuilderBeans;
+import com.opentable.kafka.builders.InjectKafkaBuilderBean;
 import com.opentable.kafka.builders.KafkaBuilderFactoryBean;
 import com.opentable.kafka.builders.KafkaConsumerBuilder;
 import com.opentable.kafka.builders.KafkaProducerBuilder;
@@ -363,7 +363,7 @@ public class LoggingInterceptorsTest {
     }
 
     @Configuration
-    @InjectKafkaBuilderBeans
+    @InjectKafkaBuilderBean
     public static class Config {
         @Bean
         ServiceInfo serviceInfo(@Value("${info.component:test-service}") final String serviceType) {

@@ -124,7 +124,7 @@ public class KafkaConsumerBuilderTest {
     }
 
     @Configuration
-    @InjectKafkaBuilderBeans
+    @InjectKafkaBuilderBean
     @Import({
             DefaultMetricsConfiguration.class,
     })

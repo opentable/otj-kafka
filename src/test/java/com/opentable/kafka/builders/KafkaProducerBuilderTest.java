@@ -165,7 +165,7 @@ public class KafkaProducerBuilderTest {
     }
 
     @Configuration
-    @InjectKafkaBuilderBeans
+    @InjectKafkaBuilderBean
     @Import({
         DefaultMetricsConfiguration.class,
     })
