@@ -25,8 +25,7 @@ import com.opentable.service.EnvInfo;
  */
 @Configuration
 @Import({
-        KafkaConsumerBuilderFactoryBean.class,
-        KafkaProducerBuilderFactoryBean.class,
+        KafkaBuilderFactoryBean.class,
         AppInfo.class,
         EnvInfo.class,
         AppInfoEnvironmentProvider.class

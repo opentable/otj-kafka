@@ -38,8 +38,8 @@ import org.apache.kafka.common.serialization.Serializer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.opentable.kafka.logging.LogSampler.SamplerType;
 import com.opentable.kafka.logging.LoggingInterceptorConfig;
-import com.opentable.kafka.logging.LoggingUtils;
 import com.opentable.kafka.metrics.OtMetricsReporter;
 import com.opentable.kafka.metrics.OtMetricsReporterConfig;
 
@@ -50,12 +50,13 @@ import com.opentable.kafka.metrics.OtMetricsReporterConfig;
 class KafkaBaseBuilder {
     private static final Logger LOG = LoggerFactory.getLogger(KafkaBaseBuilder.class);
 
-    private final LoggingUtils loggingUtils;
+    private final EnvironmentProvider environmentProvider;
     private final Map<String, Object> seedProperties; // what the user initialized with. This will take priority since mergeProperties will merge in last.
     private final Map<String, Object> finalProperties = new HashMap<>(); // what we'll build the final version of
     private final List<String> interceptors = new ArrayList<>();
     private boolean enableLoggingInterceptor = true;
     private int loggingSampleRate = LoggingInterceptorConfig.DEFAULT_SAMPLE_RATE_PCT;
+    private Optional<SamplerType> loggingSamplerType = Optional.empty();
     private OptionalLong requestTimeout = OptionalLong.empty();
     private OptionalLong retryBackoff = OptionalLong.empty();
     private final List<String> bootStrapServers = new ArrayList<>();
@@ -66,7 +67,7 @@ class KafkaBaseBuilder {
 
     KafkaBaseBuilder(Map<String, Object> props, EnvironmentProvider environmentProvider) {
         this.seedProperties = props;
-        this.loggingUtils = new LoggingUtils(environmentProvider);
+        this.environmentProvider = environmentProvider;
         metricRegistry = Optional.empty();
     }
 
@@ -89,8 +90,9 @@ class KafkaBaseBuilder {
         // Copy over any injected properties, then remove the seed property
         List<String> merged = merge(interceptors, interceptorConfigName);
         if (merged.contains(loggingInterceptorName)) {
-            addProperty(LoggingInterceptorConfig.LOGGING_REF, loggingUtils);
+            addProperty(LoggingInterceptorConfig.LOGGING_ENV_REF, environmentProvider);
             addProperty(LoggingInterceptorConfig.SAMPLE_RATE_PCT_CONFIG, loggingSampleRate);
+            loggingSamplerType.ifPresent(t -> addProperty(LoggingInterceptorConfig.SAMPLE_RATE_TYPE_CONFIG, t));
         }
     }
 
@@ -147,6 +149,10 @@ class KafkaBaseBuilder {
     }
     void withSamplingRatePer10Seconds(final int rate) {
         loggingSampleRate = rate;
+    }
+    void withSamplingRate(final int rate) {
+        loggingSampleRate = rate;
+        loggingSamplerType = Optional.ofNullable(SamplerType.Random);
     }
 
     <CK,CV> Consumer<CK,CV> consumer(Deserializer<CK> keyDeserializer, Deserializer<CV> valuedeserializer) {

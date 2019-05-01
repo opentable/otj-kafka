@@ -60,10 +60,9 @@ import org.springframework.test.context.junit4.SpringRunner;
 import com.opentable.conservedheaders.ConservedHeader;
 import com.opentable.kafka.builders.EnvironmentProvider;
 import com.opentable.kafka.builders.InjectKafkaBuilderBeans;
+import com.opentable.kafka.builders.KafkaBuilderFactoryBean;
 import com.opentable.kafka.builders.KafkaConsumerBuilder;
-import com.opentable.kafka.builders.KafkaConsumerBuilderFactoryBean;
 import com.opentable.kafka.builders.KafkaProducerBuilder;
-import com.opentable.kafka.builders.KafkaProducerBuilderFactoryBean;
 import com.opentable.kafka.builders.SettableEnvironmentProvider;
 import com.opentable.kafka.util.ReadWriteRule;
 import com.opentable.logging.otl.EdaMessageTraceV1;
@@ -84,10 +83,7 @@ public class LoggingInterceptorsTest {
     EnvironmentProvider environmentProvider;
 
     @Inject
-    KafkaConsumerBuilderFactoryBean kafkaConsumerBuilderFactoryBean;
-
-    @Inject
-    KafkaProducerBuilderFactoryBean kafkaProducerBuilderFactoryBean;
+    KafkaBuilderFactoryBean builderFactoryBean;
 
     private CapturingLoggingUtils loggingUtils;
 
@@ -97,7 +93,7 @@ public class LoggingInterceptorsTest {
     }
 
     public <K, V> KafkaProducerBuilder<K, V> createProducerBuilder(Class<? extends Serializer<K>> keySer, Class<? extends Serializer<V>> valueSer) {
-        final KafkaProducerBuilder<K,V> builder =  kafkaProducerBuilderFactoryBean.<K,V>builder("producer")
+        final KafkaProducerBuilder<K,V> builder =  builderFactoryBean.<K,V>producerBuilder("producer")
                 .withSerializers(keySer, valueSer)
                 .withProperty(ProducerConfig.LINGER_MS_CONFIG, "200")
                 .disableMetrics();
@@ -134,7 +130,7 @@ public class LoggingInterceptorsTest {
 
     public <K, V>  KafkaConsumerBuilder<K,V> createConsumerBuilder(String groupId, Class<? extends Deserializer<K>> keySer, Class<? extends Deserializer<V>> valueSer) {
         Map<String,Object> props = rw.getEkb().baseConsumerMap(groupId);
-        KafkaConsumerBuilder<K,V> builder = kafkaConsumerBuilderFactoryBean.<K,V>builder("consumer")
+        KafkaConsumerBuilder<K,V> builder = builderFactoryBean.<K,V>consumerBuilder("consumer")
                 .withDeserializers(keySer, valueSer).disableMetrics();
         props.forEach(builder::withProperty);
         return builder;
@@ -172,13 +168,44 @@ public class LoggingInterceptorsTest {
         final int numTestRecords = 100;
         loggingUtils = new CapturingLoggingUtils(environmentProvider);
         Map<String, Object> props = ImmutableMap.of(
-                LoggingInterceptorConfig.LOGGING_REF, loggingUtils,
-                LoggingInterceptorConfig.SAMPLE_RATE_PCT_CONFIG, Integer.MAX_VALUE, // effectively rate-unlimited
-                ProducerConfig.INTERCEPTOR_CLASSES_CONFIG, LoggingProducerInterceptor.class.getName()
+                LoggingInterceptorConfig.LOGGING_ENV_REF  + "_TEST", loggingUtils,
+                LoggingInterceptorConfig.SAMPLE_RATE_PCT_CONFIG, -1, // effectively rate-unlimited
+                ProducerConfig.INTERCEPTOR_CLASSES_CONFIG, CapturingLoggingProducerInterceptor.class.getName()
 
         );
         KafkaProducerBuilder<String, String> builder = createProducerBuilder(StringSerializer.class, StringSerializer.class)
                 .disableLogging(); // this fools the builder so we can put a custom loggingutils instance.
+        props.forEach(builder::withProperty);
+        Producer<String, String> producer = builder.build();
+        final UUID req = UUID.randomUUID();
+        MDC.put(ConservedHeader.REQUEST_ID.getLogName(), req.toString());
+        writeTestRecords(1, numTestRecords, producer);
+        List<EdaMessageTraceV1> edaMessageTraceV1s = loggingUtils.getMessageTraceV1s();
+        Assertions.assertThat(edaMessageTraceV1s).hasSize(numTestRecords);
+        int index = 1;
+        for (EdaMessageTraceV1 t : edaMessageTraceV1s) {
+            commonLoggingAssertions(t, "kafka-producer", "producer-test", req, index, (o, o2) -> { });
+            index++;
+            // Unfortunately I note keysize, valuesize, timestamp, and partition aren't available since they are "post commit"
+            // Until or unless we figure out how to correlate the postcommit, there's no good option. IIRC the kip doesn't guarantee anything about thread, so
+            // it's pretty hard
+        }
+        rw.readTestRecords(numTestRecords);
+    }
+
+    @Test(timeout = 60_000)
+    public void producerLoggingRandomSamplerTest() {
+        final int numTestRecords = 100;
+        loggingUtils = new CapturingLoggingUtils(environmentProvider);
+        Map<String, Object> props = ImmutableMap.of(
+            LoggingInterceptorConfig.LOGGING_ENV_REF  + "_TEST", loggingUtils,
+            LoggingInterceptorConfig.SAMPLE_RATE_TYPE_CONFIG, "random",
+            LoggingInterceptorConfig.SAMPLE_RATE_PCT_CONFIG, 100, // effectively rate-unlimited
+            ProducerConfig.INTERCEPTOR_CLASSES_CONFIG, CapturingLoggingProducerInterceptor.class.getName()
+
+        );
+        KafkaProducerBuilder<String, String> builder = createProducerBuilder(StringSerializer.class, StringSerializer.class)
+            .disableLogging(); // this fools the builder so we can put a custom loggingutils instance.
         props.forEach(builder::withProperty);
         Producer<String, String> producer = builder.build();
         final UUID req = UUID.randomUUID();
@@ -260,13 +287,55 @@ public class LoggingInterceptorsTest {
         MDC.put(ConservedHeader.REQUEST_ID.getLogName(), req.toString());
         writeTestRecords(1, numTestRecords, createProducer(StringSerializer.class, StringSerializer.class));
         Map<String, Object> props = ImmutableMap.of(
-                LoggingInterceptorConfig.LOGGING_REF, loggingUtils,
-                LoggingInterceptorConfig.SAMPLE_RATE_PCT_CONFIG, Integer.MAX_VALUE, // effectively rate-unlimited
-                ConsumerConfig.INTERCEPTOR_CLASSES_CONFIG, LoggingConsumerInterceptor.class.getName()
+                LoggingInterceptorConfig.LOGGING_ENV_REF + "_TEST", loggingUtils,
+                LoggingInterceptorConfig.SAMPLE_RATE_PCT_CONFIG, -1, // effectively rate-unlimited
+                ConsumerConfig.INTERCEPTOR_CLASSES_CONFIG, CapturingLoggingConsumerInterceptor.class.getName()
 
         );
         KafkaConsumerBuilder<String, String> builder = createConsumerBuilder("test", StringDeserializer.class, StringDeserializer.class)
                 .disableLogging();
+        props.forEach(builder::withProperty);
+        ConsumerRecords<String, String> r = readTestRecords(numTestRecords, builder.build());
+        int index = 1;
+        List<EdaMessageTraceV1> edaMessageTraceV1List = loggingUtils.getMessageTraceV1s();
+        for (EdaMessageTraceV1 t : edaMessageTraceV1List) {
+            commonLoggingAssertions(t, "kafka-consumer", "consumer-test", req, index, new BiConsumer<EdaMessageTraceV1, Integer>() {
+                @Override
+                public void accept(final EdaMessageTraceV1 edaMessageTraceV1, final Integer index) {
+                    Assertions.assertThat(edaMessageTraceV1.getKafkaGroupId()).isEqualTo("test");
+                    Assertions.assertThat(edaMessageTraceV1.getKafkaRecordKeySize()).isEqualTo(("key-" +index).length()); // techhnically assumes no compression single byte etc
+                    Assertions.assertThat(edaMessageTraceV1.getKafkaRecordValueSize()).isEqualTo(("value-" + index).length());
+                    Assertions.assertThat(edaMessageTraceV1.getTimestamp()).isNotNull();
+                    Assertions.assertThat(edaMessageTraceV1.getKafkaRecordTimestampType()).isEqualTo("CreateTime");
+                    Assertions.assertThat(edaMessageTraceV1.getKafkaPartition()).isEqualTo(0); // I think embedded only makes one partition\
+                    Assertions.assertThat(edaMessageTraceV1.getKafkaOffset()).isEqualTo(index -1);
+
+                }
+            });
+            index++;
+            // Unfortunately I note keysize, valuesize, timestamp, and partition aren't available since they are "post commit"
+            // Until or unless we figure out how to correlate the postcommit, there's no good option. IIRC the kip doesn't guarantee anything about thread, so
+            // it's pretty hard
+        }
+
+    }
+
+    @Test(timeout = 60_000)
+    public void consumerLoggingRandomSamplerTest() {
+        final int numTestRecords = 100;
+        final UUID req = UUID.randomUUID();
+        loggingUtils = new CapturingLoggingUtils(environmentProvider);
+        MDC.put(ConservedHeader.REQUEST_ID.getLogName(), req.toString());
+        writeTestRecords(1, numTestRecords, createProducer(StringSerializer.class, StringSerializer.class));
+        Map<String, Object> props = ImmutableMap.of(
+            LoggingInterceptorConfig.LOGGING_ENV_REF + "_TEST", loggingUtils,
+            LoggingInterceptorConfig.SAMPLE_RATE_TYPE_CONFIG, "random",
+            LoggingInterceptorConfig.SAMPLE_RATE_PCT_CONFIG, 100, // effectively rate-unlimited
+            ConsumerConfig.INTERCEPTOR_CLASSES_CONFIG, CapturingLoggingConsumerInterceptor.class.getName()
+
+        );
+        KafkaConsumerBuilder<String, String> builder = createConsumerBuilder("test", StringDeserializer.class, StringDeserializer.class)
+            .disableLogging();
         props.forEach(builder::withProperty);
         ConsumerRecords<String, String> r = readTestRecords(numTestRecords, builder.build());
         int index = 1;
@@ -326,6 +395,21 @@ public class LoggingInterceptorsTest {
 
         public List<EdaMessageTraceV1> getMessageTraceV1s() {
             return messageTraceV1s;
+        }
+    }
+
+    public static class CapturingLoggingConsumerInterceptor extends LoggingConsumerInterceptor {
+
+        @Override
+        LoggingUtils getLoggingUtils(Map config) {
+            return (LoggingUtils) config.get(LoggingInterceptorConfig.LOGGING_ENV_REF + "_TEST");
+        }
+    }
+
+    public static class CapturingLoggingProducerInterceptor extends LoggingProducerInterceptor {
+        @Override
+        LoggingUtils getLoggingUtils(Map config) {
+            return (LoggingUtils) config.get(LoggingInterceptorConfig.LOGGING_ENV_REF + "_TEST");
         }
     }
 }

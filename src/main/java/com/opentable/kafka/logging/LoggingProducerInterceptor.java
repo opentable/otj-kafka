@@ -15,6 +15,8 @@ package com.opentable.kafka.logging;
 
 import java.util.Map;
 
+import com.google.common.annotations.VisibleForTesting;
+
 import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.clients.producer.ProducerInterceptor;
 import org.apache.kafka.clients.producer.ProducerRecord;
@@ -22,7 +24,7 @@ import org.apache.kafka.clients.producer.RecordMetadata;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import io.github.bucket4j.Bucket;
+import com.opentable.kafka.builders.EnvironmentProvider;
 
 /**
  * Intercepts all KafkaProducer traffic and applies otl-standardized logging and metrics to them
@@ -34,7 +36,7 @@ public class LoggingProducerInterceptor implements ProducerInterceptor<Object, O
     // see configure()
     private String interceptorClientId;
     private LoggingUtils loggingUtils;
-    private Bucket bucket;
+    private LogSampler sampler;
 
 
     public LoggingProducerInterceptor() { //NOPMD
@@ -44,7 +46,7 @@ public class LoggingProducerInterceptor implements ProducerInterceptor<Object, O
     @Override
     public ProducerRecord<Object, Object> onSend(ProducerRecord<Object, Object> record) {
         loggingUtils.addHeaders(record);
-        loggingUtils.setTracingHeader(bucket, record.headers());
+        loggingUtils.setTracingHeader(sampler, record);
         loggingUtils.maybeLogProducer(LOG, interceptorClientId, record);
         return record;
     }
@@ -61,12 +63,17 @@ public class LoggingProducerInterceptor implements ProducerInterceptor<Object, O
         LOG.debug("Shutting down LoggingProducerInterceptor");
     }
 
+    @VisibleForTesting
+    LoggingUtils getLoggingUtils(Map<String, ?> config) {
+        return new LoggingUtils((EnvironmentProvider) config.get(LoggingInterceptorConfig.LOGGING_ENV_REF));
+    }
+
     @Override
     public void configure(Map<String, ?> config) {
         final LoggingInterceptorConfig conf = new LoggingInterceptorConfig(config);
         final String originalsClientId = (String) config.get(ProducerConfig.CLIENT_ID_CONFIG);
-        loggingUtils = (LoggingUtils) config.get(LoggingInterceptorConfig.LOGGING_REF);
-        bucket = loggingUtils.getBucket(conf);
+        loggingUtils = getLoggingUtils(config);
+        sampler = LogSampler.create(conf);
         this.interceptorClientId = (originalsClientId == null) ? "interceptor-producer-" + LoggingUtils.ClientIdGenerator.INSTANCE.nextPublisherId() : originalsClientId;
         LOG.info("LoggingProducerInterceptor is configured for client: {}", interceptorClientId);
     }

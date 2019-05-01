@@ -46,10 +46,10 @@ public class KafkaProducerBuilder<K, V> {
     private OptionalLong lingerMS = OptionalLong.empty();
     private OptionalLong bufferMemory = OptionalLong.empty();
     private Class<? extends Partitioner> partitioner = DefaultPartitioner.class;
-    private Class<? extends Serializer<K>> keySe;
-    private Class<? extends Serializer<V>> valueSe;
-    private Serializer<K> keySerializer;
-    private Serializer<V> valueSerializer;
+    private Class<? extends Serializer> keySe;
+    private Class<? extends Serializer> valueSe;
+    private Serializer keySerializer;
+    private Serializer valueSerializer;
 
 
     // Constructors
@@ -60,6 +60,26 @@ public class KafkaProducerBuilder<K, V> {
 
     public KafkaProducerBuilder(Map<String, Object> prop, EnvironmentProvider environmentProvider) {
         kafkaBaseBuilder = new KafkaBaseBuilder(prop, environmentProvider);
+    }
+
+    /**
+     * Cloning constructor. All properties must be copied here.
+     *
+     * @param src
+     */
+    private KafkaProducerBuilder(KafkaProducerBuilder src) {
+        this.kafkaBaseBuilder = src.kafkaBaseBuilder;
+        this.ackType = src.ackType;
+        this.retries = src.retries;
+        this.batchSize = src.batchSize;
+        this.maxInfFlight = src.maxInfFlight;
+        this.lingerMS = src.lingerMS;
+        this.bufferMemory = src.bufferMemory;
+        this.partitioner = src.partitioner;
+        this.keySe = src.keySe;
+        this.valueSe = src.valueSe;
+        this.keySerializer = src.keySerializer;
+        this.valueSerializer = src.valueSerializer;
     }
 
     // builder methods
@@ -86,8 +106,13 @@ public class KafkaProducerBuilder<K, V> {
     }
 
 
-    public KafkaProducerBuilder<K, V> withLoggingSampleRate(int rate) {
+    public KafkaProducerBuilder<K, V> withSamplingRatePer10Seconds(int rate) {
         kafkaBaseBuilder.withSamplingRatePer10Seconds(rate);
+        return this;
+    }
+
+    public KafkaProducerBuilder<K, V> withSamplingRate(int rate) {
+        kafkaBaseBuilder.withSamplingRate(rate);
         return this;
     }
 
@@ -122,12 +147,12 @@ public class KafkaProducerBuilder<K, V> {
      * @param valSer value serializer
      * @return this
      */
-    public KafkaProducerBuilder<K, V> withSerializers(Class<? extends Serializer<K>> keySer, Class<? extends Serializer<V>> valSer) {
+    public <K2, V2> KafkaProducerBuilder<K2, V2> withSerializers(Class<? extends Serializer<K2>> keySer, Class<? extends Serializer<V2>> valSer) {
         this.keySe = keySer;
         this.valueSe = valSer;
         this.keySerializer = null;
         this.valueSerializer = null;
-        return this;
+        return new KafkaProducerBuilder<>(this);
     }
 
     /**
@@ -136,12 +161,12 @@ public class KafkaProducerBuilder<K, V> {
      * @param valSer value serializer
      * @return this
      */
-    public KafkaProducerBuilder<K, V> withSerializers(Serializer<K> keySer, Serializer<V> valSer) {
+    public <K2, V2> KafkaProducerBuilder<K2, V2> withSerializers(Serializer<K2> keySer, Serializer<V2> valSer) {
         this.keySerializer = keySer;
         this.valueSerializer = valSer;
         this.keySe = null;
         this.valueSe = null;
-        return this;
+        return new KafkaProducerBuilder<>(this);
     }
 
     public KafkaProducerBuilder<K, V> withPartitioner(Class<? extends Partitioner> partitioner) {

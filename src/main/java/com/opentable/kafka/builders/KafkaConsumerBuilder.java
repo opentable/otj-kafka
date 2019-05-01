@@ -54,10 +54,10 @@ public class KafkaConsumerBuilder<K, V>  {
     private Class<? extends PartitionAssignor> partitionStrategy = RangeAssignor.class;
     // Kafka is really stupid. In the properties you can only configure a no-args
     // and then they hack around it if you have one supplied
-    private Class<? extends Deserializer<K>> keyDe;
-    private Class<? extends Deserializer<V>> valueDe;
-    private Deserializer<K> keyDeserializerInstance;
-    private Deserializer<V> valueDeserializerInstance;
+    private Class<? extends Deserializer> keyDe;
+    private Class<? extends Deserializer> valueDe;
+    private Deserializer keyDeserializerInstance;
+    private Deserializer valueDeserializerInstance;
 
     public KafkaConsumerBuilder(EnvironmentProvider environmentProvider) {
         this(new HashMap<>(), environmentProvider);
@@ -65,6 +65,27 @@ public class KafkaConsumerBuilder<K, V>  {
 
     public KafkaConsumerBuilder(Map<String, Object> prop, EnvironmentProvider environmentProvider) {
         kafkaBaseBuilder = new KafkaBaseBuilder(prop, environmentProvider);
+    }
+
+    /**
+     * Cloning constructor. All properties must be copied here.
+     *
+     * @param src
+     */
+    private KafkaConsumerBuilder(KafkaConsumerBuilder src) {
+        this.kafkaBaseBuilder = src.kafkaBaseBuilder;
+        this.groupId = src.groupId;
+        this.enableAutoCommit = src.enableAutoCommit;
+        this.maxPollRecords = src.maxPollRecords;
+        this.maxPartitionFetch = src.maxPartitionFetch;
+        this.sessionTimeoutMs = src.sessionTimeoutMs;
+        this.maxPollIntervalMs = src.maxPollIntervalMs;
+        this.autoOffsetResetType = src.autoOffsetResetType;
+        this.partitionStrategy = src.partitionStrategy;
+        this.keyDe = src.keyDe;
+        this.valueDe = src.valueDe;
+        this.keyDeserializerInstance = src.keyDeserializerInstance;
+        this.valueDeserializerInstance = src.valueDeserializerInstance;
     }
 
     public KafkaConsumerBuilder<K, V> withProperty(String key, Object value) {
@@ -82,8 +103,13 @@ public class KafkaConsumerBuilder<K, V>  {
         return this;
     }
 
-    public KafkaConsumerBuilder<K, V> withLoggingSampleRate(int rate) {
+    public KafkaConsumerBuilder<K, V> withSamplingRatePer10Seconds(int rate) {
         kafkaBaseBuilder.withSamplingRatePer10Seconds(rate);
+        return this;
+    }
+
+    public KafkaConsumerBuilder<K, V> withSamplingRate(int rate) {
+        kafkaBaseBuilder.withSamplingRate(rate);
         return this;
     }
 
@@ -113,12 +139,12 @@ public class KafkaConsumerBuilder<K, V>  {
      * @param valDeSer value deserializer
      * @return this
      */
-    public KafkaConsumerBuilder<K, V> withDeserializers(Class<? extends Deserializer<K>> keyDeSer, Class<? extends Deserializer<V>> valDeSer) {
+    public <K2, V2> KafkaConsumerBuilder<K2, V2> withDeserializers(Class<? extends Deserializer<K2>> keyDeSer, Class<? extends Deserializer<V2>> valDeSer) {
         this.keyDe = keyDeSer;
         this.valueDe = valDeSer;
         this.keyDeserializerInstance = null;
         this.valueDeserializerInstance = null;
-        return this;
+        return new KafkaConsumerBuilder<>(this);
     }
 
     /**
@@ -127,12 +153,12 @@ public class KafkaConsumerBuilder<K, V>  {
      * @param valDeSer value deserializer
      * @return this
      */
-    public KafkaConsumerBuilder<K, V> withDeserializers(Deserializer<K> keyDeSer, Deserializer<V> valDeSer) {
+    public <K2, V2> KafkaConsumerBuilder<K2, V2> withDeserializers(Deserializer<K2> keyDeSer, Deserializer<V2> valDeSer) {
         this.keyDeserializerInstance = keyDeSer;
         this.valueDeserializerInstance = valDeSer;
         this.keyDe = null;
         this.valueDe = null;
-        return this;
+        return new KafkaConsumerBuilder<>(this);
     }
 
     public KafkaConsumerBuilder<K, V> withPartitionAssignmentStrategy(Class<? extends PartitionAssignor> partitionAssignmentStrategy) {
@@ -244,6 +270,8 @@ public class KafkaConsumerBuilder<K, V>  {
                     .findFirst().orElseThrow(() -> new IllegalArgumentException("Can't convert " + c));
         }
     }
+
+
 
     @VisibleForTesting
     KafkaBaseBuilder getKafkaBaseBuilder() {
