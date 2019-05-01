@@ -54,10 +54,10 @@ public class KafkaConsumerBuilder<K, V>  {
     private Class<? extends PartitionAssignor> partitionStrategy = RangeAssignor.class;
     // Kafka is really stupid. In the properties you can only configure a no-args
     // and then they hack around it if you have one supplied
-    private Class<? extends Deserializer> keyDe;
-    private Class<? extends Deserializer> valueDe;
-    private Deserializer keyDeserializerInstance;
-    private Deserializer valueDeserializerInstance;
+    private Class<? extends Deserializer<K>> keyDe;
+    private Class<? extends Deserializer<V>> valueDe;
+    private Deserializer<K> keyDeserializerInstance;
+    private Deserializer<V> valueDeserializerInstance;
 
     public KafkaConsumerBuilder(EnvironmentProvider environmentProvider) {
         this(new HashMap<>(), environmentProvider);
@@ -65,27 +65,6 @@ public class KafkaConsumerBuilder<K, V>  {
 
     public KafkaConsumerBuilder(Map<String, Object> prop, EnvironmentProvider environmentProvider) {
         kafkaBaseBuilder = new KafkaBaseBuilder(prop, environmentProvider);
-    }
-
-    /**
-     * Cloning constructor. All properties must be copied here.
-     *
-     * @param src
-     */
-    private KafkaConsumerBuilder(KafkaConsumerBuilder src) {
-        this.kafkaBaseBuilder = src.kafkaBaseBuilder;
-        this.groupId = src.groupId;
-        this.enableAutoCommit = src.enableAutoCommit;
-        this.maxPollRecords = src.maxPollRecords;
-        this.maxPartitionFetch = src.maxPartitionFetch;
-        this.sessionTimeoutMs = src.sessionTimeoutMs;
-        this.maxPollIntervalMs = src.maxPollIntervalMs;
-        this.autoOffsetResetType = src.autoOffsetResetType;
-        this.partitionStrategy = src.partitionStrategy;
-        this.keyDe = src.keyDe;
-        this.valueDe = src.valueDe;
-        this.keyDeserializerInstance = src.keyDeserializerInstance;
-        this.valueDeserializerInstance = src.valueDeserializerInstance;
     }
 
     public KafkaConsumerBuilder<K, V> withProperty(String key, Object value) {
@@ -137,28 +116,34 @@ public class KafkaConsumerBuilder<K, V>  {
      * Provide an class. If you have a no-args constructor use this
      * @param keyDeSer key deserializer
      * @param valDeSer value deserializer
+     * @param <K2> The type of the key returned by de-serializer
+     * @param <V2> The type of the value returned by de-serializer
      * @return this
      */
     public <K2, V2> KafkaConsumerBuilder<K2, V2> withDeserializers(Class<? extends Deserializer<K2>> keyDeSer, Class<? extends Deserializer<V2>> valDeSer) {
-        this.keyDe = keyDeSer;
-        this.valueDe = valDeSer;
-        this.keyDeserializerInstance = null;
-        this.valueDeserializerInstance = null;
-        return new KafkaConsumerBuilder<>(this);
+        KafkaConsumerBuilder<K2, V2> res = (KafkaConsumerBuilder<K2, V2>) this;
+        res.keyDe = keyDeSer;
+        res.valueDe = valDeSer;
+        res.keyDeserializerInstance = null;
+        res.valueDeserializerInstance = null;
+        return res;
     }
 
     /**
      * Provide an instance. If you don't have a no-args constructor use this
      * @param keyDeSer key deserializer
      * @param valDeSer value deserializer
+     * @param <K2> The type of the key returned by de-serializer
+     * @param <V2> The type of the value returned by de-serializer
      * @return this
      */
     public <K2, V2> KafkaConsumerBuilder<K2, V2> withDeserializers(Deserializer<K2> keyDeSer, Deserializer<V2> valDeSer) {
-        this.keyDeserializerInstance = keyDeSer;
-        this.valueDeserializerInstance = valDeSer;
+        KafkaConsumerBuilder<K2, V2> res = (KafkaConsumerBuilder<K2, V2>) this;
+        res.keyDeserializerInstance = keyDeSer;
+        res.valueDeserializerInstance = valDeSer;
         this.keyDe = null;
         this.valueDe = null;
-        return new KafkaConsumerBuilder<>(this);
+        return res;
     }
 
     public KafkaConsumerBuilder<K, V> withPartitionAssignmentStrategy(Class<? extends PartitionAssignor> partitionAssignmentStrategy) {

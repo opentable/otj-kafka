@@ -46,10 +46,10 @@ public class KafkaProducerBuilder<K, V> {
     private OptionalLong lingerMS = OptionalLong.empty();
     private OptionalLong bufferMemory = OptionalLong.empty();
     private Class<? extends Partitioner> partitioner = DefaultPartitioner.class;
-    private Class<? extends Serializer> keySe;
-    private Class<? extends Serializer> valueSe;
-    private Serializer keySerializer;
-    private Serializer valueSerializer;
+    private Class<? extends Serializer<K>> keySe;
+    private Class<? extends Serializer<V>> valueSe;
+    private Serializer<K> keySerializer;
+    private Serializer<V> valueSerializer;
 
 
     // Constructors
@@ -62,25 +62,6 @@ public class KafkaProducerBuilder<K, V> {
         kafkaBaseBuilder = new KafkaBaseBuilder(prop, environmentProvider);
     }
 
-    /**
-     * Cloning constructor. All properties must be copied here.
-     *
-     * @param src
-     */
-    private KafkaProducerBuilder(KafkaProducerBuilder src) {
-        this.kafkaBaseBuilder = src.kafkaBaseBuilder;
-        this.ackType = src.ackType;
-        this.retries = src.retries;
-        this.batchSize = src.batchSize;
-        this.maxInfFlight = src.maxInfFlight;
-        this.lingerMS = src.lingerMS;
-        this.bufferMemory = src.bufferMemory;
-        this.partitioner = src.partitioner;
-        this.keySe = src.keySe;
-        this.valueSe = src.valueSe;
-        this.keySerializer = src.keySerializer;
-        this.valueSerializer = src.valueSerializer;
-    }
 
     // builder methods
 
@@ -145,28 +126,34 @@ public class KafkaProducerBuilder<K, V> {
      * Provide an class. If you have a no-args constructor use this
      * @param keySer key serializer
      * @param valSer value serializer
+     * @param <K2> The type of the key expected by serializer
+     * @param <V2> The type of the value expected by serializer
      * @return this
      */
     public <K2, V2> KafkaProducerBuilder<K2, V2> withSerializers(Class<? extends Serializer<K2>> keySer, Class<? extends Serializer<V2>> valSer) {
-        this.keySe = keySer;
-        this.valueSe = valSer;
-        this.keySerializer = null;
-        this.valueSerializer = null;
-        return new KafkaProducerBuilder<>(this);
+        KafkaProducerBuilder<K2, V2> res = (KafkaProducerBuilder<K2, V2>) this;
+        res.keySe = keySer;
+        res.valueSe = valSer;
+        res.keySerializer = null;
+        res.valueSerializer = null;
+        return res;
     }
 
     /**
      * Provide an instance. If you don't have a no-args constructor use this
      * @param keySer key serializer
      * @param valSer value serializer
+     * @param <K2> The type of the key expected by serializer
+     * @param <V2> The type of the value expected by serializer
      * @return this
      */
     public <K2, V2> KafkaProducerBuilder<K2, V2> withSerializers(Serializer<K2> keySer, Serializer<V2> valSer) {
-        this.keySerializer = keySer;
-        this.valueSerializer = valSer;
-        this.keySe = null;
-        this.valueSe = null;
-        return new KafkaProducerBuilder<>(this);
+        KafkaProducerBuilder<K2, V2> res = (KafkaProducerBuilder<K2, V2>) this;
+        res.keySerializer = keySer;
+        res.valueSerializer = valSer;
+        res.keySe = null;
+        res.valueSe = null;
+        return res;
     }
 
     public KafkaProducerBuilder<K, V> withPartitioner(Class<? extends Partitioner> partitioner) {
