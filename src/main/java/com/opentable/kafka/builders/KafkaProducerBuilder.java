@@ -92,8 +92,8 @@ public class KafkaProducerBuilder<K, V> {
         return this;
     }
 
-    public KafkaProducerBuilder<K, V> withSamplingRate(int rate) {
-        kafkaBaseBuilder.withSamplingRate(rate);
+    public KafkaProducerBuilder<K, V> withRandomSamplingRate(int rate) {
+        kafkaBaseBuilder.withRandomSamplingRate(rate);
         return this;
     }
 

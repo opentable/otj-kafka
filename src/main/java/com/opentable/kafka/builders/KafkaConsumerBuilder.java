@@ -87,8 +87,8 @@ public class KafkaConsumerBuilder<K, V>  {
         return this;
     }
 
-    public KafkaConsumerBuilder<K, V> withSamplingRate(int rate) {
-        kafkaBaseBuilder.withSamplingRate(rate);
+    public KafkaConsumerBuilder<K, V> withRandomSamplingRate(int rate) {
+        kafkaBaseBuilder.withRandomSamplingRate(rate);
         return this;
     }
 

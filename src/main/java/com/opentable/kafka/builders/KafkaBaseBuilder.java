@@ -150,7 +150,7 @@ class KafkaBaseBuilder {
     void withSamplingRatePer10Seconds(final int rate) {
         loggingSampleRate = rate;
     }
-    void withSamplingRate(final int rate) {
+    void withRandomSamplingRate(final int rate) {
         loggingSampleRate = rate;
         loggingSamplerType = Optional.ofNullable(SamplerType.Random);
     }
