@@ -57,7 +57,7 @@ class KafkaBaseBuilder {
     private boolean enableLoggingInterceptor = true;
     private int loggingSampleRate = LoggingInterceptorConfig.DEFAULT_SAMPLE_RATE_PCT;
     private Optional<String> metricsPrefix = Optional.empty();
-    private Optional<SamplerType> loggingSamplerType = Optional.empty();
+    private SamplerType loggingSamplerType = SamplerType.TimeBucket;
     private OptionalLong requestTimeout = OptionalLong.empty();
     private OptionalLong retryBackoff = OptionalLong.empty();
     private final List<String> bootStrapServers = new ArrayList<>();
@@ -93,7 +93,8 @@ class KafkaBaseBuilder {
         if (merged.contains(loggingInterceptorName)) {
             addProperty(LoggingInterceptorConfig.LOGGING_ENV_REF, environmentProvider);
             addProperty(LoggingInterceptorConfig.SAMPLE_RATE_PCT_CONFIG, loggingSampleRate);
-            loggingSamplerType.ifPresent(t -> addProperty(LoggingInterceptorConfig.SAMPLE_RATE_TYPE_CONFIG, t));
+            addProperty(LoggingInterceptorConfig.SAMPLE_RATE_TYPE_CONFIG, loggingSamplerType.getValue());
+            LOG.debug("Setting sampler {} - {}", loggingSamplerType, loggingSampleRate);
         }
     }
 
@@ -154,10 +155,11 @@ class KafkaBaseBuilder {
     }
     void withSamplingRatePer10Seconds(final int rate) {
         loggingSampleRate = rate;
+        loggingSamplerType = SamplerType.TimeBucket;
     }
     void withRandomSamplingRate(final int rate) {
         loggingSampleRate = rate;
-        loggingSamplerType = Optional.ofNullable(SamplerType.Random);
+        loggingSamplerType = SamplerType.Random;
     }
 
     <CK,CV> Consumer<CK,CV> consumer(Deserializer<CK> keyDeserializer, Deserializer<CV> valuedeserializer) {

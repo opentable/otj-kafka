@@ -39,6 +39,7 @@ This will build the Kafka producer/consumer using the following logic:
 
 * If there's any ot.kafka.myuniquenameperconsumerpermachine namespaced configuration properties, use these. They
 will take precedence over the fluent api
+* We preassign client-id in the bean as name.(serviceInfo.name).(incrementingNumber). You may override it as shown above, if desired.
 * Add in any thing specified in the fluent api
 * Wire in metrics and logging. To disable these use `disableLogging()` and/or `disableMetrics()`. The logging only
 kicks in once per 10 seconds, but you may change this rate via `withLoggingSampleRate()` (for example setting to 10 will make it rate limit
