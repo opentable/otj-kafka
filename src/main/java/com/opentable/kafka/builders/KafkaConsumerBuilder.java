@@ -209,8 +209,9 @@ public class KafkaConsumerBuilder<K, V>  {
         return this;
     }
 
-    public KafkaConsumerBuilder<K, V> withMetricRegistry(MetricRegistry metricRegistry) {
+    public KafkaConsumerBuilder<K, V> withMetricRegistry(MetricRegistry metricRegistry, String metricsPrefix) {
         kafkaBaseBuilder.withMetricRegistry(metricRegistry);
+        kafkaBaseBuilder.withPrefix(metricsPrefix);
         return this;
     }
 

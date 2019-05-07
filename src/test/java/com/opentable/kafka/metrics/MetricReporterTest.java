@@ -78,7 +78,7 @@ public class MetricReporterTest {
     public <K, V> Producer<K, V> createProducer(Class<? extends Serializer<K>> keySer, Class<? extends Serializer<V>> valueSer) {
         return new KafkaProducerBuilder<K,V>(rw.getEkb().baseProducerMap(), environmentProvider)
             .withClientId("producer-metrics-01")
-            .withMetricRegistry(metricRegistry)
+            .withMetricRegistry(metricRegistry, "producer")
             .withSerializers(keySer, valueSer)
             .withProperty(ProducerConfig.LINGER_MS_CONFIG, "200")
             .build();
@@ -100,7 +100,7 @@ public class MetricReporterTest {
     public <K, V> Consumer<K, V> createConsumer(String groupId, Class<? extends Deserializer<K>> keySer, Class<? extends Deserializer<V>> valueSer) {
         return new KafkaConsumerBuilder<K,V>(rw.getEkb().baseConsumerMap(groupId), environmentProvider)
             .withClientId("consumer-metrics-01")
-            .withMetricRegistry(metricRegistry)
+            .withMetricRegistry(metricRegistry, "myprefix")
             .withGroupId(groupId)
             .withMaxPollRecords(1)
             .withDeserializers(keySer, valueSer)
@@ -146,8 +146,8 @@ public class MetricReporterTest {
         }
         consumer.commitSync();
         //                   kafka.consumer-metrics-01.test.0_topic-1.consumer-fetch-manager-metrics_records-lag-max
-       waitForMetric(rw, "kafka.consumer-metrics-01.test.consumer-fetch-manager-metrics.records-lag-max.topic-1.0", (double)(numTestRecords - 1));
-       waitForMetric(rw, "kafka.consumer-metrics-01.test.consumer-fetch-manager-metrics.records-lag-max", (double)(numTestRecords - 1));
+       waitForMetric(rw, "kafka.myprefix.consumer-fetch-manager-metrics.records-lag-max.topic-1.0", (double)(numTestRecords - 1));
+       waitForMetric(rw, "kafka.myprefix.consumer-fetch-manager-metrics.records-lag-max", (double)(numTestRecords - 1));
        consumer.close();
     }
 
@@ -157,7 +157,7 @@ public class MetricReporterTest {
         final Double value)
         throws InterruptedException {
         while (true) {
-            Gauge gauge = metricRegistry.getGauges().get(metricName);
+            final Gauge gauge = metricRegistry.getGauges().get(metricName);
             if ((gauge != null) && (gauge.getValue().equals(value))) {
                 break;
             }

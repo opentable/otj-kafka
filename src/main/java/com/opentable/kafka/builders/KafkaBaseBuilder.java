@@ -56,6 +56,7 @@ class KafkaBaseBuilder {
     private final List<String> interceptors = new ArrayList<>();
     private boolean enableLoggingInterceptor = true;
     private int loggingSampleRate = LoggingInterceptorConfig.DEFAULT_SAMPLE_RATE_PCT;
+    private Optional<String> metricsPrefix = Optional.empty();
     private Optional<SamplerType> loggingSamplerType = Optional.empty();
     private OptionalLong requestTimeout = OptionalLong.empty();
     private OptionalLong retryBackoff = OptionalLong.empty();
@@ -111,6 +112,10 @@ class KafkaBaseBuilder {
 
     void removeProperty(String key) {
         finalProperties.remove(key);
+    }
+
+    void withPrefix(final String metricsPrefix) {
+        this.metricsPrefix = Optional.ofNullable(metricsPrefix);
     }
 
     void withBootstrapServer(String bootStrapServer) {
@@ -180,7 +185,12 @@ class KafkaBaseBuilder {
         final List<String> metricReporters = mergeListProperty(CommonClientConfigs.METRIC_REPORTER_CLASSES_CONFIG);
         metricRegistry.ifPresent(mr -> {
            if (enableMetrics) {
+               if (!metricsPrefix.isPresent()) {
+                   throw new IllegalArgumentException("MetricsPrefix is not set");
+               }
                metricReporters.add(OtMetricsReporter.class.getName());
+               LOG.debug("Registering OTMetricsReporter for Kafka with prefix {}", metricsPrefix.get());
+               addProperty(OtMetricsReporterConfig.METRIC_PREFIX_CONFIG, metricsPrefix.get());
                addProperty(OtMetricsReporterConfig.METRIC_REGISTRY_REF_CONFIG, mr);
            }
         });
@@ -217,4 +227,5 @@ class KafkaBaseBuilder {
     Map<String, Object> getFinalProperties() {
         return finalProperties;
     }
+
 }

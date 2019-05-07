@@ -24,7 +24,6 @@ import com.codahale.metrics.Gauge;
 import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.SharedMetricRegistries;
 
-import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.common.MetricName;
 import org.apache.kafka.common.metrics.KafkaMetric;
 import org.apache.kafka.common.metrics.MetricsReporter;
@@ -41,7 +40,6 @@ public class OtMetricsReporter implements MetricsReporter {
     private final Set<String> metricGroups = new HashSet<>();
     private final Map<String, String> metricTags = new HashMap<>();
     private MetricRegistry metricRegistry;
-    private String groupId;
     private String prefix;
     private final Set<String> groups = new HashSet<>();
     private final Set<String> metricMatchers = new HashSet<>();
@@ -111,9 +109,9 @@ public class OtMetricsReporter implements MetricsReporter {
 
     private String metricName(KafkaMetric metric) {
         final MetricName metricName = metric.metricName();
-        return MetricRegistry.name(prefix,
-            sanitize(metricName.tags().get("client-id")),
-            sanitize(groupId),
+        // prefix includes kafka.<userSupplied>
+        return MetricRegistry.name(
+                sanitize(prefix),
             metricName.group(),
             metricName.name(),
             sanitize(metricName.tags().get("topic")),
@@ -165,9 +163,6 @@ public class OtMetricsReporter implements MetricsReporter {
         if (otMetricsReporterConfig.getList(OtMetricsReporterConfig.METRIC_NAME_MATCHERS_CONFIG) != null) {
             metricMatchers.addAll(otMetricsReporterConfig.getList(OtMetricsReporterConfig.METRIC_NAME_MATCHERS_CONFIG));
         }
-
-        // and extract the groupId - we'll null check later
-        groupId  = (String)config.get(ConsumerConfig.GROUP_ID_CONFIG);
 
         LOG.info("OtMetricsReporter is configured with metric registry: {} and prefix: {}", metricRegistry, prefix);
     }
