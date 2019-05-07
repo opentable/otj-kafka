@@ -19,17 +19,24 @@ import org.apache.kafka.common.config.AbstractConfig;
 import org.apache.kafka.common.config.ConfigDef;
 import org.apache.kafka.common.config.ConfigDef.Type;
 
+import com.opentable.kafka.logging.LogSampler.SamplerType;
+
 public class LoggingInterceptorConfig extends AbstractConfig {
 
-    // Key used to store an object reference to LoggingUtils
-    public static final String LOGGING_REF = "ot.logging.reference";
-    public static final int DEFAULT_SAMPLE_RATE_PCT = 1;
-    // Key used to store the bucket limit rate
+    // Key used to store an object reference to EnvironmentProvider
+    public static final String LOGGING_ENV_REF = "ot.logging.reference";
+    // Key used to store the limit rate
     public static final String SAMPLE_RATE_PCT_CONFIG = "ot.logging.rate";
+    public static final int DEFAULT_SAMPLE_RATE_PCT = 1;
+    // Key used to store the sampler type
+    public static final String SAMPLE_RATE_TYPE_CONFIG = "ot.logging.sampler_type";
+    public static final String DEFAULT_SAMPLE_RATE_TYPE = SamplerType.TimeBucket.value;
 
     private static final ConfigDef CONFIG = new ConfigDef()
         .define(SAMPLE_RATE_PCT_CONFIG, Type.INT, DEFAULT_SAMPLE_RATE_PCT, ConfigDef.Importance.LOW,
-            "Logging limit rate per 10 seconds. Use a negative value to disable limiting (lots of logs!) ");
+            "Logging limit rate per 10 seconds for time-bucket or percent of records for random sampler. Use a negative value to disable limiting (lots of logs!) ")
+        .define(SAMPLE_RATE_TYPE_CONFIG, Type.STRING, DEFAULT_SAMPLE_RATE_TYPE, ConfigDef.Importance.LOW,
+            "Logging sampler type. Possible values: (random, time-bucket)");
 
     LoggingInterceptorConfig(Map<String, ?> originals) {
         super(CONFIG, originals);

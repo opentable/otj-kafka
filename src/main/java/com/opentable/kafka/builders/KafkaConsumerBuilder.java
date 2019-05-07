@@ -82,8 +82,13 @@ public class KafkaConsumerBuilder<K, V>  {
         return this;
     }
 
-    public KafkaConsumerBuilder<K, V> withLoggingSampleRate(int rate) {
+    public KafkaConsumerBuilder<K, V> withSamplingRatePer10Seconds(int rate) {
         kafkaBaseBuilder.withSamplingRatePer10Seconds(rate);
+        return this;
+    }
+
+    public KafkaConsumerBuilder<K, V> withRandomSamplingRate(int rate) {
+        kafkaBaseBuilder.withRandomSamplingRate(rate);
         return this;
     }
 
@@ -111,28 +116,34 @@ public class KafkaConsumerBuilder<K, V>  {
      * Provide an class. If you have a no-args constructor use this
      * @param keyDeSer key deserializer
      * @param valDeSer value deserializer
+     * @param <K2> The type of the key returned by de-serializer
+     * @param <V2> The type of the value returned by de-serializer
      * @return this
      */
-    public KafkaConsumerBuilder<K, V> withDeserializers(Class<? extends Deserializer<K>> keyDeSer, Class<? extends Deserializer<V>> valDeSer) {
-        this.keyDe = keyDeSer;
-        this.valueDe = valDeSer;
-        this.keyDeserializerInstance = null;
-        this.valueDeserializerInstance = null;
-        return this;
+    public <K2, V2> KafkaConsumerBuilder<K2, V2> withDeserializers(Class<? extends Deserializer<K2>> keyDeSer, Class<? extends Deserializer<V2>> valDeSer) {
+        KafkaConsumerBuilder<K2, V2> res = (KafkaConsumerBuilder<K2, V2>) this;
+        res.keyDe = keyDeSer;
+        res.valueDe = valDeSer;
+        res.keyDeserializerInstance = null;
+        res.valueDeserializerInstance = null;
+        return res;
     }
 
     /**
      * Provide an instance. If you don't have a no-args constructor use this
      * @param keyDeSer key deserializer
      * @param valDeSer value deserializer
+     * @param <K2> The type of the key returned by de-serializer
+     * @param <V2> The type of the value returned by de-serializer
      * @return this
      */
-    public KafkaConsumerBuilder<K, V> withDeserializers(Deserializer<K> keyDeSer, Deserializer<V> valDeSer) {
-        this.keyDeserializerInstance = keyDeSer;
-        this.valueDeserializerInstance = valDeSer;
+    public <K2, V2> KafkaConsumerBuilder<K2, V2> withDeserializers(Deserializer<K2> keyDeSer, Deserializer<V2> valDeSer) {
+        KafkaConsumerBuilder<K2, V2> res = (KafkaConsumerBuilder<K2, V2>) this;
+        res.keyDeserializerInstance = keyDeSer;
+        res.valueDeserializerInstance = valDeSer;
         this.keyDe = null;
         this.valueDe = null;
-        return this;
+        return res;
     }
 
     public KafkaConsumerBuilder<K, V> withPartitionAssignmentStrategy(Class<? extends PartitionAssignor> partitionAssignmentStrategy) {
@@ -244,6 +255,8 @@ public class KafkaConsumerBuilder<K, V>  {
                     .findFirst().orElseThrow(() -> new IllegalArgumentException("Can't convert " + c));
         }
     }
+
+
 
     @VisibleForTesting
     KafkaBaseBuilder getKafkaBaseBuilder() {

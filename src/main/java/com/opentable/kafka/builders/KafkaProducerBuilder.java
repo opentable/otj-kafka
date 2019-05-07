@@ -62,6 +62,7 @@ public class KafkaProducerBuilder<K, V> {
         kafkaBaseBuilder = new KafkaBaseBuilder(prop, environmentProvider);
     }
 
+
     // builder methods
 
     public KafkaProducerBuilder<K, V> withProperty(String key, Object value) {
@@ -86,8 +87,13 @@ public class KafkaProducerBuilder<K, V> {
     }
 
 
-    public KafkaProducerBuilder<K, V> withLoggingSampleRate(int rate) {
+    public KafkaProducerBuilder<K, V> withSamplingRatePer10Seconds(int rate) {
         kafkaBaseBuilder.withSamplingRatePer10Seconds(rate);
+        return this;
+    }
+
+    public KafkaProducerBuilder<K, V> withRandomSamplingRate(int rate) {
+        kafkaBaseBuilder.withRandomSamplingRate(rate);
         return this;
     }
 
@@ -120,28 +126,34 @@ public class KafkaProducerBuilder<K, V> {
      * Provide an class. If you have a no-args constructor use this
      * @param keySer key serializer
      * @param valSer value serializer
+     * @param <K2> The type of the key expected by serializer
+     * @param <V2> The type of the value expected by serializer
      * @return this
      */
-    public KafkaProducerBuilder<K, V> withSerializers(Class<? extends Serializer<K>> keySer, Class<? extends Serializer<V>> valSer) {
-        this.keySe = keySer;
-        this.valueSe = valSer;
-        this.keySerializer = null;
-        this.valueSerializer = null;
-        return this;
+    public <K2, V2> KafkaProducerBuilder<K2, V2> withSerializers(Class<? extends Serializer<K2>> keySer, Class<? extends Serializer<V2>> valSer) {
+        KafkaProducerBuilder<K2, V2> res = (KafkaProducerBuilder<K2, V2>) this;
+        res.keySe = keySer;
+        res.valueSe = valSer;
+        res.keySerializer = null;
+        res.valueSerializer = null;
+        return res;
     }
 
     /**
      * Provide an instance. If you don't have a no-args constructor use this
      * @param keySer key serializer
      * @param valSer value serializer
+     * @param <K2> The type of the key expected by serializer
+     * @param <V2> The type of the value expected by serializer
      * @return this
      */
-    public KafkaProducerBuilder<K, V> withSerializers(Serializer<K> keySer, Serializer<V> valSer) {
-        this.keySerializer = keySer;
-        this.valueSerializer = valSer;
-        this.keySe = null;
-        this.valueSe = null;
-        return this;
+    public <K2, V2> KafkaProducerBuilder<K2, V2> withSerializers(Serializer<K2> keySer, Serializer<V2> valSer) {
+        KafkaProducerBuilder<K2, V2> res = (KafkaProducerBuilder<K2, V2>) this;
+        res.keySerializer = keySer;
+        res.valueSerializer = valSer;
+        res.keySe = null;
+        res.valueSe = null;
+        return res;
     }
 
     public KafkaProducerBuilder<K, V> withPartitioner(Class<? extends Partitioner> partitioner) {

@@ -50,7 +50,6 @@ import org.springframework.test.context.junit4.SpringRunner;
 import com.opentable.kafka.builders.KafkaProducerBuilder.AckType;
 import com.opentable.kafka.logging.LoggingInterceptorConfig;
 import com.opentable.kafka.logging.LoggingProducerInterceptor;
-import com.opentable.kafka.logging.LoggingUtils;
 import com.opentable.kafka.metrics.OtMetricsReporter;
 import com.opentable.kafka.metrics.OtMetricsReporterConfig;
 import com.opentable.metrics.DefaultMetricsConfiguration;
@@ -70,7 +69,7 @@ public class KafkaProducerBuilderTest {
     private static final Logger LOG = LoggerFactory.getLogger(KafkaProducerBuilderTest.class);
 
     @Inject
-    private KafkaProducerBuilderFactoryBean builderFactoryBean;
+    private KafkaBuilderFactoryBean builderFactoryBean;
 
     @Inject
     private MetricRegistry metricRegistry;
@@ -94,7 +93,7 @@ public class KafkaProducerBuilderTest {
         // metrics, logging, overriding properties
         assertThat(finalProperties.get(CommonClientConfigs.METRIC_REPORTER_CLASSES_CONFIG)).isEqualTo(OtMetricsReporter.class.getName());
         assertThat(finalProperties.get(OtMetricsReporterConfig.METRIC_REGISTRY_REF_CONFIG)).isSameAs(metricRegistry);
-        assertThat(finalProperties.get(LoggingInterceptorConfig.LOGGING_REF)).isInstanceOf(LoggingUtils.class);
+        assertThat(finalProperties.get(LoggingInterceptorConfig.LOGGING_ENV_REF)).isInstanceOf(EnvironmentProvider.class);
         assertThat(finalProperties.get(LoggingInterceptorConfig.SAMPLE_RATE_PCT_CONFIG)).isEqualTo(3);
         assertThat(finalProperties.get("linger.ms")).isEqualTo("20");
         assertThat(finalProperties.get(ProducerConfig.INTERCEPTOR_CLASSES_CONFIG)).isEqualTo(LoggingProducerInterceptor.class.getName());
@@ -116,7 +115,7 @@ public class KafkaProducerBuilderTest {
         assertThat(finalProperties).doesNotContainKeys(OtMetricsReporterConfig.METRIC_REGISTRY_REF_CONFIG,
                 ProducerConfig.INTERCEPTOR_CLASSES_CONFIG,
                 CommonClientConfigs.METRIC_REPORTER_CLASSES_CONFIG,
-                LoggingInterceptorConfig.LOGGING_REF, LoggingInterceptorConfig.SAMPLE_RATE_PCT_CONFIG );
+                LoggingInterceptorConfig.LOGGING_ENV_REF, LoggingInterceptorConfig.SAMPLE_RATE_PCT_CONFIG );
     }
 
     @Test
@@ -149,7 +148,7 @@ public class KafkaProducerBuilderTest {
     }
 
     private KafkaProducerBuilder<Integer, String> getBuilder(String name) {
-        return builderFactoryBean.<Integer, String>builder(name)
+        return builderFactoryBean.producerBuilder(name)
                     .withBootstrapServer("localhost:8080")
                     .withProperty("blah", "blah")
                     .withProperty("linger.ms", "99") // this will be overwritten
@@ -162,11 +161,11 @@ public class KafkaProducerBuilderTest {
                     .withRequestTimeoutMs(Duration.ofSeconds(30))
                     .withSecurityProtocol(SecurityProtocol.PLAINTEXT)
                     .withSerializers(IntegerSerializer.class, StringSerializer.class)
-                    .withLoggingSampleRate(3);
+                    .withSamplingRatePer10Seconds(3);
     }
 
     @Configuration
-    @InjectKafkaBuilderBeans
+    @InjectKafkaBuilderBean
     @Import({
         DefaultMetricsConfiguration.class,
     })

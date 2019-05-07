@@ -49,8 +49,7 @@ import org.springframework.test.context.junit4.SpringRunner;
 
 import com.opentable.conservedheaders.ConservedHeader;
 import com.opentable.kafka.builders.EnvironmentProvider;
-import com.opentable.kafka.builders.InjectKafkaBuilderBeans;
-import com.opentable.kafka.builders.KafkaBuilderConfiguration;
+import com.opentable.kafka.builders.InjectKafkaBuilderBean;
 import com.opentable.kafka.builders.KafkaConsumerBuilder;
 import com.opentable.kafka.builders.KafkaProducerBuilder;
 import com.opentable.kafka.util.ReadWriteRule;
@@ -166,7 +165,7 @@ public class MetricReporterTest {
     }
 
     @Configuration
-    @InjectKafkaBuilderBeans
+    @InjectKafkaBuilderBean
     @Import(DefaultMetricsConfiguration.class)
     public static class Config {
         @Bean

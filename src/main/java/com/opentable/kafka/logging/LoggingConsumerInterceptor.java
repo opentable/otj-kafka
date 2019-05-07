@@ -15,6 +15,8 @@ package com.opentable.kafka.logging;
 
 import java.util.Map;
 
+import com.google.common.annotations.VisibleForTesting;
+
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.consumer.ConsumerInterceptor;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
@@ -23,7 +25,7 @@ import org.apache.kafka.common.TopicPartition;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import io.github.bucket4j.Bucket;
+import com.opentable.kafka.builders.EnvironmentProvider;
 
 /**
  * Logging interceptor to add otl based logging
@@ -38,7 +40,7 @@ public class LoggingConsumerInterceptor<K, V> implements ConsumerInterceptor<K, 
     private String interceptorClientId;
     private String groupId;
     private LoggingUtils loggingUtils;
-    private Bucket bucket;
+    private LogSampler sampler;
 
     public LoggingConsumerInterceptor() { //NOPMD
         /* noargs needed for kafka */
@@ -46,7 +48,7 @@ public class LoggingConsumerInterceptor<K, V> implements ConsumerInterceptor<K, 
 
     @Override
     public ConsumerRecords<K, V> onConsume(ConsumerRecords<K, V> records) {
-        records.forEach(record -> loggingUtils.maybeLogConsumer(LOG, interceptorClientId, groupId, bucket, record));
+        records.forEach(record -> loggingUtils.maybeLogConsumer(LOG, interceptorClientId, groupId, sampler, record));
         return records;
     }
 
@@ -60,13 +62,18 @@ public class LoggingConsumerInterceptor<K, V> implements ConsumerInterceptor<K, 
         LOG.debug("Shutting down LoggingConsumerInterceptor");
     }
 
+    @VisibleForTesting
+    LoggingUtils getLoggingUtils(Map<String, ?> config) {
+        return new LoggingUtils((EnvironmentProvider) config.get(LoggingInterceptorConfig.LOGGING_ENV_REF));
+    }
+
     @Override
     public void configure(Map<String, ?> config) {
         final LoggingInterceptorConfig conf = new LoggingInterceptorConfig(config);
         String originalsClientId = (String) config.get(ConsumerConfig.CLIENT_ID_CONFIG);
         groupId  = (String) config.get(ConsumerConfig.GROUP_ID_CONFIG);
-        loggingUtils = (LoggingUtils) config.get(LoggingInterceptorConfig.LOGGING_REF);
-        bucket = loggingUtils.getBucket(conf);
+        loggingUtils = getLoggingUtils(config);
+        sampler = LogSampler.create(conf);
         interceptorClientId = (originalsClientId == null) ? "interceptor-consumer-" + LoggingUtils.ClientIdGenerator.INSTANCE.nextConsumerId() : originalsClientId;
         LOG.info("LoggingConsumerInterceptor is configured for client: {}, group-id: {}", interceptorClientId, groupId);
     }

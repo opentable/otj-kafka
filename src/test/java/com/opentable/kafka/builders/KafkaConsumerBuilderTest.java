@@ -45,7 +45,6 @@ import org.springframework.test.context.junit4.SpringRunner;
 import com.opentable.kafka.builders.KafkaConsumerBuilder.AutoOffsetResetType;
 import com.opentable.kafka.logging.LoggingConsumerInterceptor;
 import com.opentable.kafka.logging.LoggingInterceptorConfig;
-import com.opentable.kafka.logging.LoggingUtils;
 import com.opentable.kafka.metrics.OtMetricsReporter;
 import com.opentable.kafka.metrics.OtMetricsReporterConfig;
 import com.opentable.metrics.DefaultMetricsConfiguration;
@@ -63,7 +62,7 @@ public class KafkaConsumerBuilderTest {
     private static final Logger LOG = LoggerFactory.getLogger(KafkaConsumerBuilderTest.class);
 
     @Inject
-    private KafkaConsumerBuilderFactoryBean builderFactoryBean;
+    private KafkaBuilderFactoryBean builderFactoryBean;
 
     @Inject
     private MetricRegistry metricRegistry;
@@ -90,7 +89,7 @@ public class KafkaConsumerBuilderTest {
         // metrics, logging, overriding properties
         assertThat(finalProperties.get(CommonClientConfigs.METRIC_REPORTER_CLASSES_CONFIG)).isEqualTo(OtMetricsReporter.class.getName());
         assertThat(finalProperties.get(OtMetricsReporterConfig.METRIC_REGISTRY_REF_CONFIG)).isSameAs(metricRegistry);
-        assertThat(finalProperties.get(LoggingInterceptorConfig.LOGGING_REF)).isInstanceOf(LoggingUtils.class);
+        assertThat(finalProperties.get(LoggingInterceptorConfig.LOGGING_ENV_REF)).isInstanceOf(EnvironmentProvider.class);
         assertThat(finalProperties.get(LoggingInterceptorConfig.SAMPLE_RATE_PCT_CONFIG)).isEqualTo(3);
         assertThat(finalProperties.get(ConsumerConfig.INTERCEPTOR_CLASSES_CONFIG)).isEqualTo(LoggingConsumerInterceptor.class.getName());
         assertThat(finalProperties.get("check.crcs")).isEqualTo("false");
@@ -105,14 +104,14 @@ public class KafkaConsumerBuilderTest {
         Map<String, Object> finalProperties = builder.getKafkaBaseBuilder().getFinalProperties();
         assertThat(finalProperties).doesNotContainKeys(OtMetricsReporterConfig.METRIC_REGISTRY_REF_CONFIG,
                 CommonClientConfigs.METRIC_REPORTER_CLASSES_CONFIG, ConsumerConfig.INTERCEPTOR_CLASSES_CONFIG,
-                LoggingInterceptorConfig.LOGGING_REF, LoggingInterceptorConfig.SAMPLE_RATE_PCT_CONFIG );
+                LoggingInterceptorConfig.LOGGING_ENV_REF, LoggingInterceptorConfig.SAMPLE_RATE_PCT_CONFIG );
         c.close();
     }
 
 
 
     private KafkaConsumerBuilder<Integer, String> getBuilder() {
-        return builderFactoryBean.<Integer,String>builder("testme")
+        return builderFactoryBean.consumerBuilder("testme")
                 .withBootstrapServer("localhost:8080")
                 .withProperty("blah", "blah")
                 .removeProperty("blah")
@@ -121,11 +120,11 @@ public class KafkaConsumerBuilderTest {
                 .withGroupId("test")
                 .withDeserializers(IntegerDeserializer.class, StringDeserializer.class)
                 .withAutoOffsetReset(AutoOffsetResetType.Latest)
-                .withLoggingSampleRate(3);
+                .withSamplingRatePer10Seconds(3);
     }
 
     @Configuration
-    @InjectKafkaBuilderBeans
+    @InjectKafkaBuilderBean
     @Import({
             DefaultMetricsConfiguration.class,
     })

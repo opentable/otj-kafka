@@ -27,6 +27,6 @@ import com.opentable.metrics.DefaultMetricsConfiguration;
 @Target(ElementType.TYPE)
 @Retention(RetentionPolicy.RUNTIME)
 @Import({KafkaBuilderConfiguration.class, DefaultMetricsConfiguration.class})
-public @interface InjectKafkaBuilderBeans {
+public @interface InjectKafkaBuilderBean {
 }
 

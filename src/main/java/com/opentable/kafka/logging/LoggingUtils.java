@@ -54,7 +54,7 @@ import com.opentable.logging.otl.MsgV1;
 /**
  * General logging code and logic. Builds various OTL records, headers for metadata, etc.
  */
-public class LoggingUtils {
+class LoggingUtils {
     private static final Logger LOG = LoggerFactory.getLogger(LoggingUtils.class);
 
     private static final Charset CHARSET = StandardCharsets.UTF_8;
@@ -73,7 +73,7 @@ public class LoggingUtils {
     private final String os;
     private final Bucket errLogging;
 
-    public LoggingUtils(EnvironmentProvider environmentProvider) {
+    LoggingUtils(EnvironmentProvider environmentProvider) {
         this.environmentProvider = environmentProvider;
         this.javaVersion = System.getProperty("java.runtime.version", UNKNOWN);
         this.os = System.getProperty("os.name", UNKNOWN);
@@ -106,23 +106,6 @@ public class LoggingUtils {
         return clientVersion;
     }
 
-    /**
-     * Generate a fresh new token bucket
-     * @param conf the configuration, used to determine the token refresh rate
-     * @return a bucket
-     */
-    final Bucket getBucket(LoggingInterceptorConfig conf) {
-        final Integer howOftenPer10Seconds = conf.getInt(LoggingInterceptorConfig.SAMPLE_RATE_PCT_CONFIG);
-        Bandwidth limit;
-        if (howOftenPer10Seconds == null || howOftenPer10Seconds < 0) {
-            LOG.warn("Not rate limiting");
-            // Apparently the only way to be "unlimited"
-            limit = Bandwidth.simple(Long.MAX_VALUE, Duration.ofSeconds(1));
-        } else {
-            limit = Bandwidth.simple(howOftenPer10Seconds, Duration.ofSeconds(10));
-        }
-        return getBucket(limit);
-    }
 
     private Bucket getBucket(Bandwidth bandWidth) {
         return Bucket4j.builder().addLimit(bandWidth).build();
@@ -290,14 +273,15 @@ public class LoggingUtils {
      * This checks if the tracing flag is on. Perhaps someone set it manually?
      * Otherwise it is set if the log limit has not been reached.
      * We'll use this tracing flag to determine logging
-     * @param bucket token bucket
-     * @param headers headers of record. These will be mutated.
+     * @param sampler Loh sampler
+     * @param record record. Headers will be mutated.
      */
-    <K, V> void setTracingHeader(Bucket bucket, Headers headers) {
+    <K, V> void setTracingHeader(LogSampler sampler, ProducerRecord<Object, Object> record) {
+        final Headers headers  = record.headers();
         final String traceFlag = kn(OTKafkaHeaders.TRACE_FLAG);
         if (!headers.headers(traceFlag).iterator().hasNext()) {
-            // If header not present, make decision ourself and set it if not rate limited
-            if (bucket.tryConsume(1)) {
+            // If header not present, make decision our-self and set it if not rate limited
+            if (sampler.mark(record.topic())) {
                 headers.add(traceFlag, TRUE);
             } else {
                 headers.add(traceFlag, FALSE);
@@ -359,13 +343,13 @@ public class LoggingUtils {
     /**
      * Log a consumer record if either a trace flag is passed, or we have tokens remaining
      * @param record record
-     * @param bucket token bucket
+     * @param sampler log sampler
      * @param <K> key
      * @param <V> value
      * @return true, if logging is needed
      */
-    private <K, V> boolean isLoggingNeeded(ConsumerRecord<K, V> record, Bucket bucket) {
-        return isTraceFlagEnabled(record) || bucket.tryConsume(1);
+    private <K, V> boolean isLoggingNeeded(ConsumerRecord<K, V> record, LogSampler sampler) {
+        return isTraceFlagEnabled(record) || sampler.mark(record.topic());
     }
 
     /**
@@ -373,13 +357,13 @@ public class LoggingUtils {
      * @param log logger
      * @param clientId clientId
      * @param groupId groupId
-     * @param bucket token bucket
+     * @param sampler log sampler
      * @param record consumer record
      * @param <K> key
      * @param <V> value
      */
-    <K, V> void maybeLogConsumer(Logger log, String clientId, String groupId, Bucket bucket, ConsumerRecord<K, V> record) {
-        if (isLoggingNeeded(record, bucket)) {
+    <K, V> void maybeLogConsumer(Logger log, String clientId, String groupId, LogSampler sampler, ConsumerRecord<K, V> record) {
+        if (isLoggingNeeded(record, sampler)) {
             final MsgV1 event = consumerEvent(record, groupId, clientId);
             log.debug(event.log(),
                     "[Consumer clientId={}, groupId={}] From:{}@{}, Headers:[{}], Message: {}",
