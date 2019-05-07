@@ -145,9 +145,10 @@ public class MetricReporterTest {
             }
         }
         consumer.commitSync();
-        waitForMetric(rw, "kafka.consumer-metrics-01.test.0.topic-1.consumer-fetch-manager-metrics-records-lag-max",
-            (double) (numTestRecords - 1));
-        consumer.close();
+        //                   kafka.consumer-metrics-01.test.0_topic-1.consumer-fetch-manager-metrics_records-lag-max
+       waitForMetric(rw, "kafka.consumer-metrics-01.test.consumer-fetch-manager-metrics.records-lag-max.topic-1.0", (double)(numTestRecords - 1));
+       waitForMetric(rw, "kafka.consumer-metrics-01.test.consumer-fetch-manager-metrics.records-lag-max", (double)(numTestRecords - 1));
+       consumer.close();
     }
 
     private void waitForMetric(

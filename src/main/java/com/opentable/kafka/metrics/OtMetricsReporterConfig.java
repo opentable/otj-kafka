@@ -24,7 +24,7 @@ public class OtMetricsReporterConfig extends AbstractConfig {
     private static final String DEFAULT_REGISTRY_NAME = "default";
     private static final String DEFAULT_METRIC_GROUPS = "producer-topic-metrics,producer-metrics,consumer-metrics,consumer-fetch-manager-metrics";
     private static final String DEFAULT_METRIC_NAME_MATCHERS = "";
-    private static final String DEFAULT_PREFIX = "kafka.";
+    private static final String DEFAULT_PREFIX = "kafka";
 
     // Leave public for manual customization
     public static final String METRIC_REGISTRY_NAME_CONFIG = "ot.metric.reporter.registry.name";
