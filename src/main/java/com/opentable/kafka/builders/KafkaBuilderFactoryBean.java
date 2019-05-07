@@ -22,6 +22,7 @@ import com.codahale.metrics.MetricRegistry;
 
 import org.springframework.core.env.ConfigurableEnvironment;
 
+import com.opentable.kafka.util.ClientIdGenerator;
 import com.opentable.service.ServiceInfo;
 import com.opentable.spring.PropertySourceUtil;
 
@@ -83,7 +84,7 @@ public class KafkaBuilderFactoryBean {
         );
         final KafkaConsumerBuilder<?, ?> res = new KafkaConsumerBuilder<>(mergedSeedProperties, environmentProvider);
         metricRegistry.ifPresent(res::withMetricRegistry);
-        serviceInfo.ifPresent(si -> res.withClientId(name + "-" + si.getName()));
+        serviceInfo.ifPresent(si -> res.withClientId(name + "-" + si.getName()  + "-" + ClientIdGenerator.getInstance().nextClientId()));
         return res;
     }
 
@@ -98,7 +99,7 @@ public class KafkaBuilderFactoryBean {
         );
         final KafkaProducerBuilder<? , ?> res = new KafkaProducerBuilder<>(mergedSeedProperties, environmentProvider);
         metricRegistry.ifPresent(res::withMetricRegistry);
-        serviceInfo.ifPresent(si -> res.withClientId(name + "-" + si.getName()));
+        serviceInfo.ifPresent(si -> res.withClientId(name + "-" + si.getName() + "-" + ClientIdGenerator.getInstance().nextClientId()));
         return res;
     }
 

@@ -106,6 +106,17 @@ public class KafkaProducerBuilderTest {
     }
 
     @Test
+    public void canBuildMultipleCondumersTest() {
+        KafkaProducerBuilder<Integer, String> builder = getBuilder("testme");
+        Producer<Integer, String> p = builder
+            .build();
+        Producer<Integer, String> p2 = builder
+            .build();
+        p.close();
+        p2.close();
+    }
+
+    @Test
     public void withoutMetricsAndLogging() {
         KafkaProducerBuilder<Integer, String> builder = getBuilder("producer");
         Producer<Integer, String> p = builder.disableLogging().disableMetrics()

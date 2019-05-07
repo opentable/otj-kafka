@@ -228,7 +228,7 @@ public class LoggingInterceptorsTest {
                                          UUID requestID, int index, BiConsumer<EdaMessageTraceV1, Integer> additionalAssertions) {
         Assertions.assertThat(edaMessageTraceV1.getTimestamp()).isNotNull();
         Assertions.assertThat(edaMessageTraceV1.getUuid()).isNotNull();
-        Assertions.assertThat(edaMessageTraceV1.getKafkaClientId()).isEqualTo(expectedClientId);
+        Assertions.assertThat(edaMessageTraceV1.getKafkaClientId()).startsWith(expectedClientId);
         Assertions.assertThat(edaMessageTraceV1.getLogName()).isEqualTo(expectedLogName);
         Assertions.assertThat(edaMessageTraceV1.getRequestId()).isEqualTo(requestID);
 

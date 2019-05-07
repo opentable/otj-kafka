@@ -26,6 +26,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.opentable.kafka.builders.EnvironmentProvider;
+import com.opentable.kafka.util.ClientIdGenerator;
 
 /**
  * Logging interceptor to add otl based logging
@@ -74,7 +75,7 @@ public class LoggingConsumerInterceptor<K, V> implements ConsumerInterceptor<K, 
         groupId  = (String) config.get(ConsumerConfig.GROUP_ID_CONFIG);
         loggingUtils = getLoggingUtils(config);
         sampler = LogSampler.create(conf);
-        interceptorClientId = (originalsClientId == null) ? "interceptor-consumer-" + LoggingUtils.ClientIdGenerator.INSTANCE.nextConsumerId() : originalsClientId;
+        interceptorClientId = (originalsClientId == null) ? "interceptor-consumer-" +  ClientIdGenerator.getInstance().nextConsumerId() : originalsClientId;
         LOG.info("LoggingConsumerInterceptor is configured for client: {}, group-id: {}", interceptorClientId, groupId);
     }
 }
