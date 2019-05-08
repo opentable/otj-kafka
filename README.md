@@ -23,7 +23,7 @@ You may inject them into any class, and use them. The general idiom they follow 
 
 ```
  final Consumer<byte[], ABEvent> consumer = kafkaConsumerBuilderFactoryBean.<byte[],ABEvent>
-                builder("myuniquenameperconsumerpermachine) // name must be unique per machine. This works because of the deterministic setup
+                builder("nameSuppliedByUser") // name must be unique per machine. This works because of the deterministic setup
                 .withBootstrapServers(Arrays.asList(brokerList().split(",")))
                 .withAutoCommit(false)
                 .withClientId(makeClientId(topicPartition))
@@ -37,9 +37,9 @@ You may inject them into any class, and use them. The general idiom they follow 
 
 This will build the Kafka producer/consumer using the following logic:
 
-* If there's any ot.kafka.myuniquenameperconsumerpermachine namespaced configuration properties, use these. They
+* If there's any `ot.kafka.consumer|producer.nameSuppliedByUser` namespaced configuration properties, use these. They
 will take precedence over the fluent api
-* We preassign client-id in the bean as name.(serviceInfo.name).(incrementingNumber). You may override it as shown above, if desired.
+* We preassign client-id in the bean as `name.(serviceInfo.name).(incrementingNumber)`. You may override it as shown above, if desired.
 * Add in any thing specified in the fluent api
 * Wire in metrics and logging. To disable these use `disableLogging()` and/or `disableMetrics()`. The logging only
 kicks in once per 10 seconds, but you may change this rate via `withLoggingSampleRate()` (for example setting to 10 will make it rate limit
@@ -47,6 +47,14 @@ once per second, changing to 100 will have a rate limit of 10 per second, etc) -
 * Return the Kafka consumer/producer (we return the interface type Consumer/Producer instead of the implementations KafkaConsumer/KafkaProducer)
 
 The BuilderFactoryBean is thread safe, but the underlying Builder is NOT.
+
+**About Metrics**
+
+* We preset the root name space as `kafka.consumer|producer.(nameSuppliedByUser)`.
+* If you create multiple consumers and producers in an application, you need to supply stable, reasonable names, if
+you want to want to have stable metrics to dashboard and alert upon. A naive strategy of a simple auto incrementing
+number will only work if you build the Producer/consumers in a deterministic order.
+* You can override the namespace entirely by calling `withMetricRegistry(metricRegistry, prefix)`
 
 Offset Metrics
 --------------
