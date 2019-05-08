@@ -25,6 +25,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.opentable.kafka.builders.EnvironmentProvider;
+import com.opentable.kafka.util.ClientIdGenerator;
 
 /**
  * Intercepts all KafkaProducer traffic and applies otl-standardized logging and metrics to them
@@ -74,7 +75,7 @@ public class LoggingProducerInterceptor implements ProducerInterceptor<Object, O
         final String originalsClientId = (String) config.get(ProducerConfig.CLIENT_ID_CONFIG);
         loggingUtils = getLoggingUtils(config);
         sampler = LogSampler.create(conf);
-        this.interceptorClientId = (originalsClientId == null) ? "interceptor-producer-" + LoggingUtils.ClientIdGenerator.INSTANCE.nextPublisherId() : originalsClientId;
+        this.interceptorClientId = (originalsClientId == null) ? "interceptor-producer-" + ClientIdGenerator.getInstance().nextPublisherId() : originalsClientId;
         LOG.info("LoggingProducerInterceptor is configured for client: {}", interceptorClientId);
     }
 

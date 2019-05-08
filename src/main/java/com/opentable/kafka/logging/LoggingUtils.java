@@ -22,7 +22,6 @@ import java.util.Arrays;
 import java.util.Optional;
 import java.util.Properties;
 import java.util.UUID;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
@@ -392,19 +391,4 @@ class LoggingUtils {
         return UUID.randomUUID();
     }
 
-    /**
-     * Provides a simple way to make sure all clientIds are unique.
-     */
-    static class ClientIdGenerator {
-        static final ClientIdGenerator INSTANCE = new ClientIdGenerator();
-        private final AtomicInteger consumerIds = new AtomicInteger(0);
-        private final AtomicInteger producerIds = new AtomicInteger(0);
-        int nextConsumerId() {
-            return consumerIds.getAndIncrement();
-        }
-
-        int nextPublisherId() {
-            return producerIds.getAndIncrement();
-        }
-    }
 }

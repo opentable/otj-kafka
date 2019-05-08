@@ -13,18 +13,17 @@
  */
 package com.opentable.kafka.metrics;
 
-import java.util.Comparator;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Set;
+import java.util.regex.Pattern;
 
 import com.codahale.metrics.Gauge;
 import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.SharedMetricRegistries;
 
-import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.common.MetricName;
 import org.apache.kafka.common.metrics.KafkaMetric;
 import org.apache.kafka.common.metrics.MetricsReporter;
@@ -35,11 +34,12 @@ import org.springframework.util.AntPathMatcher;
 public class OtMetricsReporter implements MetricsReporter {
 
     private static final Logger LOG = LoggerFactory.getLogger(OtMetricsReporter.class);
+    private static final Pattern blacklistedChars = Pattern.compile("[{}(),=\\[\\]/]");
 
     private final Set<String> metricNames = new HashSet<>();
     private final Set<String> metricGroups = new HashSet<>();
+    private final Map<String, String> metricTags = new HashMap<>();
     private MetricRegistry metricRegistry;
-    private String groupId;
     private String prefix;
     private final Set<String> groups = new HashSet<>();
     private final Set<String> metricMatchers = new HashSet<>();
@@ -50,7 +50,7 @@ public class OtMetricsReporter implements MetricsReporter {
     }
 
     @Override
-    public void init(List<KafkaMetric> metrics) {
+    public synchronized void init(List<KafkaMetric> metrics) {
         metrics.forEach(this::metricChange);
     }
 
@@ -69,6 +69,7 @@ public class OtMetricsReporter implements MetricsReporter {
                 metricNames.add(name);
                 // and its group
                 metricGroups.add(metric.metricName().group());
+                metricTags.putAll(metric.metricName().tags());
             } catch (IllegalArgumentException e) {
                 // Might happen if multiple threads access the MetricRegistry simultaneously.
                 LOG.warn("metricChange called for `{}' which was already registered, ignoring.", name);
@@ -107,27 +108,14 @@ public class OtMetricsReporter implements MetricsReporter {
     }
 
     private String metricName(KafkaMetric metric) {
-        // start with kafka.
-        final StringBuilder stringBuilder = new StringBuilder(prefix);
         final MetricName metricName = metric.metricName();
-        // MJB: too much cardinality?
-        // Add in client-id...
-        stringBuilder.append(metricName.tags().get("client-id"))
-            .append('.');
-        // add maybe group-id
-        if (groupId != null) {
-            stringBuilder.append(groupId)
-                .append('.');
-        }
-       metricName.tags().entrySet().stream()
-            .filter(v -> !"client-id".equals(v.getKey()))
-            .sorted(Comparator.comparing(Entry::getKey))
-            .forEach(v -> stringBuilder.append(v.getValue()).append('.'));
-        // now add in metric group and then metric name
-        stringBuilder.append(metricName.group())
-            .append('-')
-            .append(metricName.name());
-        return stringBuilder.toString();
+        // prefix includes kafka.<userSupplied>
+        return MetricRegistry.name(
+                sanitize(prefix),
+            metricName.group(),
+            metricName.name(),
+            sanitize(metricName.tags().get("topic")),
+            sanitize(metricName.tags().get("partition")));
     }
 
     @Override
@@ -146,6 +134,8 @@ public class OtMetricsReporter implements MetricsReporter {
         metricNames.clear();
         LOG.debug("Metric groups: {}", metricGroups);
         metricGroups.clear();
+        LOG.debug("Metric tags: {}", metricTags);
+        metricTags.clear();
     }
 
     @Override
@@ -174,10 +164,14 @@ public class OtMetricsReporter implements MetricsReporter {
             metricMatchers.addAll(otMetricsReporterConfig.getList(OtMetricsReporterConfig.METRIC_NAME_MATCHERS_CONFIG));
         }
 
-        // and extract the groupId - we'll null check later
-        groupId  = (String)config.get(ConsumerConfig.GROUP_ID_CONFIG);
-
         LOG.info("OtMetricsReporter is configured with metric registry: {} and prefix: {}", metricRegistry, prefix);
+    }
+
+    private String sanitize(String name) {
+        if (name == null) {
+            return null;
+        }
+        return blacklistedChars.matcher(name).replaceAll("_");
     }
 
 }

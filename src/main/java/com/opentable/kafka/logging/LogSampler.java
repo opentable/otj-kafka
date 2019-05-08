@@ -48,6 +48,7 @@ public abstract class LogSampler {
     /**
      * Implementation based on time bucket
      */
+    @SuppressWarnings("OptionalUsedAsFieldOrParameterType")
     public static class LogSamplerBucket  extends LogSampler {
 
         private static final Logger LOG = LoggerFactory.getLogger(LoggingUtils.class);
@@ -110,6 +111,10 @@ public abstract class LogSampler {
         public static SamplerType fromString(String c) {
             return Arrays.stream(values()).filter(t -> t.value.equalsIgnoreCase(c))
                 .findFirst().orElseThrow(() -> new IllegalArgumentException("Can't convert: " + c));
+        }
+
+        public String getValue() {
+            return value;
         }
     }
 

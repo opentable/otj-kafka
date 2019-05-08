@@ -76,7 +76,7 @@ public class KafkaConsumerBuilderTest {
         assertThat(finalProperties).isNotEmpty();
         assertThat(finalProperties.get(CommonClientConfigs.BOOTSTRAP_SERVERS_CONFIG)).isEqualTo("localhost:8080");
         assertThat(finalProperties).doesNotContainKeys("blah");
-        assertThat(finalProperties.get(CommonClientConfigs.CLIENT_ID_CONFIG)).isEqualTo("test-consomer-01");
+        assertThat(finalProperties.get(CommonClientConfigs.CLIENT_ID_CONFIG)).isEqualTo("test-consumer-01");
         assertThat(finalProperties.get("blah2")).isEqualTo("blah2");
         assertThat(finalProperties.get(ConsumerConfig.GROUP_ID_CONFIG)).isEqualTo("test");
         assertThat(finalProperties.get(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG)).isEqualTo(IntegerDeserializer.class.getName());
@@ -115,7 +115,7 @@ public class KafkaConsumerBuilderTest {
                 .withBootstrapServer("localhost:8080")
                 .withProperty("blah", "blah")
                 .removeProperty("blah")
-                .withClientId("test-consomer-01")
+                .withClientId("test-consumer-01")
                 .withProperty("blah2", "blah2")
                 .withGroupId("test")
                 .withDeserializers(IntegerDeserializer.class, StringDeserializer.class)

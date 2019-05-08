@@ -56,7 +56,8 @@ class KafkaBaseBuilder {
     private final List<String> interceptors = new ArrayList<>();
     private boolean enableLoggingInterceptor = true;
     private int loggingSampleRate = LoggingInterceptorConfig.DEFAULT_SAMPLE_RATE_PCT;
-    private Optional<SamplerType> loggingSamplerType = Optional.empty();
+    private Optional<String> metricsPrefix = Optional.empty();
+    private SamplerType loggingSamplerType = SamplerType.TimeBucket;
     private OptionalLong requestTimeout = OptionalLong.empty();
     private OptionalLong retryBackoff = OptionalLong.empty();
     private final List<String> bootStrapServers = new ArrayList<>();
@@ -92,7 +93,8 @@ class KafkaBaseBuilder {
         if (merged.contains(loggingInterceptorName)) {
             addProperty(LoggingInterceptorConfig.LOGGING_ENV_REF, environmentProvider);
             addProperty(LoggingInterceptorConfig.SAMPLE_RATE_PCT_CONFIG, loggingSampleRate);
-            loggingSamplerType.ifPresent(t -> addProperty(LoggingInterceptorConfig.SAMPLE_RATE_TYPE_CONFIG, t));
+            addProperty(LoggingInterceptorConfig.SAMPLE_RATE_TYPE_CONFIG, loggingSamplerType.getValue());
+            LOG.debug("Setting sampler {} - {}", loggingSamplerType, loggingSampleRate);
         }
     }
 
@@ -111,6 +113,15 @@ class KafkaBaseBuilder {
 
     void removeProperty(String key) {
         finalProperties.remove(key);
+    }
+
+    void withPrefix(String metricsPrefix) {
+        if (metricsPrefix != null) {
+            if (!metricsPrefix.startsWith(OtMetricsReporterConfig.DEFAULT_PREFIX + ".")) {
+                metricsPrefix = OtMetricsReporterConfig.DEFAULT_PREFIX + "." + metricsPrefix;
+            }
+        }
+        this.metricsPrefix = Optional.ofNullable(metricsPrefix);
     }
 
     void withBootstrapServer(String bootStrapServer) {
@@ -149,10 +160,11 @@ class KafkaBaseBuilder {
     }
     void withSamplingRatePer10Seconds(final int rate) {
         loggingSampleRate = rate;
+        loggingSamplerType = SamplerType.TimeBucket;
     }
     void withRandomSamplingRate(final int rate) {
         loggingSampleRate = rate;
-        loggingSamplerType = Optional.ofNullable(SamplerType.Random);
+        loggingSamplerType = SamplerType.Random;
     }
 
     <CK,CV> Consumer<CK,CV> consumer(Deserializer<CK> keyDeserializer, Deserializer<CV> valuedeserializer) {
@@ -180,7 +192,12 @@ class KafkaBaseBuilder {
         final List<String> metricReporters = mergeListProperty(CommonClientConfigs.METRIC_REPORTER_CLASSES_CONFIG);
         metricRegistry.ifPresent(mr -> {
            if (enableMetrics) {
+               if (!metricsPrefix.isPresent()) {
+                   throw new IllegalArgumentException("MetricsPrefix is not set");
+               }
                metricReporters.add(OtMetricsReporter.class.getName());
+               LOG.debug("Registering OTMetricsReporter for Kafka with prefix {}", metricsPrefix.get());
+               addProperty(OtMetricsReporterConfig.METRIC_PREFIX_CONFIG, metricsPrefix.get());
                addProperty(OtMetricsReporterConfig.METRIC_REGISTRY_REF_CONFIG, mr);
            }
         });
@@ -217,4 +234,5 @@ class KafkaBaseBuilder {
     Map<String, Object> getFinalProperties() {
         return finalProperties;
     }
+
 }
