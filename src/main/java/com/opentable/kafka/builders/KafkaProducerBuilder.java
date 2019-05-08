@@ -212,8 +212,9 @@ public class KafkaProducerBuilder<K, V> {
         return this;
     }
 
-    public KafkaProducerBuilder<K, V> withMetricRegistry(MetricRegistry metricRegistry) {
+    public KafkaProducerBuilder<K, V> withMetricRegistry(MetricRegistry metricRegistry, String metricsPrefix) {
         kafkaBaseBuilder.withMetricRegistry(metricRegistry);
+        kafkaBaseBuilder.withPrefix(metricsPrefix);
         return this;
     }
 
