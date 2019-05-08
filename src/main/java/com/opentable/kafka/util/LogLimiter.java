@@ -44,6 +44,7 @@ public class LogLimiter {
      * Limit logging after a counter is exceeded.
      * @param name an informative name to log
      * @param maxCount the number of times to log by key
+     * @return loglimiter
      */
     public static LogLimiter byCount(String name, long maxCount) {
         return new LogLimiter(name, maxCount);
