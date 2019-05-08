@@ -115,7 +115,12 @@ class KafkaBaseBuilder {
         finalProperties.remove(key);
     }
 
-    void withPrefix(final String metricsPrefix) {
+    void withPrefix(String metricsPrefix) {
+        if (metricsPrefix != null) {
+            if (!metricsPrefix.startsWith(OtMetricsReporterConfig.DEFAULT_PREFIX + ".")) {
+                metricsPrefix = OtMetricsReporterConfig.DEFAULT_PREFIX + "." + metricsPrefix;
+            }
+        }
         this.metricsPrefix = Optional.ofNullable(metricsPrefix);
     }
 

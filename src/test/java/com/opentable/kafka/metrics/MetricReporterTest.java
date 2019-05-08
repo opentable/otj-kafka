@@ -158,6 +158,8 @@ public class MetricReporterTest {
         throws InterruptedException {
         while (true) {
             final Gauge gauge = metricRegistry.getGauges().get(metricName);
+            System.err.println(metricRegistry.getGauges());
+            Thread.sleep(500);
             if ((gauge != null) && (gauge.getValue().equals(value))) {
                 break;
             }
