@@ -55,6 +55,11 @@
         <artifactId>otj-kafka-tests</artifactId>
         <version>${project.version}</version>
       </dependency>
+      <dependency>
+        <groupId>org.apache.curator</groupId>
+        <artifactId>curator-test</artifactId>
+        <version>${dep.curator.version}</version>
+      </dependency>
       </dependencies>
   </dependencyManagement>
   <modules>

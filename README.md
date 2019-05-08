@@ -95,3 +95,19 @@ instance only.
 For more detail, see the extensive Javadoc documentation on the
 `OffsetMetrics` class itself, and the methods available to you on its
 builder.
+
+JSONSerde
+---------
+
+A Generic JSON serializer/deserializer using Jackson for Kafka
+
+LogProgressRestoreListener
+--------
+
+A StateRestoreListener for logging the progress of State rebuilds with KafkaStreams
+
+Miscellaneous
+-----
+* See the Partitions package and the Client Package. 
+* A few utilities and abstractions to do with PartitioningStrategies and with a basic MessageSink/dispatcher (mostly obviated by
+EDA). These are used in buzzsaw and ab-presto-service.
