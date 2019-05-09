@@ -14,6 +14,18 @@ override this rate from the fluent API. You may also disable by calling noLoggin
 * Optional (but wired by default) metrics interceptors that wire up all of kafka's very extensive metrics
 and forward to graphite.
 
+* Move EmbeddedKafka and Embedded Zookeeper to otj-kafka-tests module. If you use these you may
+still access them via the following dependency declaration
+
+```$xslt
+<dependency>
+    <groupId>com.opentable.components</groupId>
+    <artifactId>otj-kafka-tests</artifactId>
+</dependency>
+```
+
+(probably scoped as test scope)
+
 3.1.3
 -----
 * Move test from otj-logging. This breaks a cyclic dependency.
