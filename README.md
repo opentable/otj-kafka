@@ -15,16 +15,15 @@ Why would you use them?
 
 Usage:
 
-Add `@InjectKafkaBuilderBeans` to any Configuration class. You'll now have two beans in your context:
+Add `@InjectKafkaBuilderBean` to any Configuration class. You'll now have an extra bean in your context:
 
-* KafkaConsumerBuilderFactoryBean
-* KafkaProducerBuilderFactoryBean
+* KafkaBuilderFactoryBean
 
 You may inject them into any class, and use them. The general idiom they follow looks something like this
 
 ```
- final Consumer<byte[], ABEvent> consumer = kafkaConsumerBuilderFactoryBean.<byte[],ABEvent>
-                builder("nameSuppliedByUser") // name must be unique per machine. This works because of the deterministic setup
+ final Consumer<byte[], ABEvent> consumer = kafkaBuilderFactoryBean
+                .consumerBuilder("nameSuppliedByUser") // name must be unique per machine. This works because of the deterministic setup. Use producerBuilder for a producer.
                 .withBootstrapServers(Arrays.asList(brokerList().split(",")))
                 .withAutoCommit(false)
                 .withClientId(makeClientId(topicPartition))
