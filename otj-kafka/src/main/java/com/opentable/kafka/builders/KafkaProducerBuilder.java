@@ -223,6 +223,11 @@ public class KafkaProducerBuilder<K, V> {
      * @return kafka producer
      */
     public Producer<K, V> build() {
+        buildProperties();
+        return kafkaBaseBuilder.producer(keySerializer, valueSerializer);
+    }
+
+    Map<String, Object> buildProperties() {
         kafkaBaseBuilder.addProperty(ProducerConfig.PARTITIONER_CLASS_CONFIG, partitioner.getName());
         kafkaBaseBuilder.setupInterceptors(ProducerConfig.INTERCEPTOR_CLASSES_CONFIG, LoggingProducerInterceptor.class.getName());
         maxInfFlight.ifPresent(m -> kafkaBaseBuilder.addProperty(ProducerConfig.MAX_IN_FLIGHT_REQUESTS_PER_CONNECTION, m));
@@ -240,7 +245,7 @@ public class KafkaProducerBuilder<K, V> {
 
         // merge in common and seed properties
         kafkaBaseBuilder.finishBuild();
-        return kafkaBaseBuilder.producer(keySerializer, valueSerializer);
+        return kafkaBaseBuilder.getFinalProperties();
     }
 
     public enum AckType {

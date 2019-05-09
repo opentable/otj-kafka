@@ -220,7 +220,7 @@ public class KafkaConsumerBuilder<K, V>  {
         return this;
     }
 
-    public Consumer<K, V> build() {
+    Map<String, Object> buildProperties() {
         if (partitionStrategy != null) {
             kafkaBaseBuilder.addProperty(ConsumerConfig.PARTITION_ASSIGNMENT_STRATEGY_CONFIG, partitionStrategy.getName());
         }
@@ -240,6 +240,10 @@ public class KafkaConsumerBuilder<K, V>  {
         }
         // Merge in common and user supplied properties.
         kafkaBaseBuilder.finishBuild();
+        return kafkaBaseBuilder.getFinalProperties();
+    }
+    public Consumer<K, V> build() {
+        buildProperties();
         kafkaBaseBuilder.cantBeNull(ConsumerConfig.PARTITION_ASSIGNMENT_STRATEGY_CONFIG, "Partition assignment strategy can't be null");
         return kafkaBaseBuilder.consumer(keyDeserializerInstance, valueDeserializerInstance);
     }
