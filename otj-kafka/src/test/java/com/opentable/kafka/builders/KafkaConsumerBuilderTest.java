@@ -31,8 +31,6 @@ import org.apache.kafka.common.serialization.IntegerDeserializer;
 import org.apache.kafka.common.serialization.StringDeserializer;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Bean;
@@ -58,8 +56,6 @@ import com.opentable.service.ServiceInfo;
         "ot.kafka.consumer.testme.check.crcs=false"
 })
 public class KafkaConsumerBuilderTest {
-
-    private static final Logger LOG = LoggerFactory.getLogger(KafkaConsumerBuilderTest.class);
 
     @Inject
     private KafkaBuilderFactoryBean builderFactoryBean;
@@ -121,6 +117,17 @@ public class KafkaConsumerBuilderTest {
                 .withDeserializers(IntegerDeserializer.class, StringDeserializer.class)
                 .withAutoOffsetReset(AutoOffsetResetType.Latest)
                 .withSamplingRatePer10Seconds(3);
+    }
+
+    @Test
+    public void canBuildMultipleConsumersTest() {
+        KafkaConsumerBuilder<Integer, String> builder = getBuilder();
+        Consumer<Integer, String> p = builder
+                .build();
+        Consumer<Integer, String> p2 = builder
+                .build();
+        p.close();
+        p2.close();
     }
 
     @Configuration

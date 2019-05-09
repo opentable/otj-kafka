@@ -32,6 +32,7 @@
   </scm>
 
   <properties>
+    <!-- Open source requires JavaDocs -->
     <basepom.oss.skip-scala-doc>true</basepom.oss.skip-scala-doc>
     <basepom.check.skip-javadoc>false</basepom.check.skip-javadoc>
     <basepom.check.fail-javadoc>false</basepom.check.fail-javadoc>
@@ -45,6 +46,7 @@
 
   <dependencyManagement>
     <dependencies>
+      <!-- the usual multi module declarations -->
       <dependency>
         <groupId>com.opentable.components</groupId>
         <artifactId>otj-kafka</artifactId>
@@ -55,6 +57,7 @@
         <artifactId>otj-kafka-tests</artifactId>
         <version>${project.version}</version>
       </dependency>
+      <!-- used in otj-kafka-tests -->
       <dependency>
         <groupId>org.apache.curator</groupId>
         <artifactId>curator-test</artifactId>

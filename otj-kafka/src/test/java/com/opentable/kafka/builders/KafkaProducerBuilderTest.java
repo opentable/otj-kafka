@@ -106,7 +106,7 @@ public class KafkaProducerBuilderTest {
     }
 
     @Test
-    public void canBuildMultipleCondumersTest() {
+    public void canBuildMultipleProducersTest() {
         KafkaProducerBuilder<Integer, String> builder = getBuilder("testme");
         Producer<Integer, String> p = builder
             .build();
