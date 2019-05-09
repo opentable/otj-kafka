@@ -68,5 +68,6 @@
   <modules>
     <module>otj-kafka</module>
     <module>otj-kafka-tests</module>
+    <module>otj-kafka-mirrormaker</module>
   </modules>
 </project>
