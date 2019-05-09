@@ -1,5 +1,125 @@
 Kafka integrations and convenience libraries.
 
+Kafka Builders
+--------------
+
+We provide builders for KafkaConsumer and KafkaProducer.
+Why would you use them?
+
+* Spring friendly
+* Fluent API, to make most Kafka properties a little more readable and strongly typed
+* Integration with metrics - automatically forwards Kafka metrics to graphite
+* OTL logging - on a sampled basis.
+* Support for injecting raw properties via Spring configuration files.
+* Future support for embedded authentication methods to brokers.
+
+Usage:
+
+Add `@InjectKafkaBuilderBeans` to any Configuration class. You'll now have two beans in your context:
+
+* KafkaConsumerBuilderFactoryBean
+* KafkaProducerBuilderFactoryBean
+
+You may inject them into any class, and use them. The general idiom they follow looks something like this
+
+```
+ final Consumer<byte[], ABEvent> consumer = kafkaConsumerBuilderFactoryBean.<byte[],ABEvent>
+                builder("nameSuppliedByUser") // name must be unique per machine. This works because of the deterministic setup
+                .withBootstrapServers(Arrays.asList(brokerList().split(",")))
+                .withAutoCommit(false)
+                .withClientId(makeClientId(topicPartition))
+                .withGroupId(getKafkaGroupId())
+                .withAutoOffsetReset(autoOffsetResetMode.getType())
+                .withDeserializers(keyDeserializer, abEventDeserializer)
+                .build();
+                ;
+
+```
+
+This will build the Kafka producer/consumer using the following logic:
+
+* If there's any `ot.kafka.consumer|producer.nameSuppliedByUser` namespaced configuration properties, use these. They
+will take precedence over the fluent api
+* We preassign client-id in the bean as `name.(serviceInfo.name).(incrementingNumber)`. You may override it as shown above, if desired.
+* Add in any thing specified in the fluent api
+* Wire in metrics and logging. To disable these use `disableLogging()` and/or `disableMetrics()`. The logging only
+kicks in once per 10 seconds, but you may change this rate via `withLoggingSampleRate()` (for example setting to 10 will make it rate limit
+once per second, changing to 100 will have a rate limit of 10 per second, etc) - mind our logging cluster though!
+* Return the Kafka consumer/producer (we return the interface type Consumer/Producer instead of the implementations KafkaConsumer/KafkaProducer)
+
+The BuilderFactoryBean is thread safe, but the underlying Builder is NOT.
+
+**About Metrics**
+
+* We preset the root name space as `kafka.consumer|producer.(nameSuppliedByUser)`.
+* If you create multiple consumers and producers in an application, you need to supply stable, reasonable names, if
+you want to want to have stable metrics to dashboard and alert upon. A naive strategy of a simple auto incrementing
+number will only work if you build the Producer/consumers in a deterministic order.
+* You can override the namespace entirely by calling `withMetricRegistry(metricRegistry, prefix)`
+
+**About KafkaStreams**
+
+We do not yet support KafkaStreams, however the basic logging and metrics enhancements should work with them. Please
+contact ArchTeam to discuss.
+
+**About testing***
+
+See `otj-kafka-tests` discussion below.
+
+
+otj-kafka-tests
+--------------
+This module includes embedded versions of Kafka and Zookeeper, making tests simple and self contained.
+
+Here is a typical usage:
+
+
+```$xslt
+public class KafkaBrokerRuleTest {
+    private static final String TEST_TOPIC = "test-topic";
+    private static final String TEST_VALUE = "The quick brown fox jumps over the lazy dog.";
+
+    @Rule
+    public final EmbeddedKafkaRule kb = new EmbeddedKafkaBuilder()
+            .withTopics(TEST_TOPIC)
+            .rule();
+
+    @Test(timeout = 30000)
+    public void testKafkaRule() throws Exception {
+        EmbeddedKafkaBroker ekb = kb.getBroker();
+
+        try (KafkaProducer<String, String> producer = ekb.createProducer()) {
+            producer.send(new ProducerRecord<>(TEST_TOPIC, TEST_VALUE));
+        }
+
+        try (KafkaConsumer<String, String> consumer = ekb.createConsumer("test")) {
+            consumer.subscribe(Collections.singletonList(TEST_TOPIC));
+            ConsumerRecords<String, String> records = consumer.poll(Duration.ofSeconds(5));
+            assertEquals(1, records.count());
+            assertEquals(TEST_VALUE, records.iterator().next().value());
+        }
+    }
+}
+```
+
+Note that the rule can also be used to get the connection strings directly to be used in the Kafka Builders
+we have provided
+
+```$xslt
+    final EmbeddedKafkaBroker ekb = kb.getBroker();
+    final String connectionString = ekb.getKafkaBrokerConnect();
+    final Consumer<byte[], ABEvent> consumer = kafkaConsumerBuilderFactoryBean.<byte[],ABEvent>
+                    builder("nameSuppliedByUser") // name must be unique per machine. This works because of the deterministic setup
+                    .withBootstrapServers(Arrays.asList(connectionString))
+                    .withAutoCommit(false)
+                    .withClientId(makeClientId(topicPartition))
+                    .withGroupId(getKafkaGroupId())
+                    .withAutoOffsetReset(autoOffsetResetMode.getType())
+                    .withDeserializers(keyDeserializer, abEventDeserializer)
+                    .build();
+                    ;
+```
+
 Offset Metrics
 --------------
 
@@ -47,3 +167,19 @@ instance only.
 For more detail, see the extensive Javadoc documentation on the
 `OffsetMetrics` class itself, and the methods available to you on its
 builder.
+
+JSONSerde
+---------
+
+A Generic JSON serializer/deserializer using Jackson for Kafka
+
+LogProgressRestoreListener
+--------
+
+A StateRestoreListener for logging the progress of State rebuilds with KafkaStreams
+
+Miscellaneous
+-----
+* See the Partitions package and the Client Package. 
+* A few utilities and abstractions to do with PartitioningStrategies and with a basic MessageSink/dispatcher (mostly obviated by
+EDA). These are used in buzzsaw and ab-presto-service.

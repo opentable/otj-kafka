@@ -1,6 +1,34 @@
 otj-kafka changelog
 ===================
 
+3.2.0
+-----
+* Add spring factory bean KafkaBuilderFactoryBean
+ This you can normally inject into your context using `@InjectKafkaBuilderBeans`.
+
+The builder provides:
+* Fluent API for all common configuration settings, plus manual override by property.
+* Optional support for property file configuration, which takes precedence.
+* Optional (but wired by default) logging interceptors that log a sample of your producer/consumer
+traffic using a new standardized OTL. The default rate is 1 per every 10 seconds, but you can
+override this rate from the fluent API. You may also disable by calling noLogging() in the fluent api. You also can configure to log percent of the records.
+* Optional (but wired by default) metrics interceptors that wire up all of kafka's very extensive metrics
+and forward to graphite.
+
+Detailed instructions for usage are in the README.MD.
+
+* Move EmbeddedKafka and Embedded Zookeeper to otj-kafka-tests module. If you use these you may
+still access them via the following dependency declaration
+
+```$xslt
+<dependency>
+    <groupId>com.opentable.components</groupId>
+    <artifactId>otj-kafka-tests</artifactId>
+</dependency>
+```
+
+(probably scoped as test scope)
+
 3.1.3
 -----
 * Move test from otj-logging. This breaks a cyclic dependency.
@@ -93,7 +121,7 @@ If you want to use Kafka 1.x you need to use an older library version.
 2.2.0
 -----
 
-* added producer creator helper method for key serializer instance
+* added delegate creator helper method for key serializer instance
 
 2.1.0
 -----
