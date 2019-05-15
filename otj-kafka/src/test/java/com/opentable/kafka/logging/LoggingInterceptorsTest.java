@@ -98,6 +98,8 @@ public class LoggingInterceptorsTest {
         final KafkaProducerBuilder<K,V> builder =  builderFactoryBean.<K,V>producerBuilder("producer")
                 .withSerializers(keySer, valueSer)
                 .withProperty(ProducerConfig.LINGER_MS_CONFIG, "200")
+                // This tests whether we can turn off. It's minor, and indeed the tests fail, since many check for headers.
+               // .withProperty(LoggingInterceptorConfig.ENABLE_HEADER_PROPAGATION_CONFIG, false)
                 .disableMetrics();
         Map<String,Object> map = rw.getEkb().baseProducerMap();
         map.forEach(builder::withProperty);

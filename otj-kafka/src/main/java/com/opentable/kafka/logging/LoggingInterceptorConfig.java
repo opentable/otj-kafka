@@ -32,11 +32,16 @@ public class LoggingInterceptorConfig extends AbstractConfig {
     public static final String SAMPLE_RATE_TYPE_CONFIG = "ot.logging.sampler_type";
     public static final String DEFAULT_SAMPLE_RATE_TYPE = SamplerType.TimeBucket.value;
 
+    // Whether to stop header propagation
+    public static final String ENABLE_HEADER_PROPAGATION_CONFIG = "ot.logging.headers";
+
     private static final ConfigDef CONFIG = new ConfigDef()
         .define(SAMPLE_RATE_PCT_CONFIG, Type.INT, DEFAULT_SAMPLE_RATE_PCT, ConfigDef.Importance.LOW,
             "Logging limit rate per 10 seconds for time-bucket or percent of records for random sampler. Use a negative value to disable limiting (lots of logs!) ")
         .define(SAMPLE_RATE_TYPE_CONFIG, Type.STRING, DEFAULT_SAMPLE_RATE_TYPE, ConfigDef.Importance.LOW,
-            "Logging sampler type. Possible values: (random, time-bucket)");
+            "Logging sampler type. Possible values: (random, time-bucket)")
+         .define(ENABLE_HEADER_PROPAGATION_CONFIG, Type.BOOLEAN, "true",
+                 ConfigDef.Importance.LOW, "Whether to use headers for propagation");
 
     LoggingInterceptorConfig(Map<String, ?> originals) {
         super(CONFIG, originals);

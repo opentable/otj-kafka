@@ -38,7 +38,7 @@ public class LoggingProducerInterceptor implements ProducerInterceptor<Object, O
     private String interceptorClientId;
     private LoggingUtils loggingUtils;
     private LogSampler sampler;
-    private final boolean addHeaders = (System.currentTimeMillis() ==0); // eg false
+    private boolean addHeaders = false;
 
     public LoggingProducerInterceptor() { //NOPMD
         /* noargs needed for kafka */
@@ -49,6 +49,8 @@ public class LoggingProducerInterceptor implements ProducerInterceptor<Object, O
         if (addHeaders) {
             loggingUtils.addHeaders(record);
         }
+        // Determine tracing by either setting the header (or it exists), it doing a rate limited check, which
+        // isn't as "good", but avoids adding headers.
         final boolean loggingEnabled = addHeaders ? loggingUtils.setTracingHeader(sampler, record) : sampler.mark(record.topic());
         if (loggingEnabled) {
             loggingUtils.maybeLogProducer(LOG, interceptorClientId, record);
@@ -77,10 +79,14 @@ public class LoggingProducerInterceptor implements ProducerInterceptor<Object, O
     public void configure(Map<String, ?> config) {
         final LoggingInterceptorConfig conf = new LoggingInterceptorConfig(config);
         final String originalsClientId = (String) config.get(ProducerConfig.CLIENT_ID_CONFIG);
+        final Boolean enabledHeaders = (Boolean) config.get(LoggingInterceptorConfig.ENABLE_HEADER_PROPAGATION_CONFIG);
+        if (enabledHeaders == null || enabledHeaders) {
+            this.addHeaders = true;
+        }
         loggingUtils = getLoggingUtils(config);
         sampler = LogSampler.create(conf);
         this.interceptorClientId = (originalsClientId == null) ? "interceptor-producer-" + ClientIdGenerator.getInstance().nextPublisherId() : originalsClientId;
-        LOG.info("LoggingProducerInterceptor is configured for client: {}", interceptorClientId);
+        LOG.info("LoggingProducerInterceptor is configured for client: {}, {}", interceptorClientId, enabledHeaders);
     }
 
 }
