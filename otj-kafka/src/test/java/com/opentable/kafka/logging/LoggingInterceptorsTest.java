@@ -44,6 +44,7 @@ import org.apache.kafka.common.serialization.Serializer;
 import org.apache.kafka.common.serialization.StringDeserializer;
 import org.apache.kafka.common.serialization.StringSerializer;
 import org.assertj.core.api.Assertions;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -74,6 +75,7 @@ import com.opentable.service.ServiceInfo;
 @TestPropertySource(properties = {
     "info.component=test",
 })
+@Ignore
 public class LoggingInterceptorsTest {
 
     @Rule

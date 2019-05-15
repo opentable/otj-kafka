@@ -275,30 +275,23 @@ class LoggingUtils {
      * @param sampler Loh sampler
      * @param record record. Headers will be mutated.
      */
-    <K, V> void setTracingHeader(LogSampler sampler, ProducerRecord<Object, Object> record) {
+    <K, V> boolean setTracingHeader(LogSampler sampler, ProducerRecord<Object, Object> record) {
         final Headers headers  = record.headers();
         final String traceFlag = kn(OTKafkaHeaders.TRACE_FLAG);
         if (!headers.headers(traceFlag).iterator().hasNext()) {
             // If header not present, make decision our-self and set it if not rate limited
             if (sampler.mark(record.topic())) {
                 headers.add(traceFlag, TRUE);
+                return true;
             } else {
                 headers.add(traceFlag, FALSE);
+                return false;
             }
+        } else {
+            return true;
         }
     }
 
-    /**
-     * Determining whether the ProducerRecord should be logged at this point is simple - We look for the trace flag,
-     * and if it exists, we log
-     * @param record record
-     * @param <K> key
-     * @param <V> value
-     * @return true, if logging is needed.
-     */
-    private <K, V> boolean isLoggingNeeded(ProducerRecord<K, V> record) {
-        return isTraceFlagEnabled(record.headers());
-    }
 
     private <K, V> boolean isTraceFlagEnabled(Headers headers) {
         final String traceFlag = kn(OTKafkaHeaders.TRACE_FLAG);
@@ -319,12 +312,11 @@ class LoggingUtils {
      * @param <V> value
      */
     <K, V> void maybeLogProducer(Logger log, String clientId, ProducerRecord<K, V> record) {
-        if (isLoggingNeeded(record)) {
             final MsgV1 event = producerEvent(record, clientId);
             log.debug(event.log(),
                     "[Producer clientId={}] To:{}@{}, Headers:[{}], Message: {}",
                     clientId, record.topic(), record.partition(), formatHeaders(record.headers()), record.value());
-        }
+
     }
 
     /**

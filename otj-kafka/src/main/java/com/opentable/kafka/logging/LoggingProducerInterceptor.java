@@ -38,7 +38,7 @@ public class LoggingProducerInterceptor implements ProducerInterceptor<Object, O
     private String interceptorClientId;
     private LoggingUtils loggingUtils;
     private LogSampler sampler;
-
+    private final boolean addHeaders = (System.currentTimeMillis() ==0); // eg false
 
     public LoggingProducerInterceptor() { //NOPMD
         /* noargs needed for kafka */
@@ -46,9 +46,13 @@ public class LoggingProducerInterceptor implements ProducerInterceptor<Object, O
 
     @Override
     public ProducerRecord<Object, Object> onSend(ProducerRecord<Object, Object> record) {
-        loggingUtils.addHeaders(record);
-        loggingUtils.setTracingHeader(sampler, record);
-        loggingUtils.maybeLogProducer(LOG, interceptorClientId, record);
+        if (addHeaders) {
+            loggingUtils.addHeaders(record);
+        }
+        final boolean loggingEnabled = addHeaders ? loggingUtils.setTracingHeader(sampler, record) : sampler.mark(record.topic());
+        if (loggingEnabled) {
+            loggingUtils.maybeLogProducer(LOG, interceptorClientId, record);
+        }
         return record;
     }
 
