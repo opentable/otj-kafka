@@ -275,20 +275,37 @@ class LoggingUtils {
      * @param sampler Loh sampler
      * @param record record. Headers will be mutated.
      */
-    <K, V> boolean setTracingHeader(LogSampler sampler, ProducerRecord<Object, Object> record) {
+    <K, V> boolean setTracingHeader(LogSampler sampler, ProducerRecord<Object, Object> record, GenerateHeaders propagateHeaders) {
+        if (propagateHeaders == GenerateHeaders.NONE) {
+            // We aren't going to set the header, so whether we should log is just dependent on the rate limit
+            return sampler.mark(record.topic());
+        }
+        // GenerateHeaders therefore must be ALL or TRACE, so ok to add a trace header.
+        // Now, let's check if there's an existing trace flag
         final Headers headers  = record.headers();
         final String traceFlag = kn(OTKafkaHeaders.TRACE_FLAG);
-        if (!headers.headers(traceFlag).iterator().hasNext()) {
-            // If header not present, make decision our-self and set it if not rate limited
-            if (sampler.mark(record.topic())) {
-                headers.add(traceFlag, TRUE);
-                return true;
-            } else {
-                headers.add(traceFlag, FALSE);
-                return false;
-            }
-        } else {
+        final Header lastTraceHeaderIfAny = headers.lastHeader(traceFlag);
+        final boolean previouslySetByUser = lastTraceHeaderIfAny != null &&
+                Boolean.parseBoolean(new String(lastTraceHeaderIfAny.value(), StandardCharsets.UTF_8));
+
+        // Trace flag present and equal to true
+        if (previouslySetByUser) {
+            // There's a trace flag set already, let's log
             return true;
+        }
+
+        // Trace flag present and equal to false
+        if (lastTraceHeaderIfAny != null) {
+            return false;
+        }
+
+        // No trace flag currently present, depends on rate limit
+        if (sampler.mark(record.topic())) {
+            headers.add(traceFlag, TRUE);
+            return true;
+        } else {
+            headers.add(traceFlag, FALSE);
+            return false;
         }
     }
 
@@ -311,7 +328,7 @@ class LoggingUtils {
      * @param <K> key
      * @param <V> value
      */
-    <K, V> void maybeLogProducer(Logger log, String clientId, ProducerRecord<K, V> record) {
+    <K, V> void logProducer(Logger log, String clientId, ProducerRecord<K, V> record) {
             final MsgV1 event = producerEvent(record, clientId);
             log.debug(event.log(),
                     "[Producer clientId={}] To:{}@{}, Headers:[{}], Message: {}",

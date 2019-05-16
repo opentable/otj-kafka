@@ -40,7 +40,7 @@ public class LoggingInterceptorConfig extends AbstractConfig {
             "Logging limit rate per 10 seconds for time-bucket or percent of records for random sampler. Use a negative value to disable limiting (lots of logs!) ")
         .define(SAMPLE_RATE_TYPE_CONFIG, Type.STRING, DEFAULT_SAMPLE_RATE_TYPE, ConfigDef.Importance.LOW,
             "Logging sampler type. Possible values: (random, time-bucket)")
-         .define(ENABLE_HEADER_PROPAGATION_CONFIG, Type.BOOLEAN, "true",
+         .define(ENABLE_HEADER_PROPAGATION_CONFIG, Type.STRING, GenerateHeaders.ALL.name(),
                  ConfigDef.Importance.LOW, "Whether to use headers for propagation");
 
     LoggingInterceptorConfig(Map<String, ?> originals) {
