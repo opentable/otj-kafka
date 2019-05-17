@@ -249,7 +249,6 @@ class LoggingUtils {
         setKafkaHeader(headers, OTKafkaHeaders.FOREST_SPANID, fullSpanId);
         setKafkaHeader(headers, OTKafkaHeaders.PER_REQUEST_SPAN_ID, currentSpanId);
         setKafkaHeader(headers, OTKafkaHeaders.PARENT_SPAN_ID, previousSpanId);
-        toMDC(headers, OTKafkaHeaders.PARENT_SPAN_ID.getKafkaName(), OTKafkaHeaders.PARENT_SPAN_ID.getKafkaName());
         setKafkaHeader(headers, OTKafkaHeaders.REFERRING_SERVICE, environmentProvider.getReferringService());
         setKafkaHeader(headers, OTKafkaHeaders.REFERRING_HOST, environmentProvider.getReferringHost());
         setKafkaHeader(headers, OTKafkaHeaders.REFERRING_INSTANCE_NO, environmentProvider.getReferringInstanceNumber());
