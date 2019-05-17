@@ -187,10 +187,9 @@ class LoggingUtils {
             .kafkaGroupId(groupId)
             .kafkaClientId(clientId)
             .kafkaRecordKeySize(record.serializedKeySize())
-            .kafkaRecordKey(String.valueOf(record.key()))
+       //     .kafkaRecordKey(String.valueOf(record.key()))
             .kafkaRecordValueSize(record.serializedValueSize())
-                // ObjectMApper to string
-            .kafkaRecordValue(String.valueOf(record.value()))
+         //   .kafkaRecordValue(String.valueOf(record.value()))
             .kafkaRecordTimestamp(record.timestamp())
             .kafkaRecordTimestampType(record.timestampType() == null ? TimestampType.NO_TIMESTAMP_TYPE.name : record.timestampType().name)
             .build();
