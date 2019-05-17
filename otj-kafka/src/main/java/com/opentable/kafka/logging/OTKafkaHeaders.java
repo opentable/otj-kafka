@@ -31,7 +31,10 @@ public enum OTKafkaHeaders {
     REQUEST_ID(ConservedHeader.REQUEST_ID.getLogName(), ConservedHeader.REQUEST_ID),
     TRACE_FLAG("ot-kafkalibrary-trace-flag"),
     ENV("ot-kafkalibrary-env"),
-    ENV_FLAVOR("ot-kafkalibrary-env-flavor")
+    ENV_FLAVOR("ot-kafkalibrary-env-flavor"),
+    FOREST_SPANID("ot-kafkalibrary-forest-spanid"),
+    PER_REQUEST_SPAN_ID("ot-kafkalibrary-per-request-spanid"),
+    PARENT_SPAN_ID("ot-kafkalibrary-parent-spanid")
     ;
 
     // The namespacing logic is as follows
