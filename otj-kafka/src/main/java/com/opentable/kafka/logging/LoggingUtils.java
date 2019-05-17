@@ -189,6 +189,7 @@ class LoggingUtils {
             .kafkaRecordKeySize(record.serializedKeySize())
             .kafkaRecordKey(String.valueOf(record.key()))
             .kafkaRecordValueSize(record.serializedValueSize())
+                // ObjectMApper to string
             .kafkaRecordValue(String.valueOf(record.value()))
             .kafkaRecordTimestamp(record.timestamp())
             .kafkaRecordTimestampType(record.timestampType() == null ? TimestampType.NO_TIMESTAMP_TYPE.name : record.timestampType().name)
@@ -218,6 +219,8 @@ class LoggingUtils {
      */
     private String formatHeaders(Headers headers) {
         return Arrays.stream(headers.toArray())
+            // Don't include items that we know go in the otl
+            .filter(t -> !OTKafkaHeaders.DEFINED_HEADERS.contains(t.key()))
             .map(h -> String.format("%s=%s", h.key(), new String(h.value(), CHARSET)))
             .collect(Collectors.joining(", "));
     }
@@ -331,8 +334,8 @@ class LoggingUtils {
     <K, V> void logProducer(Logger log, String clientId, ProducerRecord<K, V> record) {
             final MsgV1 event = producerEvent(record, clientId);
             log.debug(event.log(),
-                    "[Producer clientId={}] To:{}@{}, Headers:[{}], Message: {}",
-                    clientId, record.topic(), record.partition(), formatHeaders(record.headers()), record.value());
+                    "Producer clientId={}] Headers: {}",
+                    clientId, formatHeaders(record.headers()));
 
     }
 
@@ -374,8 +377,8 @@ class LoggingUtils {
         if (isLoggingNeeded(record, sampler)) {
             final MsgV1 event = consumerEvent(record, groupId, clientId);
             log.debug(event.log(),
-                    "[Consumer clientId={}, groupId={}] From:{}@{}, Headers:[{}], Message: {}",
-                    clientId, groupId, record.topic(), record.partition(), formatHeaders(record.headers()), record.value());
+                    "Consumer clientId={}, groupId={} Headers: {}",
+                    clientId, groupId, formatHeaders(record.headers()));
         }
     }
 

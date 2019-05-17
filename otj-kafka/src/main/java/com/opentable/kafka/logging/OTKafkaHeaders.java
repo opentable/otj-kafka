@@ -13,7 +13,11 @@
  */
 package com.opentable.kafka.logging;
 
+import java.util.Arrays;
 import java.util.Optional;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
 
 import com.opentable.conservedheaders.ConservedHeader;
 
@@ -55,4 +59,12 @@ public enum OTKafkaHeaders {
     public Optional<ConservedHeader> getConservedHeader() {
         return conservedHeader;
     }
+
+    public static final Set<String> DEFINED_HEADERS = ConcurrentHashMap.newKeySet();
+
+    static {
+        // Add the OTKafkaHeaders
+        DEFINED_HEADERS.addAll(Arrays.stream(OTKafkaHeaders.values()).map(OTKafkaHeaders::getKafkaName).collect(Collectors.toSet()));
+    }
+
 }
