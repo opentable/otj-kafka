@@ -304,7 +304,7 @@ class LoggingUtils {
      * This checks if the tracing flag is on. Perhaps someone set it manually?
      * Otherwise it is set if the log limit has not been reached.
      * We'll use this tracing flag to determine logging
-     * @param sampler Loh sampler
+     * @param sampler Log sampler
      * @param record record. Headers will be mutated.
      */
     <K, V> boolean setTracingHeader(LogSampler sampler, ProducerRecord<Object, Object> record, GenerateHeaders propagateHeaders) {
