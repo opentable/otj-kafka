@@ -131,9 +131,12 @@ class LoggingUtils {
                 .otEnvFlavor(headers.map(h -> h.lastHeader((kn(OTKafkaHeaders.ENV_FLAVOR)))).map(Header::value).map(String::new).orElse(null))
                 .instanceNo(headers.map(h -> h.lastHeader((kn(OTKafkaHeaders.REFERRING_INSTANCE_NO))))
                         .map(Header::value).map(String::new).map(this::parse).orElse(null))
-
-
-
+                .otParentSpanId(headers.map(h -> h.lastHeader((kn(OTKafkaHeaders.PARENT_SPAN_ID))))
+                        .map(Header::value).map(String::new).orElse(null))
+                .otSpanId(headers.map(h -> h.lastHeader((kn(OTKafkaHeaders.SPAN_ID))))
+                        .map(Header::value).map(String::new).orElse(UUID.randomUUID().toString())) // not nullable
+                .otTraceId(headers.map(h -> h.lastHeader((kn(OTKafkaHeaders.TRACE_ID))))
+                        .map(Header::value).map(String::new).orElse(UUID.randomUUID().toString())) // not nullable
                 ;
     }
 

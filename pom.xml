@@ -37,6 +37,8 @@
     <basepom.check.skip-javadoc>false</basepom.check.skip-javadoc>
     <basepom.check.fail-javadoc>false</basepom.check.fail-javadoc>
     <dep.curator.version>2.13.0</dep.curator.version>
+    <!-- Get otl merged before commit -->
+    <dep.otj-otl.version>0.8.23-SNAPSHOT</dep.otj-otl.version>
   </properties>
 
   <groupId>com.opentable.components</groupId>
