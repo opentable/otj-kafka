@@ -254,13 +254,13 @@ class LoggingUtils {
          * It is INCORRECT to propagate via the MDC - Opentracing uses its own internal context (threadlocal or reactive)
          */
         final String traceId = getCurrentTraceId();
-        // Just this span
+        // Just this span - always generated as new.
         final String currentSpanId = UUID.randomUUID().toString();
-        // Parent
-        final String parentSpanId = getParentSpanId();
+        // Parent (which is optional in OT standard, since you might not have a parent)
+        final Optional<String> parentSpanId = getParentSpanId();
         setKafkaHeader(headers, OTKafkaHeaders.TRACE_ID, traceId);
         setKafkaHeader(headers, OTKafkaHeaders.SPAN_ID, currentSpanId);
-        setKafkaHeader(headers, OTKafkaHeaders.PARENT_SPAN_ID, parentSpanId);
+        parentSpanId.ifPresent(p -> setKafkaHeader(headers, OTKafkaHeaders.PARENT_SPAN_ID, p));
         setKafkaHeader(headers, OTKafkaHeaders.REFERRING_SERVICE, environmentProvider.getReferringService());
         setKafkaHeader(headers, OTKafkaHeaders.REFERRING_HOST, environmentProvider.getReferringHost());
         setKafkaHeader(headers, OTKafkaHeaders.REFERRING_INSTANCE_NO, environmentProvider.getReferringInstanceNumber());
@@ -268,12 +268,20 @@ class LoggingUtils {
         setKafkaHeader(headers, OTKafkaHeaders.ENV_FLAVOR, environmentProvider.getEnvironmentFlavor());
     }
 
+    /**
+     * Return current trace Id
+     * @return traceId, currently instantiated in constructed as random UUID
+     */
     private String getCurrentTraceId() {
         return this.traceId;
     }
 
-    private String getParentSpanId() {
-        return null;
+    /**
+     * Return current parent spanId
+     * @return optional, currently always empry
+     */
+    private Optional<String> getParentSpanId() {
+        return Optional.empty();
     }
 
     /**
@@ -285,6 +293,18 @@ class LoggingUtils {
     private void setKafkaHeader(Headers headers, OTKafkaHeaders headerName, String value) {
         if (value != null && headers != null && headerName != null) {
             headers.add(headerName.getKafkaName(), value.getBytes(CHARSET));
+        }
+    }
+
+    /**
+     * Set the header only if the value isn't null
+     * @param headers headers
+     * @param headerName headername
+     * @param value value in byte[]
+     */
+    private void setKafkaHeader(Headers headers, OTKafkaHeaders headerName, byte[] value) {
+        if (value != null && headers != null && headerName != null) {
+            headers.add(headerName.getKafkaName(), value);
         }
     }
 
@@ -317,6 +337,7 @@ class LoggingUtils {
         final Headers headers  = record.headers();
         final String traceFlag = kn(OTKafkaHeaders.TRACE_FLAG);
         final Header lastTraceHeaderIfAny = headers.lastHeader(traceFlag);
+        // Will be true if and only if the header existed and was set to true
         final boolean previouslySetByUser = lastTraceHeaderIfAny != null &&
                 Boolean.parseBoolean(new String(lastTraceHeaderIfAny.value(), StandardCharsets.UTF_8));
 
@@ -333,10 +354,10 @@ class LoggingUtils {
 
         // No trace flag currently present, depends on rate limit
         if (sampler.mark(record.topic())) {
-            headers.add(traceFlag, TRUE);
+            setKafkaHeader(headers,  OTKafkaHeaders.TRACE_FLAG, TRUE);
             return true;
         } else {
-            headers.add(traceFlag, FALSE);
+            setKafkaHeader(headers,  OTKafkaHeaders.TRACE_FLAG, FALSE);
             return false;
         }
     }

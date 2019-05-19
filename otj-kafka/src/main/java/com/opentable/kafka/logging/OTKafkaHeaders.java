@@ -14,7 +14,6 @@
 package com.opentable.kafka.logging;
 
 import java.util.Arrays;
-import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
@@ -22,45 +21,32 @@ import java.util.stream.Collectors;
 import com.opentable.conservedheaders.ConservedHeader;
 
 /**
- * Represents the names of various headers in Kafka. Ones marked appropriately map to a conserved header
+ * Represents the names of various headers in Kafka.
+ * These are namespaced to avoid collisions, except for request Id
  */
 public enum OTKafkaHeaders {
+
     REFERRING_HOST("ot-kafkalibrary-referring-host"),
     REFERRING_INSTANCE_NO("ot-kafkalibrary-referring-instance-no"),
     REFERRING_SERVICE("ot-kafkalibrary-referring-service"),
-    REQUEST_ID(ConservedHeader.REQUEST_ID.getLogName(), ConservedHeader.REQUEST_ID),
+    REQUEST_ID(ConservedHeader.REQUEST_ID.getLogName()),
     TRACE_FLAG("ot-kafkalibrary-trace-flag"),
     ENV("ot-kafkalibrary-env"),
     ENV_FLAVOR("ot-kafkalibrary-env-flavor"),
-    TRACE_ID("X-otkafkalibrary-traceid"),
-    SPAN_ID("x-otkafkalibrary-spanid"),
-    PARENT_SPAN_ID("x-otkafkalibrary-parent-spanid")
+    TRACE_ID("ot-kafkalibrary-ot-traceid"),
+    SPAN_ID("ot-kafkalibrary-ot-spanid"),
+    PARENT_SPAN_ID("ot-kafkalibrary-ot-parent-spanid")
     ;
 
-    // The namespacing logic is as follows
-    // 1. All library usage (this library or others) preface with ot-
-    // 2. Then the library name (kafkalibrary in this case)
-    // 3. Then whatever you want
-    // 4. This helps prevent collision
     private String kafkaName;
-    @SuppressWarnings("OptionalUsedAsFieldOrParameterType")
-    private Optional<ConservedHeader> conservedHeader;
+
 
     OTKafkaHeaders(String kafkaName) {
-        this(kafkaName, null);
-    }
-
-    OTKafkaHeaders(String kafkaName, ConservedHeader conservedHeaderName) {
         this.kafkaName = kafkaName;
-        this.conservedHeader = Optional.ofNullable(conservedHeaderName);
     }
 
     public String getKafkaName() {
         return kafkaName;
-    }
-
-    public Optional<ConservedHeader> getConservedHeader() {
-        return conservedHeader;
     }
 
     public static final Set<String> DEFINED_HEADERS = ConcurrentHashMap.newKeySet();
