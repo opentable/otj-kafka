@@ -74,7 +74,7 @@ public class EmbeddedKafkaBroker implements Closeable
 
     private Path stateDir;
 
-    protected EmbeddedKafkaBroker(
+    public EmbeddedKafkaBroker(
             final List<String> topicsToCreate,
             final boolean autoCreateTopics,
             final int nPartitions) {
