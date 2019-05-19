@@ -32,9 +32,9 @@ public enum OTKafkaHeaders {
     TRACE_FLAG("ot-kafkalibrary-trace-flag"),
     ENV("ot-kafkalibrary-env"),
     ENV_FLAVOR("ot-kafkalibrary-env-flavor"),
-    FOREST_SPANID("ot-kafkalibrary-forest-spanid"),
-    PER_REQUEST_SPAN_ID("ot-kafkalibrary-per-request-spanid"),
-    PARENT_SPAN_ID("ot-kafkalibrary-parent-spanid")
+    TRACE_ID("X-otkafkalibrary-traceid"),
+    SPAN_ID("x-otkafkalibrary-spanid"),
+    PARENT_SPAN_ID("x-otkafkalibrary-parent-spanid")
     ;
 
     // The namespacing logic is as follows

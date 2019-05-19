@@ -71,6 +71,8 @@ class LoggingUtils {
     private final String javaVersion;
     private final String os;
     private final Bucket errLogging;
+    // See comments under addHeader - TODO: integrate with Opentracing context
+    private final String traceId = UUID.randomUUID().toString();
 
     LoggingUtils(EnvironmentProvider environmentProvider) {
         this.environmentProvider = environmentProvider;
@@ -239,16 +241,19 @@ class LoggingUtils {
                 headers.add(header.getLogName(), getHeaderValue(header).getBytes(CHARSET));
             }
         });
-        // Get or Create the "full forest id"
-        final String fullSpanId = getHeaderValueFromMDC(OTKafkaHeaders.FOREST_SPANID, UUID.randomUUID().toString());
-        toMDC(headers, OTKafkaHeaders.FOREST_SPANID.getKafkaName(), fullSpanId);
+        /*
+         * Note: Currently the traceId is generated at instantiation and parentSpanId is always null.
+         * This is because UNTIL we connect to OpenTracing's Context, we cannot create and propagate correctly.
+         * It is INCORRECT to propagate via the MDC - Opentracing uses its own internal context (threadlocal or reactive)
+         */
+        final String traceId = getCurrentTraceId();
         // Just this span
         final String currentSpanId = UUID.randomUUID().toString();
         // Parent
-        final String previousSpanId = getHeaderValueFromMDC(OTKafkaHeaders.PARENT_SPAN_ID, fullSpanId);
-        setKafkaHeader(headers, OTKafkaHeaders.FOREST_SPANID, fullSpanId);
-        setKafkaHeader(headers, OTKafkaHeaders.PER_REQUEST_SPAN_ID, currentSpanId);
-        setKafkaHeader(headers, OTKafkaHeaders.PARENT_SPAN_ID, previousSpanId);
+        final String parentSpanId = getParentSpanId();
+        setKafkaHeader(headers, OTKafkaHeaders.TRACE_ID, traceId);
+        setKafkaHeader(headers, OTKafkaHeaders.SPAN_ID, currentSpanId);
+        setKafkaHeader(headers, OTKafkaHeaders.PARENT_SPAN_ID, parentSpanId);
         setKafkaHeader(headers, OTKafkaHeaders.REFERRING_SERVICE, environmentProvider.getReferringService());
         setKafkaHeader(headers, OTKafkaHeaders.REFERRING_HOST, environmentProvider.getReferringHost());
         setKafkaHeader(headers, OTKafkaHeaders.REFERRING_INSTANCE_NO, environmentProvider.getReferringInstanceNumber());
@@ -256,8 +261,12 @@ class LoggingUtils {
         setKafkaHeader(headers, OTKafkaHeaders.ENV_FLAVOR, environmentProvider.getEnvironmentFlavor());
     }
 
-    private String getHeaderValueFromMDC(final OTKafkaHeaders key, String defaultIfAbsent) {
-        return MDC.get(key.getKafkaName()) == null ? defaultIfAbsent : MDC.get(key.getKafkaName());
+    private String getCurrentTraceId() {
+        return this.traceId;
+    }
+
+    private String getParentSpanId() {
+        return null;
     }
 
     /**
@@ -389,24 +398,10 @@ class LoggingUtils {
     <K, V> void maybeLogConsumer(Logger log, String clientId, String groupId, LogSampler sampler, ConsumerRecord<K, V> record) {
         if (isLoggingNeeded(record, sampler)) {
             final MsgV1 event = consumerEvent(record, groupId, clientId);
-            toMDC(record.headers());
             log.debug(event.log(),
                     "Consumer clientId={}, groupId={} Headers: {}",
                     clientId, groupId, formatHeaders(record.headers()));
         }
-    }
-
-    private <K, V> void toMDC(final Headers headers) {
-        // Propagate forest
-        toMDC(headers, OTKafkaHeaders.FOREST_SPANID.getKafkaName(), OTKafkaHeaders.FOREST_SPANID.getKafkaName());
-        // Current Span becomes the parent.
-        toMDC(headers, OTKafkaHeaders.PER_REQUEST_SPAN_ID.getKafkaName(), OTKafkaHeaders.PARENT_SPAN_ID.getKafkaName());
-    }
-
-    private void toMDC(final Headers headers, final String sourceKey, final String destinationKey) {
-        final Optional<String> value = headers.lastHeader(sourceKey) == null ? Optional.empty() :
-                Optional.of(new String(headers.lastHeader(sourceKey).value(), StandardCharsets.UTF_8));
-        value.ifPresent(v -> MDC.put(destinationKey, v));
     }
 
     /**

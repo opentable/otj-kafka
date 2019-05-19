@@ -70,6 +70,11 @@ public class KafkaProducerBuilder<K, V> {
         return this;
     }
 
+    public KafkaProducerBuilder<K,V> withProperties(final Map<String, Object> config) {
+        this.kafkaBaseBuilder.addProperties(config);
+        return this;
+    }
+
     public KafkaProducerBuilder<K, V> removeProperty(String key) {
         kafkaBaseBuilder.removeProperty(key);
         return this;

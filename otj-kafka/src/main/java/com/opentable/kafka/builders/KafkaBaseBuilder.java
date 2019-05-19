@@ -233,4 +233,7 @@ class KafkaBaseBuilder {
         return finalProperties;
     }
 
+    void addProperties(final Map<String, Object> config) {
+        config.forEach(this::addProperty);
+    }
 }
