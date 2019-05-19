@@ -3,9 +3,19 @@ otj-kafka changelog
 
 3.2.1
 -----
-* Move LogRestoreListener to new module `otj-kafka-streams`
+* Move LogRestoreListener to new module `otj-kafka-streams`. If you are using this, you'll need
+to pull in the dependency declaration
+
+```$xslt
+<dependency>
+    <groupId>com.opentable.components</groupId>
+    <artifactId>otj-kafka-streams</artifactId>
+</dependency>
+```
+
 * Add experimental support for Kafka Streams via builder. This is a work in progress.
 * Rearrange logging logic to not overlog, and add to otl the opentracing headers.
+* Add `otj-kafka-mirrormaker` module with a utility for dynamically changing topic names when mirroring them.
 
 3.2.0
 -----
