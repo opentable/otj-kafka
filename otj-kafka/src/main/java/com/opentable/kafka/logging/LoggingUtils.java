@@ -137,6 +137,10 @@ class LoggingUtils {
                         .map(Header::value).map(String::new).orElse(UUID.randomUUID().toString())) // not nullable
                 .otTraceId(headers.map(h -> h.lastHeader((kn(OTKafkaHeaders.TRACE_ID))))
                         .map(Header::value).map(String::new).orElse(UUID.randomUUID().toString())) // not nullable
+                // See https://github.com/apache/incubator-zipkin-b3-propagation - set to 1 if and only if trace is on
+                .otFlags(headers.map(h -> h.lastHeader((kn(OTKafkaHeaders.TRACE_FLAG))))
+                        .map(Header::value).map(String::new).filter("true"::equals).map(t -> "1").orElse(null))
+
                 ;
     }
 
