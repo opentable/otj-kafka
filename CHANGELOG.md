@@ -33,7 +33,7 @@ and forward to graphite.
 
 Detailed instructions for usage are in the README.MD.
 
-* Move EmbeddedKafka and Embedded Zookeeper to `otj-kafka-tests module`. If you use these you may
+* Move EmbeddedKafka and Embedded Zookeeper to `otj-kafka-tests` module. If you use these you may
 still access them via the following dependency declaration
 
 ```$xslt
