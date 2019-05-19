@@ -52,6 +52,11 @@
         <artifactId>otj-kafka</artifactId>
         <version>${project.version}</version>
       </dependency>
+      <dependency>
+        <groupId>com.opentable.components</groupId>
+        <artifactId>otj-kafka-streams</artifactId>
+        <version>${project.version}</version>
+      </dependency>
     <dependency>
         <groupId>com.opentable.components</groupId>
         <artifactId>otj-kafka-tests</artifactId>
@@ -67,6 +72,7 @@
   </dependencyManagement>
   <modules>
     <module>otj-kafka</module>
+    <module>otj-kafka-streams</module>
     <module>otj-kafka-tests</module>
     <module>otj-kafka-mirrormaker</module>
   </modules>

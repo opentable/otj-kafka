@@ -63,13 +63,6 @@
       <artifactId>kafka-clients</artifactId>
     </dependency>
 
-    <!-- Needed for the ProgressListener -->
-    <dependency>
-      <groupId>org.apache.kafka</groupId>
-      <artifactId>kafka-streams</artifactId>
-      <optional>true</optional>
-    </dependency>
-
     <dependency>
       <groupId>javax.annotation</groupId>
       <artifactId>javax.annotation-api</artifactId>

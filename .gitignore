@@ -4,3 +4,5 @@
 otj-kafka-mirrormaker/target/
 otj-kafka-tests/target/
 otj-kafka/target/
+*.html
+
