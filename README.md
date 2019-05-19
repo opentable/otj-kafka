@@ -1,7 +1,7 @@
 Kafka integrations and convenience libraries.
 
 Kafka Builders
---------------
+====
 
 We provide builders for KafkaConsumer and KafkaProducer.
 Why would you use them?
@@ -59,8 +59,8 @@ number will only work if you build the Producer/consumers in a deterministic ord
 
 **About KafkaStreams**
 
-We do not yet support KafkaStreams, however the basic logging and metrics enhancements should work with them. Please
-contact ArchTeam to discuss.
+We do not yet support KafkaStreams, however a WIP implementations is in the
+`otj-kafka-streams` module.
 
 **About testing***
 
@@ -68,7 +68,7 @@ See `otj-kafka-tests` discussion below.
 
 
 otj-kafka-tests
---------------
+====
 This module includes embedded versions of Kafka and Zookeeper, making tests simple and self contained.
 
 Here is a typical usage:
@@ -119,6 +119,18 @@ we have provided
                     .build();
                     ;
 ```
+
+otj-kafka-streams
+===
+
+LogProgressRestoreListener
+--------
+
+A StateRestoreListener for logging the progress of State rebuilds with KafkaStreams
+
+
+Other Tools
+====
 
 Offset Metrics
 --------------
@@ -171,12 +183,13 @@ builder.
 JSONSerde
 ---------
 
-A Generic JSON serializer/deserializer using Jackson for Kafka
+A Generic JSON serializer/deserializer using Jackson for Kafka. 
+This is convenient for the common use case that JSON is being
+serialized/deserialized in Kafka.
 
-LogProgressRestoreListener
---------
-
-A StateRestoreListener for logging the progress of State rebuilds with KafkaStreams
+Typical usage is 
+* `JsonSerde jsonSerde = JSONSerde.forType(objectMapper, class<T>)`. This will
+return an object that implements Serializer, Deserializer, and Serde interfaces.
 
 Miscellaneous
 -----
