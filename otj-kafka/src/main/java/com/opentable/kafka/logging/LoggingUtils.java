@@ -135,9 +135,11 @@ class LoggingUtils {
                 .otParentSpanId(headers.map(h -> h.lastHeader((kn(OTKafkaHeaders.PARENT_SPAN_ID))))
                         .map(Header::value).map(String::new).orElse(null))
                 .otSpanId(headers.map(h -> h.lastHeader((kn(OTKafkaHeaders.SPAN_ID))))
-                        .map(Header::value).map(String::new).orElse(UUID.randomUUID().toString())) // not nullable
+                        .map(Header::value).map(String::new).orElse(opentracingSpanId())) // not nullable
                 .otTraceId(headers.map(h -> h.lastHeader((kn(OTKafkaHeaders.TRACE_ID))))
-                        .map(Header::value).map(String::new).orElse(UUID.randomUUID().toString())) // not nullable
+                        .map(Header::value).map(String::new).orElse(opentracingTraceId())) // not nullable
+                .otTraceId(headers.map(h -> h.lastHeader((kn(OTKafkaHeaders.PARENT_INHERITANCE_TYPE))))
+                        .map(Header::value).map(String::new).orElse(null)) // not current set, and nullable
                 // See https://github.com/apache/incubator-zipkin-b3-propagation - set to 1 if and only if trace is on
                 .otFlags(headers.map(h -> h.lastHeader((kn(OTKafkaHeaders.TRACE_FLAG))))
                         .map(Header::value).map(String::new).filter("true"::equals).map(t -> "1").orElse(null))
