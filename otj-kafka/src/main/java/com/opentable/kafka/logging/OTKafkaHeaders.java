@@ -35,7 +35,8 @@ public enum OTKafkaHeaders {
     ENV_FLAVOR("ot-kafkalibrary-env-flavor"),
     TRACE_ID("ot-kafkalibrary-ot-traceid"),
     SPAN_ID("ot-kafkalibrary-ot-spanid"),
-    PARENT_SPAN_ID("ot-kafkalibrary-ot-parent-spanid")
+    PARENT_SPAN_ID("ot-kafkalibrary-ot-parent-spanid"),
+    PARENT_INHERITANCE_TYPE("ot-kafkalibrary-it-parent-inheritance")
     ;
 
     private String kafkaName;

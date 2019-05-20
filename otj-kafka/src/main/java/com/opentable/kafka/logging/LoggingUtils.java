@@ -261,6 +261,7 @@ class LoggingUtils {
         // Just this span - always generated as new.
         final String currentSpanId = opentracingSpanId();
         // Parent (which is optional in OT standard, since you might not have a parent)
+        // This is currently always null, once added, parent inheritance needs to be added too.
         final Optional<String> parentSpanId = getParentSpanId();
         setKafkaHeader(headers, OTKafkaHeaders.TRACE_ID, traceId);
         setKafkaHeader(headers, OTKafkaHeaders.SPAN_ID, currentSpanId);
