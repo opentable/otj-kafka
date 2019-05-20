@@ -228,7 +228,9 @@ class LoggingUtils {
     private String formatHeaders(Headers headers) {
         return Arrays.stream(headers.toArray())
             // Don't include items that we know go in the otl
-            .filter(t -> !OTKafkaHeaders.DEFINED_HEADERS.contains(t.key()))
+            // Effectively this reduces the logged set to just the conserved headers (minus requestId)
+            // and any user set headers. All others are mirrored in the OTL
+            .filter(t -> !OTKafkaHeaders.isDefinedHeader(t.key()))
             .map(h -> String.format("%s=%s", h.key(), new String(h.value(), CHARSET)))
             .collect(Collectors.joining(", "));
     }
@@ -242,7 +244,8 @@ class LoggingUtils {
      * @param <V> value
      */
     <K, V> void addHeaders(ProducerRecord<K, V> record) {
-          final Headers headers = record.headers();
+        // Copy conserved headers over. We keep their names the same here.
+        final Headers headers = record.headers();
         Arrays.asList(ConservedHeader.values()).forEach((header) -> {
             if (getHeaderValue(header) != null) {
                 headers.add(header.getLogName(), getHeaderValue(header).getBytes(CHARSET));

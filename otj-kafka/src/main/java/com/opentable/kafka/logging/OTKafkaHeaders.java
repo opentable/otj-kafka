@@ -49,7 +49,11 @@ public enum OTKafkaHeaders {
         return kafkaName;
     }
 
-    public static final Set<String> DEFINED_HEADERS = ConcurrentHashMap.newKeySet();
+    private static final Set<String> DEFINED_HEADERS = ConcurrentHashMap.newKeySet();
+
+    public static boolean isDefinedHeader(String key) {
+        return DEFINED_HEADERS.contains(key);
+    }
 
     static {
         // Add the OTKafkaHeaders
