@@ -22,6 +22,7 @@ import java.util.Arrays;
 import java.util.Optional;
 import java.util.Properties;
 import java.util.UUID;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
@@ -72,7 +73,7 @@ class LoggingUtils {
     private final String os;
     private final Bucket errLogging;
     // See comments under addHeader - TODO: integrate with Opentracing context
-    private final String traceId = opentracingId();
+    private final String traceId = opentracingTraceId();
 
     LoggingUtils(EnvironmentProvider environmentProvider) {
         this.environmentProvider = environmentProvider;
@@ -258,7 +259,7 @@ class LoggingUtils {
          */
         final String traceId = getCurrentTraceId();
         // Just this span - always generated as new.
-        final String currentSpanId = opentracingId();
+        final String currentSpanId = opentracingSpanId();
         // Parent (which is optional in OT standard, since you might not have a parent)
         final Optional<String> parentSpanId = getParentSpanId();
         setKafkaHeader(headers, OTKafkaHeaders.TRACE_ID, traceId);
@@ -456,8 +457,12 @@ class LoggingUtils {
         return UUID.randomUUID();
     }
 
-    private String opentracingId() {
+    private String opentracingTraceId() {
         return UUID.randomUUID().toString().replaceAll("-", "");
+    }
+
+    private String opentracingSpanId() {
+        return Long.toHexString(ThreadLocalRandom.current().nextLong());
     }
 
 }
