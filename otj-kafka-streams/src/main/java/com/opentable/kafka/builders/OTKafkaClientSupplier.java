@@ -14,6 +14,7 @@
 package com.opentable.kafka.builders;
 
 import java.util.Map;
+import java.util.UUID;
 import java.util.function.Supplier;
 
 import javax.inject.Inject;
@@ -82,5 +83,9 @@ public class OTKafkaClientSupplier implements KafkaClientSupplier {
     @Override
     public Consumer<byte[], byte[]> getGlobalConsumer(final Map<String, Object> config) {
         return getConsumer(config);
+    }
+
+    public static void main(String[] args) {
+        System.err.println(UUID.randomUUID().toString().replaceAll("-", "").length());
     }
 }

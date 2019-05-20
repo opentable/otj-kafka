@@ -72,7 +72,7 @@ class LoggingUtils {
     private final String os;
     private final Bucket errLogging;
     // See comments under addHeader - TODO: integrate with Opentracing context
-    private final String traceId = UUID.randomUUID().toString();
+    private final String traceId = opentracingId();
 
     LoggingUtils(EnvironmentProvider environmentProvider) {
         this.environmentProvider = environmentProvider;
@@ -258,7 +258,7 @@ class LoggingUtils {
          */
         final String traceId = getCurrentTraceId();
         // Just this span - always generated as new.
-        final String currentSpanId = UUID.randomUUID().toString();
+        final String currentSpanId = opentracingId();
         // Parent (which is optional in OT standard, since you might not have a parent)
         final Optional<String> parentSpanId = getParentSpanId();
         setKafkaHeader(headers, OTKafkaHeaders.TRACE_ID, traceId);
@@ -454,6 +454,10 @@ class LoggingUtils {
             }
         }
         return UUID.randomUUID();
+    }
+
+    private String opentracingId() {
+        return UUID.randomUUID().toString().replaceAll("-", "");
     }
 
 }
