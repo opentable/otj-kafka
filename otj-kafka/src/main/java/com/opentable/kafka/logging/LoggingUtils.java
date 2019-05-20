@@ -460,10 +460,12 @@ class LoggingUtils {
         return UUID.randomUUID();
     }
 
+    // 32 or 64 hex encoded lower case
     private String opentracingTraceId() {
         return UUID.randomUUID().toString().replaceAll("-", "");
     }
 
+    // 16 hex encoded lower case
     private String opentracingSpanId() {
         return Long.toHexString(ThreadLocalRandom.current().nextLong());
     }
