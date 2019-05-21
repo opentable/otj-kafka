@@ -37,6 +37,8 @@
     <basepom.check.skip-javadoc>false</basepom.check.skip-javadoc>
     <basepom.check.fail-javadoc>false</basepom.check.fail-javadoc>
     <dep.curator.version>2.13.0</dep.curator.version>
+    <!-- Remove once parent is updated -->
+    <dep.otj-otl.version>0.8.23</dep.otj-otl.version>
   </properties>
 
   <groupId>com.opentable.components</groupId>
@@ -50,6 +52,11 @@
       <dependency>
         <groupId>com.opentable.components</groupId>
         <artifactId>otj-kafka</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>com.opentable.components</groupId>
+        <artifactId>otj-kafka-streams</artifactId>
         <version>${project.version}</version>
       </dependency>
     <dependency>
@@ -67,6 +74,8 @@
   </dependencyManagement>
   <modules>
     <module>otj-kafka</module>
+    <module>otj-kafka-streams</module>
     <module>otj-kafka-tests</module>
+    <module>otj-kafka-mirrormaker</module>
   </modules>
 </project>

@@ -38,7 +38,7 @@ public class LoggingProducerInterceptor implements ProducerInterceptor<Object, O
     private String interceptorClientId;
     private LoggingUtils loggingUtils;
     private LogSampler sampler;
-
+    private GenerateHeaders addHeaders = GenerateHeaders.ALL;
 
     public LoggingProducerInterceptor() { //NOPMD
         /* noargs needed for kafka */
@@ -46,9 +46,16 @@ public class LoggingProducerInterceptor implements ProducerInterceptor<Object, O
 
     @Override
     public ProducerRecord<Object, Object> onSend(ProducerRecord<Object, Object> record) {
-        loggingUtils.addHeaders(record);
-        loggingUtils.setTracingHeader(sampler, record);
-        loggingUtils.maybeLogProducer(LOG, interceptorClientId, record);
+        // Only add general headers with ALL, still might add trace
+        if (addHeaders == GenerateHeaders.ALL) {
+            loggingUtils.addHeaders(record);
+        }
+        // Determine tracing by either setting the header (or it exists), it doing a rate limited check, which
+        // isn't as "good", but avoids adding headers.
+        final boolean loggingEnabled = loggingUtils.setTracingHeader(sampler, record, addHeaders) ;
+        if (loggingEnabled) {
+            loggingUtils.logProducer(LOG, interceptorClientId, record);
+        }
         return record;
     }
 
@@ -73,10 +80,12 @@ public class LoggingProducerInterceptor implements ProducerInterceptor<Object, O
     public void configure(Map<String, ?> config) {
         final LoggingInterceptorConfig conf = new LoggingInterceptorConfig(config);
         final String originalsClientId = (String) config.get(ProducerConfig.CLIENT_ID_CONFIG);
+        final String enabledHeaders = (String) config.get(LoggingInterceptorConfig.ENABLE_HEADER_PROPAGATION_CONFIG);
+        this.addHeaders = GenerateHeaders.fromString(enabledHeaders);
         loggingUtils = getLoggingUtils(config);
         sampler = LogSampler.create(conf);
         this.interceptorClientId = (originalsClientId == null) ? "interceptor-producer-" + ClientIdGenerator.getInstance().nextPublisherId() : originalsClientId;
-        LOG.info("LoggingProducerInterceptor is configured for client: {}", interceptorClientId);
+        LOG.info("LoggingProducerInterceptor is configured for client: {}, {}", interceptorClientId, enabledHeaders);
     }
 
 }

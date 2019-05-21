@@ -72,6 +72,11 @@ public class KafkaConsumerBuilder<K, V>  {
         return this;
     }
 
+    public KafkaConsumerBuilder<K,V> withProperties(final Map<String, Object> config) {
+        kafkaBaseBuilder.addProperties(config);
+        return this;
+    }
+
     public KafkaConsumerBuilder<K, V> removeProperty(String key) {
         kafkaBaseBuilder.removeProperty(key);
         return this;

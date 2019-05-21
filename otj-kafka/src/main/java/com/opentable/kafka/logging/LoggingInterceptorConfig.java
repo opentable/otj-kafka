@@ -14,6 +14,8 @@
 package com.opentable.kafka.logging;
 
 import java.util.Map;
+import java.util.UUID;
+import java.util.concurrent.ThreadLocalRandom;
 
 import org.apache.kafka.common.config.AbstractConfig;
 import org.apache.kafka.common.config.ConfigDef;
@@ -25,6 +27,7 @@ public class LoggingInterceptorConfig extends AbstractConfig {
 
     // Key used to store an object reference to EnvironmentProvider
     public static final String LOGGING_ENV_REF = "ot.logging.reference";
+
     // Key used to store the limit rate
     public static final String SAMPLE_RATE_PCT_CONFIG = "ot.logging.rate";
     public static final int DEFAULT_SAMPLE_RATE_PCT = 1;
@@ -32,13 +35,29 @@ public class LoggingInterceptorConfig extends AbstractConfig {
     public static final String SAMPLE_RATE_TYPE_CONFIG = "ot.logging.sampler_type";
     public static final String DEFAULT_SAMPLE_RATE_TYPE = SamplerType.TimeBucket.value;
 
+    // Whether to stop header propagation
+    public static final String ENABLE_HEADER_PROPAGATION_CONFIG = "ot.logging.headers";
+
     private static final ConfigDef CONFIG = new ConfigDef()
-        .define(SAMPLE_RATE_PCT_CONFIG, Type.INT, DEFAULT_SAMPLE_RATE_PCT, ConfigDef.Importance.LOW,
-            "Logging limit rate per 10 seconds for time-bucket or percent of records for random sampler. Use a negative value to disable limiting (lots of logs!) ")
-        .define(SAMPLE_RATE_TYPE_CONFIG, Type.STRING, DEFAULT_SAMPLE_RATE_TYPE, ConfigDef.Importance.LOW,
-            "Logging sampler type. Possible values: (random, time-bucket)");
+            .define(SAMPLE_RATE_PCT_CONFIG, Type.INT, DEFAULT_SAMPLE_RATE_PCT, ConfigDef.Importance.LOW,
+                    "Logging limit rate per 10 seconds for time-bucket or percent of records for random sampler. Use a negative value to disable limiting (lots of logs!) ")
+            .define(SAMPLE_RATE_TYPE_CONFIG, Type.STRING, DEFAULT_SAMPLE_RATE_TYPE, ConfigDef.Importance.LOW,
+                    "Logging sampler type. Possible values: (random, time-bucket)")
+            .define(ENABLE_HEADER_PROPAGATION_CONFIG, Type.STRING, GenerateHeaders.ALL.name(),
+                    ConfigDef.Importance.LOW, "Whether to use headers for propagation")
+            ;
 
     LoggingInterceptorConfig(Map<String, ?> originals) {
         super(CONFIG, originals);
+    }
+
+    // 32 or 64 hex encoded lower case
+    static String opentracingTraceId() {
+        return UUID.randomUUID().toString().replaceAll("-", "");
+    }
+
+    // 16 hex encoded lower case
+    static String opentracingSpanId() {
+        return Long.toHexString(ThreadLocalRandom.current().nextLong());
     }
 }

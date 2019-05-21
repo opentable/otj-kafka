@@ -71,6 +71,8 @@ class LoggingUtils {
     private final String javaVersion;
     private final String os;
     private final Bucket errLogging;
+    // See comments under addHeader - TODO: integrate with Opentracing context
+    private final String traceId = LoggingInterceptorConfig.opentracingTraceId();
 
     LoggingUtils(EnvironmentProvider environmentProvider) {
         this.environmentProvider = environmentProvider;
@@ -129,8 +131,17 @@ class LoggingUtils {
                 .otEnvFlavor(headers.map(h -> h.lastHeader((kn(OTKafkaHeaders.ENV_FLAVOR)))).map(Header::value).map(String::new).orElse(null))
                 .instanceNo(headers.map(h -> h.lastHeader((kn(OTKafkaHeaders.REFERRING_INSTANCE_NO))))
                         .map(Header::value).map(String::new).map(this::parse).orElse(null))
-
-
+                .otParentSpanId(headers.map(h -> h.lastHeader((kn(OTKafkaHeaders.PARENT_SPAN_ID))))
+                        .map(Header::value).map(String::new).orElse(null))
+                .otSpanId(headers.map(h -> h.lastHeader((kn(OTKafkaHeaders.SPAN_ID))))
+                        .map(Header::value).map(String::new).orElse(LoggingInterceptorConfig.opentracingSpanId())) // not nullable
+                .otTraceId(headers.map(h -> h.lastHeader((kn(OTKafkaHeaders.TRACE_ID))))
+                        .map(Header::value).map(String::new).orElse(LoggingInterceptorConfig.opentracingTraceId())) // not nullable
+                .otSpanInheritance(headers.map(h -> h.lastHeader((kn(OTKafkaHeaders.PARENT_INHERITANCE_TYPE))))
+                        .map(Header::value).map(String::new).orElse(null)) // not current set, and nullable
+                // See https://github.com/apache/incubator-zipkin-b3-propagation - set to 1 if and only if trace is on
+                .otFlags(headers.map(h -> h.lastHeader((kn(OTKafkaHeaders.TRACE_FLAG))))
+                        .map(Header::value).map(String::new).filter("true"::equals).map(t -> "1").orElse(null))
 
                 ;
     }
@@ -187,9 +198,9 @@ class LoggingUtils {
             .kafkaGroupId(groupId)
             .kafkaClientId(clientId)
             .kafkaRecordKeySize(record.serializedKeySize())
-            .kafkaRecordKey(String.valueOf(record.key()))
+       //     .kafkaRecordKey(String.valueOf(record.key()))
             .kafkaRecordValueSize(record.serializedValueSize())
-            .kafkaRecordValue(String.valueOf(record.value()))
+         //   .kafkaRecordValue(String.valueOf(record.value()))
             .kafkaRecordTimestamp(record.timestamp())
             .kafkaRecordTimestampType(record.timestampType() == null ? TimestampType.NO_TIMESTAMP_TYPE.name : record.timestampType().name)
             .build();
@@ -218,6 +229,10 @@ class LoggingUtils {
      */
     private String formatHeaders(Headers headers) {
         return Arrays.stream(headers.toArray())
+            // Don't include items that we know go in the otl
+            // Effectively this reduces the logged set to just the conserved headers (minus requestId)
+            // and any user set headers. All others are mirrored in the OTL
+            .filter(t -> !OTKafkaHeaders.isDefinedHeader(t.key()))
             .map(h -> String.format("%s=%s", h.key(), new String(h.value(), CHARSET)))
             .collect(Collectors.joining(", "));
     }
@@ -231,17 +246,48 @@ class LoggingUtils {
      * @param <V> value
      */
     <K, V> void addHeaders(ProducerRecord<K, V> record) {
+        // Copy conserved headers over. We keep their names the same here.
         final Headers headers = record.headers();
         Arrays.asList(ConservedHeader.values()).forEach((header) -> {
             if (getHeaderValue(header) != null) {
                 headers.add(header.getLogName(), getHeaderValue(header).getBytes(CHARSET));
             }
         });
+        /*
+         * Note: Currently the traceId is generated at instantiation and parentSpanId is always null.
+         * This is because UNTIL we connect to OpenTracing's Context, we cannot create and propagate correctly.
+         * It is INCORRECT to propagate via the MDC - Opentracing uses its own internal context (threadlocal or reactive)
+         */
+        final String traceId = getCurrentTraceId();
+        // Just this span - always generated as new.
+        final String currentSpanId = LoggingInterceptorConfig.opentracingSpanId();
+        // Parent (which is optional in OT standard, since you might not have a parent)
+        // This is currently always null, once added, parent inheritance needs to be added too.
+        final Optional<String> parentSpanId = getParentSpanId();
+        setKafkaHeader(headers, OTKafkaHeaders.TRACE_ID, traceId);
+        setKafkaHeader(headers, OTKafkaHeaders.SPAN_ID, currentSpanId);
+        parentSpanId.ifPresent(p -> setKafkaHeader(headers, OTKafkaHeaders.PARENT_SPAN_ID, p));
         setKafkaHeader(headers, OTKafkaHeaders.REFERRING_SERVICE, environmentProvider.getReferringService());
         setKafkaHeader(headers, OTKafkaHeaders.REFERRING_HOST, environmentProvider.getReferringHost());
         setKafkaHeader(headers, OTKafkaHeaders.REFERRING_INSTANCE_NO, environmentProvider.getReferringInstanceNumber());
         setKafkaHeader(headers, OTKafkaHeaders.ENV, environmentProvider.getEnvironment());
         setKafkaHeader(headers, OTKafkaHeaders.ENV_FLAVOR, environmentProvider.getEnvironmentFlavor());
+    }
+
+    /**
+     * Return current trace Id
+     * @return traceId, currently instantiated in constructed as random UUID
+     */
+    private String getCurrentTraceId() {
+        return this.traceId;
+    }
+
+    /**
+     * Return current parent spanId
+     * @return optional, currently always empry
+     */
+    private Optional<String> getParentSpanId() {
+        return Optional.empty();
     }
 
     /**
@@ -253,6 +299,18 @@ class LoggingUtils {
     private void setKafkaHeader(Headers headers, OTKafkaHeaders headerName, String value) {
         if (value != null && headers != null && headerName != null) {
             headers.add(headerName.getKafkaName(), value.getBytes(CHARSET));
+        }
+    }
+
+    /**
+     * Set the header only if the value isn't null
+     * @param headers headers
+     * @param headerName headername
+     * @param value value in byte[]
+     */
+    private void setKafkaHeader(Headers headers, OTKafkaHeaders headerName, byte[] value) {
+        if (value != null && headers != null && headerName != null) {
+            headers.add(headerName.getKafkaName(), value);
         }
     }
 
@@ -272,33 +330,44 @@ class LoggingUtils {
      * This checks if the tracing flag is on. Perhaps someone set it manually?
      * Otherwise it is set if the log limit has not been reached.
      * We'll use this tracing flag to determine logging
-     * @param sampler Loh sampler
+     * @param sampler Log sampler
      * @param record record. Headers will be mutated.
      */
-    <K, V> void setTracingHeader(LogSampler sampler, ProducerRecord<Object, Object> record) {
+    <K, V> boolean setTracingHeader(LogSampler sampler, ProducerRecord<Object, Object> record, GenerateHeaders propagateHeaders) {
+        if (propagateHeaders == GenerateHeaders.NONE) {
+            // We aren't going to set the header, so whether we should log is just dependent on the rate limit
+            return sampler.mark(record.topic());
+        }
+        // GenerateHeaders therefore must be ALL or TRACE, so ok to add a trace header.
+        // Now, let's check if there's an existing trace flag
         final Headers headers  = record.headers();
         final String traceFlag = kn(OTKafkaHeaders.TRACE_FLAG);
-        if (!headers.headers(traceFlag).iterator().hasNext()) {
-            // If header not present, make decision our-self and set it if not rate limited
-            if (sampler.mark(record.topic())) {
-                headers.add(traceFlag, TRUE);
-            } else {
-                headers.add(traceFlag, FALSE);
-            }
+        final Header lastTraceHeaderIfAny = headers.lastHeader(traceFlag);
+        // Will be true if and only if the header existed and was set to true
+        final boolean previouslySetByUser = lastTraceHeaderIfAny != null &&
+                Boolean.parseBoolean(new String(lastTraceHeaderIfAny.value(), StandardCharsets.UTF_8));
+
+        // Trace flag present and equal to true
+        if (previouslySetByUser) {
+            // There's a trace flag set already, let's log
+            return true;
+        }
+
+        // Trace flag present and equal to false
+        if (lastTraceHeaderIfAny != null) {
+            return false;
+        }
+
+        // No trace flag currently present, depends on rate limit
+        if (sampler.mark(record.topic())) {
+            setKafkaHeader(headers,  OTKafkaHeaders.TRACE_FLAG, TRUE);
+            return true;
+        } else {
+            setKafkaHeader(headers,  OTKafkaHeaders.TRACE_FLAG, FALSE);
+            return false;
         }
     }
 
-    /**
-     * Determining whether the ProducerRecord should be logged at this point is simple - We look for the trace flag,
-     * and if it exists, we log
-     * @param record record
-     * @param <K> key
-     * @param <V> value
-     * @return true, if logging is needed.
-     */
-    private <K, V> boolean isLoggingNeeded(ProducerRecord<K, V> record) {
-        return isTraceFlagEnabled(record.headers());
-    }
 
     private <K, V> boolean isTraceFlagEnabled(Headers headers) {
         final String traceFlag = kn(OTKafkaHeaders.TRACE_FLAG);
@@ -318,13 +387,12 @@ class LoggingUtils {
      * @param <K> key
      * @param <V> value
      */
-    <K, V> void maybeLogProducer(Logger log, String clientId, ProducerRecord<K, V> record) {
-        if (isLoggingNeeded(record)) {
+    <K, V> void logProducer(Logger log, String clientId, ProducerRecord<K, V> record) {
             final MsgV1 event = producerEvent(record, clientId);
             log.debug(event.log(),
-                    "[Producer clientId={}] To:{}@{}, Headers:[{}], Message: {}",
-                    clientId, record.topic(), record.partition(), formatHeaders(record.headers()), record.value());
-        }
+                    "Producer clientId={}] Headers: {}",
+                    clientId, formatHeaders(record.headers()));
+
     }
 
     /**
@@ -365,8 +433,8 @@ class LoggingUtils {
         if (isLoggingNeeded(record, sampler)) {
             final MsgV1 event = consumerEvent(record, groupId, clientId);
             log.debug(event.log(),
-                    "[Consumer clientId={}, groupId={}] From:{}@{}, Headers:[{}], Message: {}",
-                    clientId, groupId, record.topic(), record.partition(), formatHeaders(record.headers()), record.value());
+                    "Consumer clientId={}, groupId={} Headers: {}",
+                    clientId, groupId, formatHeaders(record.headers()));
         }
     }
 
