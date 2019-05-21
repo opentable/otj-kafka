@@ -22,7 +22,6 @@ import java.util.Arrays;
 import java.util.Optional;
 import java.util.Properties;
 import java.util.UUID;
-import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
@@ -73,7 +72,7 @@ class LoggingUtils {
     private final String os;
     private final Bucket errLogging;
     // See comments under addHeader - TODO: integrate with Opentracing context
-    private final String traceId = opentracingTraceId();
+    private final String traceId = LoggingInterceptorConfig.opentracingTraceId();
 
     LoggingUtils(EnvironmentProvider environmentProvider) {
         this.environmentProvider = environmentProvider;
@@ -135,9 +134,9 @@ class LoggingUtils {
                 .otParentSpanId(headers.map(h -> h.lastHeader((kn(OTKafkaHeaders.PARENT_SPAN_ID))))
                         .map(Header::value).map(String::new).orElse(null))
                 .otSpanId(headers.map(h -> h.lastHeader((kn(OTKafkaHeaders.SPAN_ID))))
-                        .map(Header::value).map(String::new).orElse(opentracingSpanId())) // not nullable
+                        .map(Header::value).map(String::new).orElse(LoggingInterceptorConfig.opentracingSpanId())) // not nullable
                 .otTraceId(headers.map(h -> h.lastHeader((kn(OTKafkaHeaders.TRACE_ID))))
-                        .map(Header::value).map(String::new).orElse(opentracingTraceId())) // not nullable
+                        .map(Header::value).map(String::new).orElse(LoggingInterceptorConfig.opentracingTraceId())) // not nullable
                 .otSpanInheritance(headers.map(h -> h.lastHeader((kn(OTKafkaHeaders.PARENT_INHERITANCE_TYPE))))
                         .map(Header::value).map(String::new).orElse(null)) // not current set, and nullable
                 // See https://github.com/apache/incubator-zipkin-b3-propagation - set to 1 if and only if trace is on
@@ -261,7 +260,7 @@ class LoggingUtils {
          */
         final String traceId = getCurrentTraceId();
         // Just this span - always generated as new.
-        final String currentSpanId = opentracingSpanId();
+        final String currentSpanId = LoggingInterceptorConfig.opentracingSpanId();
         // Parent (which is optional in OT standard, since you might not have a parent)
         // This is currently always null, once added, parent inheritance needs to be added too.
         final Optional<String> parentSpanId = getParentSpanId();
@@ -458,16 +457,6 @@ class LoggingUtils {
             }
         }
         return UUID.randomUUID();
-    }
-
-    // 32 or 64 hex encoded lower case
-    private String opentracingTraceId() {
-        return UUID.randomUUID().toString().replaceAll("-", "");
-    }
-
-    // 16 hex encoded lower case
-    private String opentracingSpanId() {
-        return Long.toHexString(ThreadLocalRandom.current().nextLong());
     }
 
 }
