@@ -226,6 +226,16 @@ public class KafkaConsumerBuilder<K, V>  {
     }
 
     public Consumer<K, V> build() {
+        internalBuild();
+        return kafkaBaseBuilder.consumer(keyDeserializerInstance, valueDeserializerInstance);
+    }
+
+    protected Map<String, Object> buildProperties() {
+        internalBuild();
+        return kafkaBaseBuilder.getFinalProperties();
+    }
+
+    private void internalBuild() {
         if (partitionStrategy != null) {
             kafkaBaseBuilder.addProperty(ConsumerConfig.PARTITION_ASSIGNMENT_STRATEGY_CONFIG, partitionStrategy.getName());
         }
@@ -246,7 +256,6 @@ public class KafkaConsumerBuilder<K, V>  {
         // Merge in common and user supplied properties.
         kafkaBaseBuilder.finishBuild();
         kafkaBaseBuilder.cantBeNull(ConsumerConfig.PARTITION_ASSIGNMENT_STRATEGY_CONFIG, "Partition assignment strategy can't be null");
-        return kafkaBaseBuilder.consumer(keyDeserializerInstance, valueDeserializerInstance);
     }
 
     public enum AutoOffsetResetType {
