@@ -230,7 +230,7 @@ public class KafkaConsumerBuilder<K, V>  {
         return kafkaBaseBuilder.consumer(keyDeserializerInstance, valueDeserializerInstance);
     }
 
-    protected Map<String, Object> buildProperties() {
+    public Map<String, Object> buildProperties() {
         internalBuild();
         return kafkaBaseBuilder.getFinalProperties();
     }

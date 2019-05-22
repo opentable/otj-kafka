@@ -24,8 +24,6 @@ import com.codahale.metrics.MetricRegistry;
 import org.springframework.core.env.ConfigurableEnvironment;
 
 import com.opentable.kafka.builders.EnvironmentProvider;
-import com.opentable.kafka.builders.KafkaConsumerBuilder;
-import com.opentable.kafka.builders.KafkaProducerBuilder;
 import com.opentable.kafka.metrics.OtMetricsReporterConfig;
 import com.opentable.kafka.util.ClientIdGenerator;
 import com.opentable.service.ServiceInfo;
@@ -87,6 +85,18 @@ public class KafkaFactoryBuilderFactoryBean {
         final KafkaProducerFactoryBuilder<? , ?> res = new KafkaProducerFactoryBuilder<>(mergedSeedProperties, environmentProvider);
         metricRegistry.ifPresent(mr -> res.withMetricRegistry(mr, OtMetricsReporterConfig.DEFAULT_PREFIX + ".producer." + name) );
         serviceInfo.ifPresent(si -> res.withClientId(name + "-" + si.getName() + "-" + ClientIdGenerator.getInstance().nextClientId()));
+        return res;
+    }
+
+    public KafkaConsumerFactoryBuilder<?, ?> consumerFactoryBuilder(String name) {
+        Objects.requireNonNull(name, "Name cannot be null!");
+        final Map<String, Object> mergedSeedProperties = mergeProperties(
+            getProperties(DEFAULT, consumerPrefix),
+            name, consumerPrefix
+        );
+        final KafkaConsumerFactoryBuilder<?, ?> res = new KafkaConsumerFactoryBuilder<>(mergedSeedProperties, environmentProvider);
+        metricRegistry.ifPresent(mr -> res.withMetricRegistry(mr, OtMetricsReporterConfig.DEFAULT_PREFIX + ".consumer." + name) );
+        serviceInfo.ifPresent(si -> res.withClientId(name + "-" + si.getName()  + "-" + ClientIdGenerator.getInstance().nextClientId()));
         return res;
     }
 

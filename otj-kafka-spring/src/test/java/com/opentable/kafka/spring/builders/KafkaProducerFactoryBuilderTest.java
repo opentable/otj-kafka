@@ -29,7 +29,7 @@ public class KafkaProducerFactoryBuilderTest extends AbstractTest {
     private KafkaTemplate<String, String> kafkaTemplate2;
 
     @Test
-    public void contextLoads() throws ExecutionException, InterruptedException {
+    public void kafkaTemplateTest() throws ExecutionException, InterruptedException {
        kafkaTemplate1.send("topic-i", 1, "1").get();
        kafkaTemplate2.send("topic-i", "2", "2").get();
     }
