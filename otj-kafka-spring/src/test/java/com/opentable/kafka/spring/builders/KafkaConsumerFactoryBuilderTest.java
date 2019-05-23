@@ -13,15 +13,12 @@ import org.apache.kafka.common.serialization.StringDeserializer;
 import org.apache.kafka.common.serialization.StringSerializer;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.kafka.annotation.EnableKafka;
 import org.springframework.kafka.annotation.KafkaListener;
-import org.springframework.kafka.config.ConcurrentKafkaListenerContainerFactory;
 import org.springframework.kafka.config.KafkaListenerContainerFactory;
-import org.springframework.kafka.core.ConsumerFactory;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.kafka.core.ProducerFactory;
 import org.springframework.kafka.listener.ConcurrentMessageListenerContainer;
@@ -76,7 +73,7 @@ public class KafkaConsumerFactoryBuilderTest extends AbstractTest {
         }
 
         @Bean
-        public ConsumerFactory<Integer, String> consumerFactory() {
+        KafkaListenerContainerFactory<ConcurrentMessageListenerContainer<Integer, String>> kafkaListenerContainerFactory() {
             return kafkaFactoryBuilderFactoryBean.consumerFactoryBuilder("test")
                 .withBootstrapServer(brokerAddresses)
                 .withDeserializers(IntegerDeserializer.class, StringDeserializer.class)
@@ -85,20 +82,11 @@ public class KafkaConsumerFactoryBuilderTest extends AbstractTest {
         }
 
         @Bean
-        KafkaListenerContainerFactory<ConcurrentMessageListenerContainer<Integer, String>> kafkaListenerContainerFactory() {
-            ConcurrentKafkaListenerContainerFactory<Integer, String> factory = new ConcurrentKafkaListenerContainerFactory<>();
-            factory.setConsumerFactory(consumerFactory());
-            factory.setConcurrency(3);
-            factory.getContainerProperties().setPollTimeout(3000);
-            return factory;
-        }
-
-        @Bean
         public SettableListenableFuture<String> resultFuture1() {
             return new SettableListenableFuture<>();
         }
 
-        @KafkaListener(id = "foo", topics = "topic-1", containerFactory = "kafkaListenerContainerFactory")
+        @KafkaListener(id = "foo", topics = "topic-1", containerFactory = "kafkaListenerContainerFactory", concurrency = "5")
         public void listen(String data) {
             resultFuture1().set(data);
         }

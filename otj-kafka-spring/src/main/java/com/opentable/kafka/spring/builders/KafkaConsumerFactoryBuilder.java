@@ -10,8 +10,11 @@ import org.apache.kafka.clients.consumer.ConsumerInterceptor;
 import org.apache.kafka.clients.consumer.internals.PartitionAssignor;
 import org.apache.kafka.common.security.auth.SecurityProtocol;
 import org.apache.kafka.common.serialization.Deserializer;
+import org.springframework.kafka.config.ConcurrentKafkaListenerContainerFactory;
+import org.springframework.kafka.config.KafkaListenerContainerFactory;
 import org.springframework.kafka.core.ConsumerFactory;
 import org.springframework.kafka.core.DefaultKafkaConsumerFactory;
+import org.springframework.kafka.listener.ConcurrentMessageListenerContainer;
 import org.springframework.lang.Nullable;
 
 import com.opentable.kafka.builders.EnvironmentProvider;
@@ -29,13 +32,22 @@ public class KafkaConsumerFactoryBuilder<K, V>  {
         this.delegate = new KafkaConsumerBuilder<>(prop, environmentProvider);
     }
 
-    public ConsumerFactory<K, V> build() {
-        return build(null, null);
+    public ConsumerFactory<K, V> buildFactory() {
+        return buildFactory(null, null);
     }
 
-    public <K2, V2> ConsumerFactory<K2, V2> build(@Nullable Deserializer<K2> keyDeserializer,
+    public <K2, V2> ConsumerFactory<K2, V2> buildFactory(@Nullable Deserializer<K2> keyDeserializer,
                                        @Nullable Deserializer<V2> valueDeserializer) {
         return new DefaultKafkaConsumerFactory<>(delegate.buildProperties(), keyDeserializer, valueDeserializer);
+    }
+
+    public KafkaListenerContainerFactory<ConcurrentMessageListenerContainer<K, V>> build() {
+        final ConcurrentKafkaListenerContainerFactory<K, V> factory = new ConcurrentKafkaListenerContainerFactory<>();
+        factory.setConsumerFactory(buildFactory());
+        factory.setConcurrency(1);
+        factory.getContainerProperties().setPollTimeout(3000);
+        return factory;
+
     }
 
     public KafkaConsumerFactoryBuilder<K, V> withProperty(String key, Object value) {
