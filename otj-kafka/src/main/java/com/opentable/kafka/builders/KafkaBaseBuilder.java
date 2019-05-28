@@ -123,7 +123,7 @@ public abstract class KafkaBaseBuilder<SELF extends KafkaBaseBuilder<SELF>> {
         return self();
     }
 
-    public SELF withPrefix(String metricsPrefix) {
+    protected SELF withPrefix(String metricsPrefix) {
         if ((metricsPrefix != null) && (!metricsPrefix.startsWith(OtMetricsReporterConfig.DEFAULT_PREFIX + "."))) {
                 metricsPrefix = OtMetricsReporterConfig.DEFAULT_PREFIX + "." + metricsPrefix;
         }

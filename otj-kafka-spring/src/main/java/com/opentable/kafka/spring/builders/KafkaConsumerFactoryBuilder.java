@@ -25,11 +25,13 @@ public class KafkaConsumerFactoryBuilder<K, V>  extends KafkaConsumerBaseBuilder
         return this;
     }
 
+    @SuppressWarnings("unchecked")
     @Override
     protected <K2, V2> KafkaConsumerFactoryBuilder<K2, V2> withDeserializers(Class<? extends Deserializer<K2>> keyDeSer, Class<? extends Deserializer<V2>> valDeSer) {
         return (KafkaConsumerFactoryBuilder<K2, V2>) super.withDeserializers(keyDeSer, valDeSer);
     }
 
+    @SuppressWarnings("unchecked")
     @Override
     protected <K2, V2> KafkaConsumerFactoryBuilder<K2, V2> withDeserializers(Deserializer<K2> keyDeSer, Deserializer<V2> valDeSer) {
         return (KafkaConsumerFactoryBuilder<K2, V2>) super.withDeserializers(keyDeSer, valDeSer);

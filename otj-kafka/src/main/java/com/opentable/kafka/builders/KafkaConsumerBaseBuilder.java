@@ -60,6 +60,7 @@ public abstract class KafkaConsumerBaseBuilder<SELF extends KafkaConsumerBaseBui
      * @param <V2> The type of the value returned by de-serializer
      * @return this
      */
+    @SuppressWarnings("unchecked")
     protected <K2, V2> KafkaConsumerBaseBuilder<?, K2, V2> withDeserializers(Class<? extends Deserializer<K2>> keyDeSer, Class<? extends Deserializer<V2>> valDeSer) {
         KafkaConsumerBaseBuilder<? extends SELF, K2, V2> res = (KafkaConsumerBaseBuilder<? extends SELF, K2, V2>) self();
         res.keyDe = keyDeSer;
@@ -77,6 +78,7 @@ public abstract class KafkaConsumerBaseBuilder<SELF extends KafkaConsumerBaseBui
      * @param <V2> The type of the value returned by de-serializer
      * @return this
      */
+    @SuppressWarnings("unchecked")
     protected <K2, V2> KafkaConsumerBaseBuilder<?, K2, V2> withDeserializers(Deserializer<K2> keyDeSer, Deserializer<V2> valDeSer) {
         KafkaConsumerBaseBuilder<? extends SELF, K2, V2> res = (KafkaConsumerBaseBuilder<? extends SELF, K2, V2>) self();
         res.keyDeserializerInstance = keyDeSer;

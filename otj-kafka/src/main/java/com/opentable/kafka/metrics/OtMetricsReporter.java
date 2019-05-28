@@ -140,6 +140,7 @@ public class OtMetricsReporter implements MetricsReporter {
 
     @Override
     public synchronized void configure(Map<String, ?> config) {
+        
         // The normal path is that the metric registry was stored....
         final OtMetricsReporterConfig otMetricsReporterConfig = new OtMetricsReporterConfig(config);
         this.metricRegistry  = (MetricRegistry) config.get(OtMetricsReporterConfig.METRIC_REGISTRY_REF_CONFIG);

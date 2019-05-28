@@ -65,6 +65,7 @@ public abstract class KafkaProducerBaseBuilder<SELF extends KafkaProducerBaseBui
      * @param <V2> The type of the value expected by serializer
      * @return this
      */
+    @SuppressWarnings("unchecked")
     protected <K2, V2> KafkaProducerBaseBuilder<?, K2, V2> withSerializers(Class<? extends Serializer<K2>> keySer, Class<? extends Serializer<V2>> valSer) {
         KafkaProducerBaseBuilder<? extends SELF, K2, V2> res = (KafkaProducerBaseBuilder<? extends SELF, K2, V2>) this;
         res.keySe =  keySer;
@@ -82,6 +83,7 @@ public abstract class KafkaProducerBaseBuilder<SELF extends KafkaProducerBaseBui
      * @param <V2> The type of the value expected by serializer
      * @return this
      */
+    @SuppressWarnings("unchecked")
     protected <K2, V2> KafkaProducerBaseBuilder<?, K2, V2> withSerializers(Serializer<K2> keySer, Serializer<V2> valSer) {
         KafkaProducerBaseBuilder<? extends SELF, K2, V2> res = (KafkaProducerBaseBuilder<? extends SELF, K2, V2>) this;
         res.keySerializer = keySer;

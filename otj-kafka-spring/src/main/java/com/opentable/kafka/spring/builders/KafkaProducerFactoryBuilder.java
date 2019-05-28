@@ -22,11 +22,13 @@ public class KafkaProducerFactoryBuilder<K, V>  extends KafkaProducerBaseBuilder
         return this;
     }
 
+    @SuppressWarnings("unchecked")
     @Override
     protected <K2, V2> KafkaProducerFactoryBuilder<K2, V2> withSerializers(Class<? extends Serializer<K2>> keySer, Class<? extends Serializer<V2>> valSer) {
         return (KafkaProducerFactoryBuilder<K2, V2>) super.withSerializers(keySer, valSer);
     }
 
+    @SuppressWarnings("unchecked")
     @Override
     protected <K2, V2> KafkaProducerFactoryBuilder<K2, V2> withSerializers(Serializer<K2> keySer, Serializer<V2> valSer) {
         return (KafkaProducerFactoryBuilder<K2, V2>) super.withSerializers(keySer, valSer);
