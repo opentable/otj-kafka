@@ -24,6 +24,7 @@ public class ClientIdGenerator {
     private final AtomicInteger consumerIds = new AtomicInteger(0);
     private final AtomicInteger producerIds = new AtomicInteger(0);
     private final AtomicInteger clientIds = new AtomicInteger(0);
+    private final AtomicInteger metricReporterIds = new AtomicInteger(0);
 
     public int nextConsumerId() {
         return consumerIds.getAndIncrement();
@@ -35,6 +36,10 @@ public class ClientIdGenerator {
 
     public int nextClientId() {
         return clientIds.getAndIncrement();
+    }
+
+    public int nextMetricReporterId() {
+        return metricReporterIds.getAndIncrement();
     }
 
     public static ClientIdGenerator getInstance() {

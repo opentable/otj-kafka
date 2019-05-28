@@ -83,7 +83,7 @@ public class KafkaFactoryBuilderFactoryBean {
             name, producerPrefix
         );
         final KafkaProducerFactoryBuilder<? , ?> res = new KafkaProducerFactoryBuilder<>(mergedSeedProperties, environmentProvider);
-        metricRegistry.ifPresent(mr -> res.withMetricRegistry(mr, OtMetricsReporterConfig.DEFAULT_PREFIX + ".producer." + name) );
+        metricRegistry.ifPresent(mr -> res.withMetricRegistry(mr, OtMetricsReporterConfig.DEFAULT_PREFIX + ".producer." + name + ".${metric-reporter-id}"));
         serviceInfo.ifPresent(si -> res.withClientId(name + "-" + si.getName() + "-" + ClientIdGenerator.getInstance().nextClientId()));
         return res;
     }
@@ -95,7 +95,7 @@ public class KafkaFactoryBuilderFactoryBean {
             name, consumerPrefix
         );
         final KafkaConsumerFactoryBuilder<?, ?> res = new KafkaConsumerFactoryBuilder<>(mergedSeedProperties, environmentProvider);
-        metricRegistry.ifPresent(mr -> res.withMetricRegistry(mr, OtMetricsReporterConfig.DEFAULT_PREFIX + ".consumer." + name) );
+        metricRegistry.ifPresent(mr -> res.withMetricRegistry(mr, OtMetricsReporterConfig.DEFAULT_PREFIX + ".consumer." + name + ".${metric-reporter-id}"));
         serviceInfo.ifPresent(si -> res.withClientId(name + "-" + si.getName()  + "-" + ClientIdGenerator.getInstance().nextClientId()));
         return res;
     }
