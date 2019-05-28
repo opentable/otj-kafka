@@ -59,7 +59,7 @@ public class KafkaFactoryBuilderFactoryBean {
     }
 
     // These take precedence. One minor flaw is list properties are not currently combined, these replace all
-    Map<String, Object> getProperties(final String nameSpace, final String prefix) {
+    private Map<String, Object> getProperties(final String nameSpace, final String prefix) {
         return PropertySourceUtil.getProperties(env, prefix + nameSpace)
                 .entrySet()
                 .stream()
@@ -68,7 +68,7 @@ public class KafkaFactoryBuilderFactoryBean {
     }
 
     // merge properties in, given the officially namespaced properties get precedence
-    Map<String, Object> mergeProperties(final Map<String, Object> originalProperties, final String namespace, final String prefix) {
+    private Map<String, Object> mergeProperties(final Map<String, Object> originalProperties, final String namespace, final String prefix) {
         final Map<String, Object> originalMap = new HashMap<>(originalProperties);
         final Map<String, Object> mergeMap = getProperties(namespace, prefix);
         originalMap.putAll(mergeMap);
