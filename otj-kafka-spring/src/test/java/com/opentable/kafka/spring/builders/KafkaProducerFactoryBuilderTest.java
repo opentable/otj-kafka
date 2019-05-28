@@ -40,7 +40,6 @@ public class KafkaProducerFactoryBuilderTest extends AbstractTest {
         @Value("${" + KafkaEmbedded.SPRING_EMBEDDED_KAFKA_BROKERS + "}")
         protected String brokerAddresses;
 
-
         @Autowired
         private KafkaFactoryBuilderFactoryBean kafkaFactoryBuilderFactoryBean;
 

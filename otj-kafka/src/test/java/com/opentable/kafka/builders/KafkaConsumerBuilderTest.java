@@ -40,7 +40,6 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.junit4.SpringRunner;
 
-import com.opentable.kafka.builders.KafkaConsumerBuilder.AutoOffsetResetType;
 import com.opentable.kafka.logging.LoggingConsumerInterceptor;
 import com.opentable.kafka.logging.LoggingInterceptorConfig;
 import com.opentable.kafka.metrics.OtMetricsReporter;
@@ -68,7 +67,7 @@ public class KafkaConsumerBuilderTest {
         KafkaConsumerBuilder<Integer, String> builder = getBuilder();
         Consumer<Integer, String> c = builder
                 .build();
-        Map<String, Object> finalProperties = builder.getKafkaBaseBuilder().getFinalProperties();
+        Map<String, Object> finalProperties = builder.getFinalProperties();
         assertThat(finalProperties).isNotEmpty();
         assertThat(finalProperties.get(CommonClientConfigs.BOOTSTRAP_SERVERS_CONFIG)).isEqualTo("localhost:8080");
         assertThat(finalProperties).doesNotContainKeys("blah");
@@ -77,7 +76,7 @@ public class KafkaConsumerBuilderTest {
         assertThat(finalProperties.get(ConsumerConfig.GROUP_ID_CONFIG)).isEqualTo("test");
         assertThat(finalProperties.get(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG)).isEqualTo(IntegerDeserializer.class.getName());
         assertThat(finalProperties.get(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG)).isEqualTo(StringDeserializer.class.getName());
-        assertThat(finalProperties.get(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG)).isEqualTo(AutoOffsetResetType.Latest.value);
+        assertThat(finalProperties.get(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG)).isEqualTo(KafkaConsumerBaseBuilder.AutoOffsetResetType.Latest.value);
         assertThat(finalProperties.get(ConsumerConfig.PARTITION_ASSIGNMENT_STRATEGY_CONFIG)).isEqualTo(RangeAssignor.class.getName());
         assertThat(finalProperties).doesNotContainKeys(ConsumerConfig.MAX_POLL_INTERVAL_MS_CONFIG, ConsumerConfig.SESSION_TIMEOUT_MS_CONFIG, ConsumerConfig.MAX_POLL_RECORDS_CONFIG);
         assertThat(finalProperties).doesNotContainKeys(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG,
@@ -97,7 +96,7 @@ public class KafkaConsumerBuilderTest {
         KafkaConsumerBuilder<Integer, String> builder = getBuilder().disableLogging().disableMetrics();
         Consumer<Integer, String> c = builder
                 .build();
-        Map<String, Object> finalProperties = builder.getKafkaBaseBuilder().getFinalProperties();
+        Map<String, Object> finalProperties = builder.getFinalProperties();
         assertThat(finalProperties).doesNotContainKeys(OtMetricsReporterConfig.METRIC_REGISTRY_REF_CONFIG,
                 CommonClientConfigs.METRIC_REPORTER_CLASSES_CONFIG, ConsumerConfig.INTERCEPTOR_CLASSES_CONFIG,
                 LoggingInterceptorConfig.LOGGING_ENV_REF, LoggingInterceptorConfig.SAMPLE_RATE_PCT_CONFIG );
@@ -115,7 +114,7 @@ public class KafkaConsumerBuilderTest {
                 .withProperty("blah2", "blah2")
                 .withGroupId("test")
                 .withDeserializers(IntegerDeserializer.class, StringDeserializer.class)
-                .withAutoOffsetReset(AutoOffsetResetType.Latest)
+                .withAutoOffsetReset(KafkaConsumerBaseBuilder.AutoOffsetResetType.Latest)
                 .withSamplingRatePer10Seconds(3);
     }
 
