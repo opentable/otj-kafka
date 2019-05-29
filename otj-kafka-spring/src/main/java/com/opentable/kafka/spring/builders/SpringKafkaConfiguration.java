@@ -14,7 +14,7 @@ import com.opentable.service.EnvInfo;
     AppInfo.class,
     EnvInfo.class,
     AppInfoEnvironmentProvider.class,
-    KafkaFactoryBuilderFactoryBean.class
+    SpringKafkaFactoryBuilderFactoryBean.class
 })
 public class SpringKafkaConfiguration {
 

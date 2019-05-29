@@ -31,9 +31,13 @@ import com.opentable.spring.PropertySourceUtil;
 
 /**
  * Main spring entry point for building KafkaConsumer and KafkaProducer
+ *
+ * NOTE: Dmitry - this is really ugly. Recreating this way is actually ADDDING MORE BOILER PLATE
+ * By definition spring Kafka IS a bean, I believe it's posisble to convert these classes into a single class.
+ *
  */
 @SuppressWarnings("OptionalUsedAsFieldOrParameterType")
-public class KafkaFactoryBuilderFactoryBean {
+public class SpringKafkaFactoryBuilderFactoryBean {
 
     protected static final String PREFIX = "ot.kafka.";
     static final String DEFAULT = "default";
@@ -45,7 +49,7 @@ public class KafkaFactoryBuilderFactoryBean {
     private final String consumerPrefix;
     private final String producerPrefix;
 
-    KafkaFactoryBuilderFactoryBean(
+    SpringKafkaFactoryBuilderFactoryBean(
             final EnvironmentProvider environmentProvider,
             final ConfigurableEnvironment env,
             final Optional<ServiceInfo> serviceInfo,
@@ -76,25 +80,25 @@ public class KafkaFactoryBuilderFactoryBean {
     }
 
 
-    public KafkaProducerFactoryBuilder<? , ?> producerFactoryBuilder(String name) {
+    public SpringKafkaProducerFactoryBuilder<? , ?> producerFactoryBuilder(String name) {
         Objects.requireNonNull(name, "Name cannot be null!");
         final Map<String, Object> mergedSeedProperties = mergeProperties(
             getProperties(DEFAULT, this.producerPrefix),
             name, producerPrefix
         );
-        final KafkaProducerFactoryBuilder<? , ?> res = new KafkaProducerFactoryBuilder<>(mergedSeedProperties, environmentProvider);
+        final SpringKafkaProducerFactoryBuilder<? , ?> res = new SpringKafkaProducerFactoryBuilder<>(mergedSeedProperties, environmentProvider);
         metricRegistry.ifPresent(mr -> res.withMetricRegistry(mr, OtMetricsReporterConfig.DEFAULT_PREFIX + ".producer." + name + ".${metric-reporter-id}"));
         serviceInfo.ifPresent(si -> res.withClientId(name + "-" + si.getName() + "-" + ClientIdGenerator.getInstance().nextClientId()));
         return res;
     }
 
-    public KafkaConsumerFactoryBuilder<?, ?> consumerFactoryBuilder(String name) {
+    public SpringKafkaConsumerFactoryBuilder<?, ?> consumerFactoryBuilder(String name) {
         Objects.requireNonNull(name, "Name cannot be null!");
         final Map<String, Object> mergedSeedProperties = mergeProperties(
             getProperties(DEFAULT, consumerPrefix),
             name, consumerPrefix
         );
-        final KafkaConsumerFactoryBuilder<?, ?> res = new KafkaConsumerFactoryBuilder<>(mergedSeedProperties, environmentProvider);
+        final SpringKafkaConsumerFactoryBuilder<?, ?> res = new SpringKafkaConsumerFactoryBuilder<>(mergedSeedProperties, environmentProvider);
         metricRegistry.ifPresent(mr -> res.withMetricRegistry(mr, OtMetricsReporterConfig.DEFAULT_PREFIX + ".consumer." + name + ".${metric-reporter-id}"));
         serviceInfo.ifPresent(si -> res.withClientId(name + "-" + si.getName()  + "-" + ClientIdGenerator.getInstance().nextClientId()));
         return res;

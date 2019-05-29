@@ -57,7 +57,7 @@ public class KafkaConsumerFactoryBuilderTest extends AbstractTest {
 
 
         @Autowired
-        private KafkaFactoryBuilderFactoryBean kafkaFactoryBuilderFactoryBean;
+        private SpringKafkaFactoryBuilderFactoryBean kafkaFactoryBuilderFactoryBean;
 
         @Bean
         public ProducerFactory<Integer, String> producerFactory1() {

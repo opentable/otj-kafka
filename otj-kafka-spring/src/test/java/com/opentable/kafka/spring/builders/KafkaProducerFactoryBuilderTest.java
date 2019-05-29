@@ -41,7 +41,7 @@ public class KafkaProducerFactoryBuilderTest extends AbstractTest {
         protected String brokerAddresses;
 
         @Autowired
-        private KafkaFactoryBuilderFactoryBean kafkaFactoryBuilderFactoryBean;
+        private SpringKafkaFactoryBuilderFactoryBean kafkaFactoryBuilderFactoryBean;
 
         @Bean
         public ProducerFactory<Integer, String> producerFactory1() {
