@@ -3,8 +3,6 @@ package com.opentable.kafka.spring.builders;
 import java.time.Duration;
 import java.util.Map;
 import java.util.Optional;
-import java.util.OptionalInt;
-import java.util.OptionalLong;
 
 import org.apache.kafka.common.serialization.Deserializer;
 import org.springframework.kafka.config.ConcurrentKafkaListenerContainerFactory;
