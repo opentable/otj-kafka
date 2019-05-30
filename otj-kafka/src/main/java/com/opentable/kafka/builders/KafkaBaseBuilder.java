@@ -167,11 +167,17 @@ class KafkaBaseBuilder {
 
     <CK,CV> Consumer<CK,CV> consumer(Deserializer<CK> keyDeserializer, Deserializer<CV> valuedeserializer) {
         LOG.trace("Building KafkaConsumer with props {}", finalProperties);
+        if (keyDeserializer != null || valuedeserializer != null) {
+            LOG.warn("You passed an INSTANCE (as opposed to class) as a Deserializer. That's fine, but realize configure() will not be called on the Deserializer. That's per Kafka Design.");
+        }
         return new KafkaConsumer<>(finalProperties, keyDeserializer, valuedeserializer);
     }
 
     <PK,PV> Producer<PK,PV> producer(Serializer<PK> keySerializer, Serializer<PV> valueSerializer) {
         LOG.trace("Building KafkaProducer with props {}", finalProperties);
+        if (keySerializer != null || valueSerializer != null) {
+            LOG.warn("You passed an INSTANCE (as opposed to class) as a Serializer. That's fine, but realize configure() will not be called on the Serializer. That's per Kafka Design.");
+        }
         return new KafkaProducer<>(finalProperties, keySerializer, valueSerializer);
     }
 
