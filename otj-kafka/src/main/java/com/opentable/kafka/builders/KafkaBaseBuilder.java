@@ -99,7 +99,8 @@ class KafkaBaseBuilder {
             addProperty(LoggingInterceptorConfig.SAMPLE_RATE_PCT_CONFIG, loggingSampleRate);
             addProperty(LoggingInterceptorConfig.SAMPLE_RATE_BUCKET_SECONDS_CONFIG, loggingDenominator);
             addProperty(LoggingInterceptorConfig.SAMPLE_RATE_TYPE_CONFIG, loggingSamplerType.getValue());
-            LOG.debug("Setting sampler {} - {}", loggingSamplerType, loggingSampleRate);
+            LOG.debug("Setting sampler {} - {}, {} second bucket ", loggingSamplerType, loggingSampleRate,
+                    loggingSamplerType == SamplerType.TimeBucket ? loggingDenominator : "--NA--");
         }
     }
 
