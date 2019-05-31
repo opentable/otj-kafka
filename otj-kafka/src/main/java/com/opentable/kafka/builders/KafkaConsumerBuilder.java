@@ -34,6 +34,7 @@ import org.apache.kafka.common.security.auth.SecurityProtocol;
 import org.apache.kafka.common.serialization.Deserializer;
 
 import com.opentable.kafka.logging.LoggingConsumerInterceptor;
+import com.opentable.kafka.logging.LoggingInterceptorConfig;
 
 /**
  * Main builder for KafkaConsumer. This is usually entered via a KafkaConsumerBuilderFactoryBean so some "sugar" is injected.
@@ -88,7 +89,12 @@ public class KafkaConsumerBuilder<K, V>  {
     }
 
     public KafkaConsumerBuilder<K, V> withSamplingRatePer10Seconds(int rate) {
-        kafkaBaseBuilder.withSamplingRatePer10Seconds(rate);
+        kafkaBaseBuilder.withBucketedSamplingRate(rate, LoggingInterceptorConfig.DEFAULT_BUCKET_DENOMINATOR);
+        return this;
+    }
+
+    public KafkaConsumerBuilder<K, V> withSamplingRatePerNSeconds(int rate, int nSeconds) {
+        kafkaBaseBuilder.withBucketedSamplingRate(rate, nSeconds);
         return this;
     }
 

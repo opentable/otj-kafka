@@ -33,6 +33,7 @@ import org.apache.kafka.clients.producer.internals.DefaultPartitioner;
 import org.apache.kafka.common.security.auth.SecurityProtocol;
 import org.apache.kafka.common.serialization.Serializer;
 
+import com.opentable.kafka.logging.LoggingInterceptorConfig;
 import com.opentable.kafka.logging.LoggingProducerInterceptor;
 
 @SuppressWarnings("OptionalUsedAsFieldOrParameterType")
@@ -93,8 +94,14 @@ public class KafkaProducerBuilder<K, V> {
 
 
     public KafkaProducerBuilder<K, V> withSamplingRatePer10Seconds(int rate) {
-        kafkaBaseBuilder.withSamplingRatePer10Seconds(rate);
+        kafkaBaseBuilder.withBucketedSamplingRate(rate, LoggingInterceptorConfig.DEFAULT_BUCKET_DENOMINATOR);
         return this;
+    }
+
+    public KafkaProducerBuilder<K, V> withSamplingRatePerNSeconds(int rate, int nSeconds) {
+        kafkaBaseBuilder.withBucketedSamplingRate(rate, nSeconds);
+        return this;
+
     }
 
     public KafkaProducerBuilder<K, V> withRandomSamplingRate(int rate) {
