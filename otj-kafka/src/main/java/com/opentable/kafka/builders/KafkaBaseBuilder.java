@@ -56,6 +56,7 @@ class KafkaBaseBuilder {
     private final List<String> interceptors = new ArrayList<>();
     private boolean enableLoggingInterceptor = true;
     private int loggingSampleRate = LoggingInterceptorConfig.DEFAULT_SAMPLE_RATE_PCT;
+    private int loggingDenominator = LoggingInterceptorConfig.DEFAULT_BUCKET_DENOMINATOR;
     private Optional<String> metricsPrefix = Optional.empty();
     private SamplerType loggingSamplerType = SamplerType.TimeBucket;
     private OptionalLong requestTimeout = OptionalLong.empty();
@@ -91,10 +92,15 @@ class KafkaBaseBuilder {
         // Copy over any injected properties, then remove the seed property
         List<String> merged = merge(interceptors, interceptorConfigName);
         if (merged.contains(loggingInterceptorName)) {
+            if (loggingDenominator <= 0) {
+                throw new IllegalArgumentException("LoggingDenominator must be > 0");
+            }
             addProperty(LoggingInterceptorConfig.LOGGING_ENV_REF, environmentProvider);
             addProperty(LoggingInterceptorConfig.SAMPLE_RATE_PCT_CONFIG, loggingSampleRate);
+            addProperty(LoggingInterceptorConfig.SAMPLE_RATE_BUCKET_SECONDS_CONFIG, loggingDenominator);
             addProperty(LoggingInterceptorConfig.SAMPLE_RATE_TYPE_CONFIG, loggingSamplerType.getValue());
-            LOG.debug("Setting sampler {} - {}", loggingSamplerType, loggingSampleRate);
+            LOG.debug("Setting sampler {} - {}, {} second bucket ", loggingSamplerType, loggingSampleRate,
+                    loggingSamplerType == SamplerType.TimeBucket ? loggingDenominator : "--NA--");
         }
     }
 
@@ -156,8 +162,9 @@ class KafkaBaseBuilder {
     void withLogging(boolean enabled) {
         enableLoggingInterceptor = enabled;
     }
-    void withSamplingRatePer10Seconds(final int rate) {
+    void withBucketedSamplingRate(final int rate, final int denominator) {
         loggingSampleRate = rate;
+        loggingDenominator = denominator;
         loggingSamplerType = SamplerType.TimeBucket;
     }
     void withRandomSamplingRate(final int rate) {

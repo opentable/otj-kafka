@@ -38,13 +38,19 @@ public class LoggingInterceptorConfig extends AbstractConfig {
     // Whether to stop header propagation
     public static final String ENABLE_HEADER_PROPAGATION_CONFIG = "ot.logging.headers";
 
+    public static final String SAMPLE_RATE_BUCKET_SECONDS_CONFIG = "ot.logging.rate.bucket";
+
+    public static final int DEFAULT_BUCKET_DENOMINATOR = 10;
+
     private static final ConfigDef CONFIG = new ConfigDef()
             .define(SAMPLE_RATE_PCT_CONFIG, Type.INT, DEFAULT_SAMPLE_RATE_PCT, ConfigDef.Importance.LOW,
-                    "Logging limit rate per 10 seconds for time-bucket or percent of records for random sampler. Use a negative value to disable limiting (lots of logs!) ")
+                    "Logging limit rate per N seconds for time-bucket or percent of records for random sampler, where N = SAMPLE_RATE_BUCKET_SECONDS_CONFIG. Use a negative value to disable limiting (lots of logs!) ")
             .define(SAMPLE_RATE_TYPE_CONFIG, Type.STRING, DEFAULT_SAMPLE_RATE_TYPE, ConfigDef.Importance.LOW,
                     "Logging sampler type. Possible values: (random, time-bucket)")
             .define(ENABLE_HEADER_PROPAGATION_CONFIG, Type.STRING, GenerateHeaders.ALL.name(),
                     ConfigDef.Importance.LOW, "Whether to use headers for propagation")
+            .define(SAMPLE_RATE_BUCKET_SECONDS_CONFIG, Type.INT,  DEFAULT_BUCKET_DENOMINATOR, ConfigDef.Importance.LOW,
+                    "How large is the token bucket? The default is 10 seconds")
             ;
 
     LoggingInterceptorConfig(Map<String, ?> originals) {
