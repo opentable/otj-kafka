@@ -1,6 +1,12 @@
 otj-kafka changelog
 ===================
 
+3.2.2
+-----
+* Hierarchy of builders was refactored to use inheritance. The properties defined in the `KafkaBaseBuilder` visible on child builders.
+* Added support for spring-kafka abstractions:
+The bean `KafkaFactoryBuilderFactoryBean` can be used to construct `ProducerFactory<K, V>` and `KafkaListenerContainerFactory<ConcurrentMessageListenerContainer<K, V>>` using fluent API.
+
 3.2.1
 -----
 * Move LogRestoreListener to new module `otj-kafka-streams`. If you are using this, you'll need
