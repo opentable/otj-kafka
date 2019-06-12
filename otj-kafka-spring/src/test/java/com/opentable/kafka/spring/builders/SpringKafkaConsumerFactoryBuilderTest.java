@@ -28,10 +28,10 @@ import org.springframework.util.concurrent.SettableListenableFuture;
 
 import com.opentable.kafka.builders.KafkaConsumerBuilder;
 import com.opentable.kafka.spring.AbstractTest;
-import com.opentable.kafka.spring.builders.KafkaConsumerFactoryBuilderTest.Config;
+import com.opentable.kafka.spring.builders.SpringKafkaConsumerFactoryBuilderTest.Config;
 
 @ContextConfiguration(classes = Config.class)
-public class KafkaConsumerFactoryBuilderTest extends AbstractTest {
+public class SpringKafkaConsumerFactoryBuilderTest extends AbstractTest {
 
 
     @Autowired

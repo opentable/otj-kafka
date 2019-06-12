@@ -192,7 +192,7 @@ public abstract class KafkaBaseBuilder<SELF extends KafkaBaseBuilder<SELF>> {
         return self();
     }
 
-    public SELF withMetrics(final boolean enabled) {
+    protected SELF withMetrics(final boolean enabled) {
         this.enableMetrics = enabled;
         return self();
     }

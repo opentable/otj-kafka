@@ -16,10 +16,10 @@ import org.springframework.kafka.test.rule.KafkaEmbedded;
 import org.springframework.test.context.ContextConfiguration;
 
 import com.opentable.kafka.spring.AbstractTest;
-import com.opentable.kafka.spring.builders.KafkaProducerFactoryBuilderTest.Config;
+import com.opentable.kafka.spring.builders.SpringKafkaProducerFactoryBuilderTest.Config;
 
 @ContextConfiguration(classes = Config.class)
-public class KafkaProducerFactoryBuilderTest extends AbstractTest {
+public class SpringKafkaProducerFactoryBuilderTest extends AbstractTest {
 
 
     @Autowired
