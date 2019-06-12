@@ -56,6 +56,9 @@ public class KafkaProducerBuilder<K, V>  extends KafkaProducerBaseBuilder<KafkaP
 
     private <PK,PV> Producer<PK,PV> producer(Serializer<PK> keySerializer, Serializer<PV> valueSerializer) {
         LOG.trace("Building KafkaProducer with props {}", getFinalProperties());
+        if (keySerializer != null || valueSerializer != null) {
+            LOG.warn("You passed an INSTANCE (as opposed to class) as a Serializer. That's fine, but realize configure() will not be called on the Serializer. That's per Kafka Design.");
+        }
         return new KafkaProducer<>(getFinalProperties(), keySerializer, valueSerializer);
     }
 

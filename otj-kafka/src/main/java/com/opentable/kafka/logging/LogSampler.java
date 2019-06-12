@@ -55,13 +55,14 @@ public abstract class LogSampler {
         private final Optional<LocalBucket> bucket;
 
         LogSamplerBucket(LoggingInterceptorConfig conf) {
-            final Integer howOftenPer10Seconds = conf.getInt(LoggingInterceptorConfig.SAMPLE_RATE_PCT_CONFIG);
+            final Integer howOftenPerNSEconds = conf.getInt(LoggingInterceptorConfig.SAMPLE_RATE_PCT_CONFIG);
+            final Integer nSeconds = conf.getInt(LoggingInterceptorConfig.SAMPLE_RATE_BUCKET_SECONDS_CONFIG);
             Bandwidth limit;
-            if (howOftenPer10Seconds == null || howOftenPer10Seconds < 0) {
+            if (howOftenPerNSEconds == null || howOftenPerNSEconds < 0) {
                 LOG.warn("Not rate limiting");
                 this.bucket = Optional.empty();
             } else {
-                limit = Bandwidth.simple(howOftenPer10Seconds, Duration.ofSeconds(10));
+                limit = Bandwidth.simple(howOftenPerNSEconds, Duration.ofSeconds(nSeconds));
                 this.bucket = Optional.ofNullable(Bucket4j.builder().addLimit(limit).build());
             }
         }

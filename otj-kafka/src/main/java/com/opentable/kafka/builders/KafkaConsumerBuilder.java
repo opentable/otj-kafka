@@ -56,6 +56,9 @@ public class KafkaConsumerBuilder<K, V> extends KafkaConsumerBaseBuilder<KafkaCo
 
     private <CK,CV> Consumer<CK,CV> consumer(Deserializer<CK> keyDeserializer, Deserializer<CV> valuedeserializer) {
         LOG.trace("Building KafkaConsumer with props {}", getFinalProperties());
+        if (keyDeserializer != null || valuedeserializer != null) {
+            LOG.warn("You passed an INSTANCE (as opposed to class) as a Deserializer. That's fine, but realize configure() will not be called on the Deserializer. That's per Kafka Design.");
+        }
         return new KafkaConsumer<>(getFinalProperties(), keyDeserializer, valuedeserializer);
     }
 
