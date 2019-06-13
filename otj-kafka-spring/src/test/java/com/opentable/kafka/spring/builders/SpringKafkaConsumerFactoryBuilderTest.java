@@ -24,6 +24,7 @@ import org.springframework.kafka.core.ProducerFactory;
 import org.springframework.kafka.listener.ConcurrentMessageListenerContainer;
 import org.springframework.kafka.test.rule.KafkaEmbedded;
 import org.springframework.test.context.ContextConfiguration;
+import org.springframework.test.context.TestPropertySource;
 import org.springframework.util.concurrent.SettableListenableFuture;
 
 import com.opentable.kafka.builders.KafkaConsumerBuilder;
@@ -31,6 +32,10 @@ import com.opentable.kafka.spring.AbstractTest;
 import com.opentable.kafka.spring.builders.SpringKafkaConsumerFactoryBuilderTest.Config;
 
 @ContextConfiguration(classes = Config.class)
+@TestPropertySource(properties = {
+    "ot.kafka.consumer.test.ack-mode=MANUAL",
+    "ot.kafka.consumer.test.concurrency=1"
+})
 public class SpringKafkaConsumerFactoryBuilderTest extends AbstractTest {
 
 

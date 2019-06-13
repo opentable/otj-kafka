@@ -21,6 +21,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.OptionalLong;
+import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import com.codahale.metrics.MetricRegistry;
@@ -62,7 +64,7 @@ public abstract class KafkaBaseBuilder<SELF extends KafkaBaseBuilder<SELF>> {
     private boolean enableMetrics = true;
 
     protected KafkaBaseBuilder(Map<String, Object> props, EnvironmentProvider environmentProvider) {
-        this.seedProperties = props;
+        this.seedProperties = new HashMap<>(props);
         this.environmentProvider = environmentProvider;
         metricRegistry = Optional.empty();
     }
@@ -71,6 +73,25 @@ public abstract class KafkaBaseBuilder<SELF extends KafkaBaseBuilder<SELF>> {
 
     protected void addProperty(String key, Object value) {
         finalProperties.put(key, value);
+    }
+
+    /**
+     * Reads property value from the seedProperties. The key is removed because we've precombined,
+     * and don't want the mergeProperties() to overwrite.
+     *
+     * @param name - name of the property.
+     * @param mapper - converter function.
+     * @param action - callback.
+     */
+    protected <T> void readProperty(final String name, Function<String, ? extends T> mapper, Consumer<? super T> action) {
+        Optional.ofNullable(seedProperties.get(name))
+            .filter(String.class::isInstance)
+            .map(String.class::cast)
+            .map(mapper)
+            .ifPresent(i -> {
+                seedProperties.remove(name);
+                action.accept(i);
+            });
     }
 
     protected void addInterceptor(String className) {
