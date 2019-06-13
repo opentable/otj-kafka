@@ -3,6 +3,7 @@ package com.opentable.kafka.spring.builders;
 import java.time.Duration;
 import java.util.Map;
 import java.util.Optional;
+import java.util.function.Consumer;
 
 import org.apache.kafka.common.serialization.Deserializer;
 import org.springframework.kafka.config.ConcurrentKafkaListenerContainerFactory;
@@ -12,6 +13,7 @@ import org.springframework.kafka.core.DefaultKafkaConsumerFactory;
 import org.springframework.kafka.listener.ConcurrentMessageListenerContainer;
 import org.springframework.kafka.listener.ContainerProperties;
 import org.springframework.kafka.listener.ContainerProperties.AckMode;
+import org.springframework.kafka.support.converter.MessageConverter;
 import org.springframework.lang.Nullable;
 
 import com.opentable.kafka.builders.EnvironmentProvider;
@@ -23,10 +25,18 @@ public class SpringKafkaConsumerFactoryBuilder<K, V>  extends KafkaConsumerBaseB
     public static final String POLL_TIMEOUT_CONFIG = "poll-timeout";
     public static final String ACK_MODE_CONFIG = "ack-mode";
     public static final String CONCURRENCY_CONFIG = "concurrency";
+    public static final String SYNC_COMMITS_CONFIG = "sync-commits";
+    public static final String ACK_ON_ERROR_CONFIG = "ack-on-error";
 
     private Optional<Duration> pollTimeout = Optional.empty();
     private Optional<AckMode> ackMode = Optional.empty();
     private Optional<Integer> concurrency = Optional.empty();
+    private Optional<Consumer<ContainerProperties>> containerPropertiesCustomizer = Optional.empty();
+    private Optional<Consumer<KafkaListenerContainerFactory<ConcurrentMessageListenerContainer<K, V>>>> factoryCustomizer = Optional.empty();
+    private Optional<Boolean> syncCommits = Optional.empty();
+    private Optional<Boolean> ackOnError = Optional.empty();
+    private Optional<Boolean> batchListener = Optional.empty();
+    private Optional<MessageConverter> messageConverter  = Optional.empty();
 
     SpringKafkaConsumerFactoryBuilder(Map<String, Object> props, EnvironmentProvider environmentProvider) {
         super(props, environmentProvider);
@@ -37,6 +47,8 @@ public class SpringKafkaConsumerFactoryBuilder<K, V>  extends KafkaConsumerBaseB
         readProperty(POLL_TIMEOUT_CONFIG, Duration::parse, this::withPollTimeout);
         readProperty(ACK_MODE_CONFIG, AckMode::valueOf, this::withAckMode);
         readProperty(CONCURRENCY_CONFIG, Integer::valueOf, this::withConcurrency);
+        readProperty(SYNC_COMMITS_CONFIG, Boolean::valueOf, this::withSyncCommits);
+        readProperty(ACK_ON_ERROR_CONFIG, Boolean::valueOf, this::withAckOnError);
     }
 
     @Override
@@ -80,7 +92,7 @@ public class SpringKafkaConsumerFactoryBuilder<K, V>  extends KafkaConsumerBaseB
      * @param value the {@link AckMode}; default BATCH.
      */
     public SpringKafkaConsumerFactoryBuilder<K, V> withAckMode(AckMode value) {
-        withAutoCommit(false);
+        withAutoCommit(value == null);
         this.ackMode = Optional.ofNullable(value);
         return self();
     }
@@ -92,6 +104,81 @@ public class SpringKafkaConsumerFactoryBuilder<K, V>  extends KafkaConsumerBaseB
      */
     public SpringKafkaConsumerFactoryBuilder<K, V> withConcurrency(Integer value) {
         this.concurrency = Optional.ofNullable(value);
+        return self();
+    }
+
+    /**
+     * Set whether or not to call consumer.commitSync() or commitAsync() when the
+     * container is responsible for commits. Default true. See
+     * https://github.com/spring-projects/spring-kafka/issues/62 At the time of
+     * writing, async commits are not entirely reliable.
+     * @param value true to use commitSync().
+     */
+    public SpringKafkaConsumerFactoryBuilder<K, V> withSyncCommits(Boolean value) {
+        this.syncCommits = Optional.ofNullable(value);
+        return self();
+    }
+
+    /**
+     * Set whether or not the container should commit offsets (ack messages) where the
+     * listener throws exceptions. This works in conjunction with {@link #ackMode} and is
+     * effective only when the kafka property {@code enable.auto.commit} is {@code false};
+     * it is not applicable to manual ack modes. When this property is set to {@code true}
+     * (the default), all messages handled will have their offset committed. When set to
+     * {@code false}, offsets will be committed only for successfully handled messages.
+     * Manual acks will always be applied. Bear in mind that, if the next message is
+     * successfully handled, its offset will be committed, effectively committing the
+     * offset of the failed message anyway, so this option has limited applicability.
+     * Perhaps useful for a component that starts throwing exceptions consistently;
+     * allowing it to resume when restarted from the last successfully processed message.
+     * <p>
+     * Does not apply when transactions are used - in that case, whether or not the
+     * offsets are sent to the transaction depends on whether the transaction is committed
+     * or rolled back. If a listener throws an exception, the transaction will normally
+     * be rolled back unless an error handler is provided that handles the error and
+     * exits normally; in which case the offsets are sent to the transaction and the
+     * transaction is committed.
+     * @param value whether the container should acknowledge messages that throw
+     * exceptions.
+     */
+    public SpringKafkaConsumerFactoryBuilder<K, V> withAckOnError(Boolean value) {
+        this.ackOnError = Optional.ofNullable(value);
+        return self();
+    }
+
+    /**
+     * Set to true if this endpoint should create a batch listener.
+     * @param value true for a batch listener.
+     */
+    public SpringKafkaConsumerFactoryBuilder<K, V> withBatchListener(Boolean value) {
+        this.batchListener = Optional.ofNullable(value);
+        return self();
+    }
+
+    /**
+     * Set the message converter to use if dynamic argument type matching is needed.
+     * @param value the converter.
+     */
+    public SpringKafkaConsumerFactoryBuilder<K, V> withMessageConverter(MessageConverter value) {
+        this.messageConverter = Optional.ofNullable(value);
+        return self();
+    }
+
+    /**
+     * Specify callback to customize {@link ContainerProperties}
+     * @param value - callback
+     */
+    public SpringKafkaConsumerFactoryBuilder<K, V> withContainerPropertiesCustomizer(Consumer<ContainerProperties> value) {
+        this.containerPropertiesCustomizer = Optional.ofNullable(value);
+        return self();
+    }
+
+    /**
+     * Specify callback to customize {@link KafkaListenerContainerFactory}
+     * @param value - callback
+     */
+    public SpringKafkaConsumerFactoryBuilder<K, V> withFactoryCustomizer(Consumer<KafkaListenerContainerFactory<ConcurrentMessageListenerContainer<K, V>>> value) {
+        this.factoryCustomizer = Optional.ofNullable(value);
         return self();
     }
 
@@ -118,10 +205,20 @@ public class SpringKafkaConsumerFactoryBuilder<K, V>  extends KafkaConsumerBaseB
     public KafkaListenerContainerFactory<ConcurrentMessageListenerContainer<K, V>> build() {
         final ConcurrentKafkaListenerContainerFactory<K, V> factory = new ConcurrentKafkaListenerContainerFactory<>();
         factory.setConsumerFactory(buildFactory());
-        concurrency.ifPresent(factory::setConcurrency);
         final ContainerProperties containerProperties = factory.getContainerProperties();
+
         pollTimeout.map(Duration::toMillis).ifPresent(containerProperties::setPollTimeout);
         ackMode.ifPresent(containerProperties::setAckMode);
+        syncCommits.ifPresent(containerProperties::setSyncCommits);
+        ackOnError.ifPresent(containerProperties::setAckOnError);
+
+        concurrency.ifPresent(factory::setConcurrency);
+        batchListener.ifPresent(factory::setBatchListener);
+        messageConverter.ifPresent(factory::setMessageConverter);
+
+        containerPropertiesCustomizer.ifPresent(c -> c.accept(containerProperties));
+        factoryCustomizer.ifPresent(c -> c.accept(factory));
+
         return factory;
     }
 }
