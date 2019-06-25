@@ -20,6 +20,7 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 
 import com.codahale.metrics.MetricRegistry;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import org.springframework.core.env.ConfigurableEnvironment;
 
@@ -35,13 +36,15 @@ import com.opentable.spring.PropertySourceUtil;
 @SuppressWarnings("OptionalUsedAsFieldOrParameterType")
 public class KafkaFactoryBuilderFactoryBean {
 
-    protected static final String PREFIX = "ot.kafka.";
-    static final String DEFAULT = "default";
+    private static final String PREFIX = "ot.kafka.";
+    private static final String DEFAULT = "default";
+    private static final String NAME_CANNOT_BE_NULL = "Name cannot be null!";
 
     private final ConfigurableEnvironment env;
     final Optional<MetricRegistry> metricRegistry;
     final EnvironmentProvider environmentProvider;
     final Optional<ServiceInfo> serviceInfo;
+    final Optional<ObjectMapper> objectMapper;
     private final String consumerPrefix;
     private final String producerPrefix;
 
@@ -49,7 +52,10 @@ public class KafkaFactoryBuilderFactoryBean {
             final EnvironmentProvider environmentProvider,
             final ConfigurableEnvironment env,
             final Optional<ServiceInfo> serviceInfo,
-            final Optional<MetricRegistry> metricRegistry) {
+            final Optional<MetricRegistry> metricRegistry,
+            final Optional<ObjectMapper> objectMapper
+    ) {
+        this.objectMapper = objectMapper;
         this.env = env;
         this.environmentProvider = environmentProvider;
         this.serviceInfo = serviceInfo;
@@ -77,7 +83,7 @@ public class KafkaFactoryBuilderFactoryBean {
 
 
     public SpringKafkaProducerFactoryBuilder<? , ?> producerFactoryBuilder(String name) {
-        Objects.requireNonNull(name, "Name cannot be null!");
+        Objects.requireNonNull(name, NAME_CANNOT_BE_NULL);
         final Map<String, Object> mergedSeedProperties = mergeProperties(
             getProperties(DEFAULT, this.producerPrefix),
             name, producerPrefix
@@ -89,12 +95,12 @@ public class KafkaFactoryBuilderFactoryBean {
     }
 
     public SpringKafkaConsumerFactoryBuilder<?, ?> consumerFactoryBuilder(String name) {
-        Objects.requireNonNull(name, "Name cannot be null!");
+        Objects.requireNonNull(name, NAME_CANNOT_BE_NULL);
         final Map<String, Object> mergedSeedProperties = mergeProperties(
             getProperties(DEFAULT, consumerPrefix),
             name, consumerPrefix
         );
-        final SpringKafkaConsumerFactoryBuilder<?, ?> res = new SpringKafkaConsumerFactoryBuilder<>(mergedSeedProperties, environmentProvider);
+        final SpringKafkaConsumerFactoryBuilder<?, ?> res = new SpringKafkaConsumerFactoryBuilder<>(mergedSeedProperties, environmentProvider, objectMapper);
         metricRegistry.ifPresent(mr -> res.withMetricRegistry(mr, OtMetricsReporterConfig.DEFAULT_PREFIX + ".consumer." + name + ".${metric-reporter-id}"));
         serviceInfo.ifPresent(si -> res.withClientId(name + "-" + si.getName()  + "-" + ClientIdGenerator.getInstance().nextClientId()));
         return res;

@@ -36,13 +36,13 @@ public class SpringKafkaProducerFactoryBuilder<K, V>  extends KafkaProducerBaseB
 
     @SuppressWarnings("unchecked")
     @Override
-    protected <K2, V2> SpringKafkaProducerFactoryBuilder<K2, V2> withSerializers(Class<? extends Serializer<K2>> keySer, Class<? extends Serializer<V2>> valSer) {
+    public <K2, V2> SpringKafkaProducerFactoryBuilder<K2, V2> withSerializers(Class<? extends Serializer<K2>> keySer, Class<? extends Serializer<V2>> valSer) {
         return (SpringKafkaProducerFactoryBuilder<K2, V2>) super.withSerializers(keySer, valSer);
     }
 
     @SuppressWarnings("unchecked")
     @Override
-    protected <K2, V2> SpringKafkaProducerFactoryBuilder<K2, V2> withSerializers(Serializer<K2> keySer, Serializer<V2> valSer) {
+    public <K2, V2> SpringKafkaProducerFactoryBuilder<K2, V2> withSerializers(Serializer<K2> keySer, Serializer<V2> valSer) {
         return (SpringKafkaProducerFactoryBuilder<K2, V2>) super.withSerializers(keySer, valSer);
     }
 

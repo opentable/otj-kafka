@@ -5,6 +5,9 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.function.Consumer;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+
+import org.apache.kafka.common.serialization.BytesDeserializer;
 import org.apache.kafka.common.serialization.Deserializer;
 import org.springframework.kafka.config.ConcurrentKafkaListenerContainerFactory;
 import org.springframework.kafka.config.KafkaListenerContainerFactory;
@@ -13,6 +16,7 @@ import org.springframework.kafka.core.DefaultKafkaConsumerFactory;
 import org.springframework.kafka.listener.ConcurrentMessageListenerContainer;
 import org.springframework.kafka.listener.ContainerProperties;
 import org.springframework.kafka.listener.ContainerProperties.AckMode;
+import org.springframework.kafka.support.converter.BytesJsonMessageConverter;
 import org.springframework.kafka.support.converter.MessageConverter;
 import org.springframework.lang.Nullable;
 
@@ -28,6 +32,8 @@ public class SpringKafkaConsumerFactoryBuilder<K, V>  extends KafkaConsumerBaseB
     public static final String SYNC_COMMITS_CONFIG = "sync-commits";
     public static final String ACK_ON_ERROR_CONFIG = "ack-on-error";
 
+    private final Optional<ObjectMapper> objectMapper;
+
     private Optional<Duration> pollTimeout = Optional.empty();
     private Optional<AckMode> ackMode = Optional.empty();
     private Optional<Integer> concurrency = Optional.empty();
@@ -38,8 +44,10 @@ public class SpringKafkaConsumerFactoryBuilder<K, V>  extends KafkaConsumerBaseB
     private Optional<Boolean> batchListener = Optional.empty();
     private Optional<MessageConverter> messageConverter  = Optional.empty();
 
-    SpringKafkaConsumerFactoryBuilder(Map<String, Object> props, EnvironmentProvider environmentProvider) {
+
+    SpringKafkaConsumerFactoryBuilder(Map<String, Object> props, EnvironmentProvider environmentProvider, Optional<ObjectMapper> objectMapper) {
         super(props, environmentProvider);
+        this.objectMapper = objectMapper;
         readProperties();
     }
 
@@ -162,6 +170,25 @@ public class SpringKafkaConsumerFactoryBuilder<K, V>  extends KafkaConsumerBaseB
     public SpringKafkaConsumerFactoryBuilder<K, V> withMessageConverter(MessageConverter value) {
         this.messageConverter = Optional.ofNullable(value);
         return self();
+    }
+
+    /**
+     * Configures BytesJsonMessageConverter to use with provided ObjectMapper
+     * @param objectMapper
+     * @return
+     */
+    public SpringKafkaConsumerFactoryBuilder<?, ?> withJsonMessageConverter(ObjectMapper objectMapper) {
+        return withMessageConverter(new BytesJsonMessageConverter(objectMapper))
+            .withDeserializers(BytesDeserializer.class, BytesDeserializer.class);
+    }
+
+    /**
+     * Configures BytesJsonMessageConverter to use with default ObjectMapper
+     * @return
+     */
+    public SpringKafkaConsumerFactoryBuilder<?, ?> withJsonMessageConverter() {
+        return withMessageConverter(objectMapper.map(BytesJsonMessageConverter::new).orElse(new BytesJsonMessageConverter()))
+            .withDeserializers(BytesDeserializer.class, BytesDeserializer.class);
     }
 
     /**
