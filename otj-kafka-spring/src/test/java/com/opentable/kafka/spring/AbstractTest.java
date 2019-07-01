@@ -29,7 +29,7 @@ import com.opentable.service.ServiceInfo;
 @SpringBootTest(classes = AbstractTest.Config.class)
 @ActiveProfiles(profiles = "test")
 @DirtiesContext
-@EmbeddedKafka(partitions = 1, topics = { "topic-1"})
+@EmbeddedKafka(partitions = 1, topics = {"topic-1", "topic-2"})
 @TestPropertySource(properties = {
     "kafka.enabled=true",
     "kafka.consumer.enabled=true",

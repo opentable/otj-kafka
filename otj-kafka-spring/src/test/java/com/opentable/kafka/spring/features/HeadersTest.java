@@ -2,7 +2,10 @@ package com.opentable.kafka.spring.features;
 
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 
+import java.util.Map;
+import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -12,6 +15,7 @@ import org.apache.kafka.common.serialization.IntegerSerializer;
 import org.apache.kafka.common.serialization.StringDeserializer;
 import org.apache.kafka.common.serialization.StringSerializer;
 import org.junit.Test;
+import org.slf4j.MDC;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
@@ -24,15 +28,16 @@ import org.springframework.kafka.config.KafkaListenerEndpointRegistry;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.kafka.core.ProducerFactory;
 import org.springframework.kafka.listener.ConcurrentMessageListenerContainer;
-import org.springframework.kafka.listener.ContainerProperties.AckMode;
-import org.springframework.kafka.support.Acknowledgment;
 import org.springframework.kafka.support.KafkaHeaders;
 import org.springframework.kafka.test.rule.KafkaEmbedded;
 import org.springframework.messaging.handler.annotation.Header;
+import org.springframework.messaging.handler.annotation.Headers;
 import org.springframework.messaging.handler.annotation.Payload;
+import org.springframework.messaging.support.MessageBuilder;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.util.concurrent.SettableListenableFuture;
 
+import com.opentable.conservedheaders.ConservedHeader;
 import com.opentable.kafka.builders.KafkaConsumerBuilder;
 import com.opentable.kafka.spring.AbstractTest;
 import com.opentable.kafka.spring.builders.KafkaFactoryBuilderFactoryBean;
@@ -41,16 +46,23 @@ import com.opentable.kafka.spring.builders.KafkaFactoryBuilderFactoryBean;
 public class HeadersTest extends AbstractTest {
 
 
+    public static class DataWithHeaders {
+        String data;
+        String customHeader;
+        String requestId;
+        String correlationId;
+        Map<String, Object> allHeaders;
+    }
+
     @Autowired
     private KafkaTemplate<Integer, String> kafkaTemplate1;
 
     @Autowired
     @Qualifier("resultFuture1")
-    private SettableListenableFuture<String> resultFuture1;
+    private SettableListenableFuture<DataWithHeaders> resultFuture1;
 
     @Autowired
     private KafkaListenerEndpointRegistry registry;
-
 
 
     @Configuration
@@ -88,25 +100,46 @@ public class HeadersTest extends AbstractTest {
 
         @Bean
         @Qualifier("resultFuture1")
-        public SettableListenableFuture<String> resultFuture1() {
+        public SettableListenableFuture<DataWithHeaders> resultFuture1() {
             return new SettableListenableFuture<>();
         }
 
         @KafkaListener(id = "foo", topics = "topic-1", containerFactory = "kafkaListenerContainerFactory", concurrency = "1")
         public void listen(@Payload String data,
-            @Header(KafkaHeaders.RECEIVED_TIMESTAMP) long ts,
-            @Header("X-Custom-Header") String customHeader
+                           @Header(KafkaHeaders.RECEIVED_TIMESTAMP) long ts,
+                           @Header(name = "X-Custom-Header", required = false) String customHeader,
+                           @Header("request-id") String requestId,
+                           @Header("correlation-id") String correlationId,
+                           @Headers Map<String, Object> headers
+
         ) {
-            resultFuture1().set(data);
+            DataWithHeaders res = new DataWithHeaders();
+            res.correlationId = correlationId;
+            res.data = data;
+            res.customHeader = customHeader;
+            res.requestId = requestId;
+            res.allHeaders = headers;
+            resultFuture1().set(res);
         }
 
     }
 
     @Test
-    public void manualAckTest() throws ExecutionException, InterruptedException, TimeoutException {
-        kafkaTemplate1.send("topic-1", 1, "1").get();
-        String data = resultFuture1.get(20, TimeUnit.SECONDS);
-        assertEquals("1", data);
+    public void headersSendReceiveTest() throws ExecutionException, InterruptedException, TimeoutException {
+        final UUID req = UUID.randomUUID();
+        MDC.put(ConservedHeader.REQUEST_ID.getLogName(), req.toString());
+        MDC.put(ConservedHeader.CORRELATION_ID.getLogName(), "foo");
+        kafkaTemplate1.send(MessageBuilder
+            .withPayload("1")
+            .setHeader("X-Custom-Header", "X-Custom-Header")
+            .setHeader(KafkaHeaders.TOPIC, "topic-1")
+            .setHeader(KafkaHeaders.MESSAGE_KEY, 1)
+            .build()).get();
+        DataWithHeaders data = resultFuture1.get(20, TimeUnit.SECONDS);
+        assertEquals("1", data.data);
+        assertEquals(req.toString(), data.requestId);
+        assertNotNull(data.correlationId);
+        assertEquals("X-Custom-Header", data.customHeader);
     }
 
 }
