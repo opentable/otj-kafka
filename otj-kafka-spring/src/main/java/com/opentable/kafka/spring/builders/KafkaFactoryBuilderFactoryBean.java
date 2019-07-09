@@ -13,11 +13,7 @@
  */
 package com.opentable.kafka.spring.builders;
 
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Objects;
 import java.util.Optional;
-import java.util.stream.Collectors;
 
 import com.codahale.metrics.MetricRegistry;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -25,86 +21,42 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.core.env.ConfigurableEnvironment;
 
 import com.opentable.kafka.builders.EnvironmentProvider;
+import com.opentable.kafka.builders.KafkaAbstractFactoryBean;
 import com.opentable.kafka.metrics.OtMetricsReporterConfig;
 import com.opentable.kafka.util.ClientIdGenerator;
 import com.opentable.service.ServiceInfo;
-import com.opentable.spring.PropertySourceUtil;
 
 /**
- * Main spring entry point for building KafkaConsumer and KafkaProducer
+ * Main spring entry point for building ConsumerFactory and ProducerFactory
  */
 @SuppressWarnings("OptionalUsedAsFieldOrParameterType")
-public class KafkaFactoryBuilderFactoryBean {
+public class KafkaFactoryBuilderFactoryBean extends KafkaAbstractFactoryBean {
 
-    private static final String PREFIX = "ot.kafka.";
-    private static final String DEFAULT = "default";
-    private static final String NAME_CANNOT_BE_NULL = "Name cannot be null!";
+    private final Optional<ObjectMapper> objectMapper;
 
-    private final ConfigurableEnvironment env;
-    final Optional<MetricRegistry> metricRegistry;
-    final EnvironmentProvider environmentProvider;
-    final Optional<ServiceInfo> serviceInfo;
-    final Optional<ObjectMapper> objectMapper;
-    private final String consumerPrefix;
-    private final String producerPrefix;
-
-    KafkaFactoryBuilderFactoryBean(
-            final EnvironmentProvider environmentProvider,
-            final ConfigurableEnvironment env,
-            final Optional<ServiceInfo> serviceInfo,
-            final Optional<MetricRegistry> metricRegistry,
-            final Optional<ObjectMapper> objectMapper
+    KafkaFactoryBuilderFactoryBean(EnvironmentProvider environmentProvider,
+                                   ConfigurableEnvironment env,
+                                   Optional<ServiceInfo> serviceInfo,
+                                   Optional<MetricRegistry> metricRegistry,
+                                   Optional<ObjectMapper> objectMapper
     ) {
+        super(environmentProvider, env, serviceInfo, metricRegistry);
         this.objectMapper = objectMapper;
-        this.env = env;
-        this.environmentProvider = environmentProvider;
-        this.serviceInfo = serviceInfo;
-        this.metricRegistry = metricRegistry;
-        this.consumerPrefix = PREFIX + "consumer.";
-        this.producerPrefix = PREFIX + "producer.";
-    }
-
-    // These take precedence. One minor flaw is list properties are not currently combined, these replace all
-    private Map<String, Object> getProperties(final String nameSpace, final String prefix) {
-        return PropertySourceUtil.getProperties(env, prefix + nameSpace)
-                .entrySet()
-                .stream()
-                .collect(Collectors.toMap(o -> (String) o.getKey(), Map.Entry::getValue));
-
-    }
-
-    // merge properties in, given the officially namespaced properties get precedence
-    private Map<String, Object> mergeProperties(final Map<String, Object> originalProperties, final String namespace, final String prefix) {
-        final Map<String, Object> originalMap = new HashMap<>(originalProperties);
-        final Map<String, Object> mergeMap = getProperties(namespace, prefix);
-        originalMap.putAll(mergeMap);
-        return originalMap;
     }
 
 
-    public SpringKafkaProducerFactoryBuilder<? , ?> producerFactoryBuilder(String name) {
-        Objects.requireNonNull(name, NAME_CANNOT_BE_NULL);
-        final Map<String, Object> mergedSeedProperties = mergeProperties(
-            getProperties(DEFAULT, this.producerPrefix),
-            name, producerPrefix
-        );
-        final SpringKafkaProducerFactoryBuilder<? , ?> res = new SpringKafkaProducerFactoryBuilder<>(mergedSeedProperties, environmentProvider);
-        metricRegistry.ifPresent(mr -> res.withMetricRegistry(mr, OtMetricsReporterConfig.DEFAULT_PREFIX + ".producer." + name + ".${metric-reporter-id}"));
-        serviceInfo.ifPresent(si -> res.withClientId(name + "-" + si.getName() + "-" + ClientIdGenerator.getInstance().nextClientId()));
+    public SpringKafkaProducerFactoryBuilder<?, ?> producerFactoryBuilder(String name) {
+        final SpringKafkaProducerFactoryBuilder<?, ?> res = new SpringKafkaProducerFactoryBuilder<>(getMergedProducerProperties(name), getEnvironmentProvider());
+        getMetricRegistry().ifPresent(mr -> res.withMetricRegistry(mr, OtMetricsReporterConfig.DEFAULT_PREFIX + ".producer." + name + ".${metric-reporter-id}"));
+        getServiceInfo().ifPresent(si -> res.withClientId(name + "-" + si.getName() + "-" + ClientIdGenerator.getInstance().nextClientId()));
         return res;
     }
 
     public SpringKafkaConsumerFactoryBuilder<?, ?> consumerFactoryBuilder(String name) {
-        Objects.requireNonNull(name, NAME_CANNOT_BE_NULL);
-        final Map<String, Object> mergedSeedProperties = mergeProperties(
-            getProperties(DEFAULT, consumerPrefix),
-            name, consumerPrefix
-        );
-        final SpringKafkaConsumerFactoryBuilder<?, ?> res = new SpringKafkaConsumerFactoryBuilder<>(mergedSeedProperties, environmentProvider, objectMapper);
-        metricRegistry.ifPresent(mr -> res.withMetricRegistry(mr, OtMetricsReporterConfig.DEFAULT_PREFIX + ".consumer." + name + ".${metric-reporter-id}"));
-        serviceInfo.ifPresent(si -> res.withClientId(name + "-" + si.getName()  + "-" + ClientIdGenerator.getInstance().nextClientId()));
+        final SpringKafkaConsumerFactoryBuilder<?, ?> res = new SpringKafkaConsumerFactoryBuilder<>(getMergedConsumerProperties(name), getEnvironmentProvider(), objectMapper);
+        getMetricRegistry().ifPresent(mr -> res.withMetricRegistry(mr, OtMetricsReporterConfig.DEFAULT_PREFIX + ".consumer." + name + ".${metric-reporter-id}"));
+        getServiceInfo().ifPresent(si -> res.withClientId(name + "-" + si.getName() + "-" + ClientIdGenerator.getInstance().nextClientId()));
         return res;
     }
-
 
 }

@@ -11,7 +11,6 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.Import;
 import org.springframework.core.env.ConfigurableEnvironment;
 import org.springframework.kafka.test.EmbeddedKafkaBroker;
 import org.springframework.kafka.test.context.EmbeddedKafka;
@@ -20,9 +19,7 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.junit4.SpringRunner;
 
-import com.opentable.kafka.builders.InjectKafkaBuilderBean;
-import com.opentable.kafka.spring.builders.SpringKafkaConfiguration;
-import com.opentable.metrics.DefaultMetricsConfiguration;
+import com.opentable.kafka.spring.builders.InjectSpringKafkaBuilderBean;
 import com.opentable.service.ServiceInfo;
 
 @RunWith(SpringRunner.class)
@@ -49,11 +46,7 @@ public abstract class AbstractTest {
     protected String brokerAddresses;
 
     @Configuration
-    @InjectKafkaBuilderBean
-    @Import({
-        DefaultMetricsConfiguration.class,
-        SpringKafkaConfiguration.class
-    })
+    @InjectSpringKafkaBuilderBean
     public static class Config {
         @Bean
         ServiceInfo serviceInfo(@Value("${info.component:test-service}") final String serviceType) {
