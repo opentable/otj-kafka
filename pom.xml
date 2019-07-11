@@ -36,6 +36,7 @@
     <basepom.oss.skip-scala-doc>true</basepom.oss.skip-scala-doc>
     <basepom.check.skip-javadoc>false</basepom.check.skip-javadoc>
     <basepom.check.fail-javadoc>false</basepom.check.fail-javadoc>
+    <!-- We can't go to Curator 3 or 4 without bumping to Zookeeper 3.5. Since Kafka is still shipping with 3.4, holding off -->
     <dep.curator.version>2.13.0</dep.curator.version>
 
     <!-- Manage in parent -->
