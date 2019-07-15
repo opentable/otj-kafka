@@ -120,7 +120,6 @@ public class JsonTest extends AbstractTest {
     private KafkaListenerEndpointRegistry registry;
 
     @Configuration
-    @EnableKafka
     public static class Config {
 
         @Value("${" + KafkaEmbedded.SPRING_EMBEDDED_KAFKA_BROKERS + "}")

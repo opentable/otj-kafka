@@ -20,6 +20,7 @@ import java.lang.annotation.Target;
 
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
+import org.springframework.kafka.annotation.EnableKafka;
 
 import com.opentable.metrics.DefaultMetricsConfiguration;
 
@@ -27,6 +28,7 @@ import com.opentable.metrics.DefaultMetricsConfiguration;
 @Target(ElementType.TYPE)
 @Retention(RetentionPolicy.RUNTIME)
 @Import({SpringKafkaConfiguration.class, DefaultMetricsConfiguration.class})
+@EnableKafka
 public @interface InjectSpringKafkaBuilderBean {
 }
 
