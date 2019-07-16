@@ -30,6 +30,7 @@
     <tag>HEAD</tag>
   </scm>
 
+  
   <properties>
     <!-- Open source requires JavaDocs -->
     <basepom.oss.skip-scala-doc>true</basepom.oss.skip-scala-doc>
