@@ -20,9 +20,8 @@
   <parent>
     <groupId>com.opentable</groupId>
     <artifactId>otj-parent-spring</artifactId>
-    <version>210</version>
+    <version>211-SNAPSHOT</version>
   </parent>
-
 
   <scm>
     <connection>scm:git:git://github.com/opentable/otj-kafka.git</connection>
@@ -38,10 +37,6 @@
     <basepom.check.fail-javadoc>false</basepom.check.fail-javadoc>
     <!-- We can't go to Curator 3 or 4 without bumping to Zookeeper 3.5. Since Kafka is still shipping with 3.4, holding off -->
     <dep.curator.version>2.13.0</dep.curator.version>
-
-    <!-- Manage in parent -->
-    <spring-kafka.version>2.2.4.RELEASE</spring-kafka.version>
-
   </properties>
 
   <groupId>com.opentable.components</groupId>
@@ -73,36 +68,6 @@
         <artifactId>curator-test</artifactId>
         <version>${dep.curator.version}</version>
       </dependency>
-
-
-      <!-- otj-kafka-spring - put in parent -->
-      <dependency>
-        <groupId>org.springframework.kafka</groupId>
-        <artifactId>spring-kafka</artifactId>
-        <exclusions>
-          <exclusion>
-            <groupId>org.apache.kafka</groupId>
-            <artifactId>kafka-clients</artifactId>
-          </exclusion>
-        </exclusions>
-        <version>${spring-kafka.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.springframework.kafka</groupId>
-        <artifactId>spring-kafka-test</artifactId>
-        <exclusions>
-          <exclusion>
-            <groupId>org.apache.kafka</groupId>
-            <artifactId>kafka-clients</artifactId>
-          </exclusion>
-          <exclusion>
-            <groupId>org.apache.kafka</groupId>
-            <artifactId>kafka_2.11</artifactId>
-          </exclusion>
-        </exclusions>
-        <version>${spring-kafka.version}</version>
-      </dependency>
-
       </dependencies>
   </dependencyManagement>
   <modules>
