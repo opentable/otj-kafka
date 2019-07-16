@@ -17,6 +17,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.regex.Pattern;
 
@@ -24,12 +25,16 @@ import com.codahale.metrics.Gauge;
 import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.SharedMetricRegistries;
 
+import org.apache.commons.lang3.text.StrSubstitutor;
+import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.common.MetricName;
 import org.apache.kafka.common.metrics.KafkaMetric;
 import org.apache.kafka.common.metrics.MetricsReporter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.util.AntPathMatcher;
+
+import com.opentable.kafka.util.ClientIdGenerator;
 
 public class OtMetricsReporter implements MetricsReporter {
 
@@ -111,7 +116,7 @@ public class OtMetricsReporter implements MetricsReporter {
         final MetricName metricName = metric.metricName();
         // prefix includes kafka.<userSupplied>
         return MetricRegistry.name(
-                sanitize(prefix),
+            getExpandedPrefix(metric),
             metricName.group(),
             metricName.name(),
             sanitize(metricName.tags().get("topic")),
@@ -157,13 +162,16 @@ public class OtMetricsReporter implements MetricsReporter {
         if (prefix == null) {
             throw new IllegalStateException("METRIC_PREFIX_CONFIG is null");
         }
+        if (prefix.contains("${metric-reporter-id}")) {
+            prefix = prefix.replace("${metric-reporter-id}", String.valueOf(ClientIdGenerator.getInstance().nextMetricReporterId()));
+        }
+        prefix = prefix.replace("${group-id}", Optional.ofNullable((String)config.get(ConsumerConfig.GROUP_ID_CONFIG)).orElse(""));
         if (otMetricsReporterConfig.getList(OtMetricsReporterConfig.METRIC_GROUPS_CONFIG) != null) {
             groups.addAll(otMetricsReporterConfig.getList(OtMetricsReporterConfig.METRIC_GROUPS_CONFIG));
         }
         if (otMetricsReporterConfig.getList(OtMetricsReporterConfig.METRIC_NAME_MATCHERS_CONFIG) != null) {
             metricMatchers.addAll(otMetricsReporterConfig.getList(OtMetricsReporterConfig.METRIC_NAME_MATCHERS_CONFIG));
         }
-
         LOG.info("OtMetricsReporter is configured with metric registry: {} and prefix: {}", metricRegistry, prefix);
     }
 
@@ -174,4 +182,7 @@ public class OtMetricsReporter implements MetricsReporter {
         return blacklistedChars.matcher(name).replaceAll("_");
     }
 
+    private String getExpandedPrefix(KafkaMetric metric) {
+        return sanitize(new StrSubstitutor(metric.metricName().tags()).replace(prefix));
+    }
 }

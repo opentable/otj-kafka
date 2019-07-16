@@ -13,11 +13,7 @@
  */
 package com.opentable.kafka.builders;
 
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Objects;
 import java.util.Optional;
-import java.util.stream.Collectors;
 
 import com.codahale.metrics.MetricRegistry;
 
@@ -26,78 +22,32 @@ import org.springframework.core.env.ConfigurableEnvironment;
 import com.opentable.kafka.metrics.OtMetricsReporterConfig;
 import com.opentable.kafka.util.ClientIdGenerator;
 import com.opentable.service.ServiceInfo;
-import com.opentable.spring.PropertySourceUtil;
 
 /**
  * Main spring entry point for building KafkaConsumer and KafkaProducer
  */
 @SuppressWarnings("OptionalUsedAsFieldOrParameterType")
-public class KafkaBuilderFactoryBean {
+public class KafkaBuilderFactoryBean extends KafkaAbstractFactoryBean {
 
-    protected static final String PREFIX = "ot.kafka.";
-    static final String DEFAULT = "default";
-
-    private final ConfigurableEnvironment env;
-    final Optional<MetricRegistry> metricRegistry;
-    final EnvironmentProvider environmentProvider;
-    final Optional<ServiceInfo> serviceInfo;
-    private final String consumerPrefix;
-    private final String producerPrefix;
-
-    KafkaBuilderFactoryBean(
-            final EnvironmentProvider environmentProvider,
-            final ConfigurableEnvironment env,
-            final Optional<ServiceInfo> serviceInfo,
-            final Optional<MetricRegistry> metricRegistry) {
-        this.env = env;
-        this.environmentProvider = environmentProvider;
-        this.serviceInfo = serviceInfo;
-        this.metricRegistry = metricRegistry;
-        this.consumerPrefix = PREFIX + "consumer.";
-        this.producerPrefix = PREFIX + "producer.";
-    }
-
-    // These take precedence. One minor flaw is list properties are not currently combined, these replace all
-    Map<String, Object> getProperties(final String nameSpace, final String prefix) {
-        return PropertySourceUtil.getProperties(env, prefix + nameSpace)
-                .entrySet()
-                .stream()
-                .collect(Collectors.toMap(o -> (String) o.getKey(), Map.Entry::getValue));
-
-    }
-
-    // merge properties in, given the officially namespaced properties get precedence
-    Map<String, Object> mergeProperties(final Map<String, Object> originalProperties, final String namespace, final String prefix) {
-        final Map<String, Object> originalMap = new HashMap<>(originalProperties);
-        final Map<String, Object> mergeMap = getProperties(namespace, prefix);
-        originalMap.putAll(mergeMap);
-        return originalMap;
+    KafkaBuilderFactoryBean(EnvironmentProvider environmentProvider,
+                            ConfigurableEnvironment env,
+                            Optional<ServiceInfo> serviceInfo,
+                            Optional<MetricRegistry> metricRegistry) {
+        super(environmentProvider, env, serviceInfo, metricRegistry);
     }
 
     public KafkaConsumerBuilder<?, ?> consumerBuilder(String name) {
-        Objects.requireNonNull(name, "Name cannot be null!");
-        final Map<String, Object> mergedSeedProperties = mergeProperties(
-            getProperties(DEFAULT, consumerPrefix),
-            name, consumerPrefix
-        );
-        final KafkaConsumerBuilder<?, ?> res = new KafkaConsumerBuilder<>(mergedSeedProperties, environmentProvider);
-        metricRegistry.ifPresent(mr -> res.withMetricRegistry(mr, OtMetricsReporterConfig.DEFAULT_PREFIX + ".consumer." + name) );
-        serviceInfo.ifPresent(si -> res.withClientId(name + "-" + si.getName()  + "-" + ClientIdGenerator.getInstance().nextClientId()));
+        final KafkaConsumerBuilder<?, ?> res = new KafkaConsumerBuilder<>(getMergedConsumerProperties(name), getEnvironmentProvider());
+        getMetricRegistry().ifPresent(mr -> res.withMetricRegistry(mr, OtMetricsReporterConfig.DEFAULT_PREFIX + ".consumer." + name) );
+        getServiceInfo().ifPresent(si -> res.withClientId(name + "-" + si.getName()  + "-" + ClientIdGenerator.getInstance().nextClientId()));
         return res;
     }
-
 
     public KafkaProducerBuilder<? , ?> producerBuilder(String name) {
-        Objects.requireNonNull(name, "Name cannot be null!");
-        final Map<String, Object> mergedSeedProperties = mergeProperties(
-            getProperties(DEFAULT, this.producerPrefix),
-            name, producerPrefix
-        );
-        final KafkaProducerBuilder<? , ?> res = new KafkaProducerBuilder<>(mergedSeedProperties, environmentProvider);
-        metricRegistry.ifPresent(mr -> res.withMetricRegistry(mr, OtMetricsReporterConfig.DEFAULT_PREFIX + ".producer." + name) );
-        serviceInfo.ifPresent(si -> res.withClientId(name + "-" + si.getName() + "-" + ClientIdGenerator.getInstance().nextClientId()));
+        final KafkaProducerBuilder<? , ?> res = new KafkaProducerBuilder<>(getMergedProducerProperties(name), getEnvironmentProvider());
+        getMetricRegistry().ifPresent(mr -> res.withMetricRegistry(mr, OtMetricsReporterConfig.DEFAULT_PREFIX + ".producer." + name) );
+        getServiceInfo().ifPresent(si -> res.withClientId(name + "-" + si.getName() + "-" + ClientIdGenerator.getInstance().nextClientId()));
         return res;
     }
-
 
 }

@@ -21,6 +21,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.OptionalLong;
+import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import com.codahale.metrics.MetricRegistry;
@@ -28,13 +30,7 @@ import com.google.common.annotations.VisibleForTesting;
 
 import org.apache.commons.lang3.StringUtils;
 import org.apache.kafka.clients.CommonClientConfigs;
-import org.apache.kafka.clients.consumer.Consumer;
-import org.apache.kafka.clients.consumer.KafkaConsumer;
-import org.apache.kafka.clients.producer.KafkaProducer;
-import org.apache.kafka.clients.producer.Producer;
 import org.apache.kafka.common.security.auth.SecurityProtocol;
-import org.apache.kafka.common.serialization.Deserializer;
-import org.apache.kafka.common.serialization.Serializer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -47,7 +43,7 @@ import com.opentable.kafka.metrics.OtMetricsReporterConfig;
  * Some common configuration options + the main properties builder is here.
  */
 @SuppressWarnings("OptionalUsedAsFieldOrParameterType")
-class KafkaBaseBuilder {
+public abstract class KafkaBaseBuilder<SELF extends KafkaBaseBuilder<SELF>> {
     private static final Logger LOG = LoggerFactory.getLogger(KafkaBaseBuilder.class);
 
     private final EnvironmentProvider environmentProvider;
@@ -67,25 +63,46 @@ class KafkaBaseBuilder {
     private Optional<MetricRegistry> metricRegistry;
     private boolean enableMetrics = true;
 
-    KafkaBaseBuilder(Map<String, Object> props, EnvironmentProvider environmentProvider) {
-        this.seedProperties = props;
+    protected KafkaBaseBuilder(Map<String, Object> props, EnvironmentProvider environmentProvider) {
+        this.seedProperties = new HashMap<>(props);
         this.environmentProvider = environmentProvider;
         metricRegistry = Optional.empty();
     }
 
-    void addProperty(String key, Object value) {
+    protected abstract SELF self();
+
+    protected void addProperty(String key, Object value) {
         finalProperties.put(key, value);
     }
 
-    void addInterceptor(String className) {
+    /**
+     * Reads property value from the seedProperties. The key is removed because we've precombined,
+     * and don't want the mergeProperties() to overwrite.
+     *
+     * @param name - name of the property.
+     * @param mapper - converter function.
+     * @param action - callback.
+     */
+    protected <T> void readProperty(final String name, Function<String, ? extends T> mapper, Consumer<? super T> action) {
+        Optional.ofNullable(seedProperties.get(name))
+            .filter(String.class::isInstance)
+            .map(String.class::cast)
+            .map(mapper)
+            .ifPresent(i -> {
+                seedProperties.remove(name);
+                action.accept(i);
+            });
+    }
+
+    protected void addInterceptor(String className) {
         interceptors.add(className);
     }
 
-    void removeInterceptor(String className) {
+    protected void removeInterceptor(String className) {
         interceptors.remove(className);
     }
 
-    void setupInterceptors(String interceptorConfigName, String loggingInterceptorName) {
+    protected void setupInterceptors(String interceptorConfigName, String loggingInterceptorName) {
         if (enableLoggingInterceptor) {
             interceptors.add(loggingInterceptorName);
         }
@@ -104,11 +121,11 @@ class KafkaBaseBuilder {
         }
     }
 
-    void setupBootstrap() {
+    protected void setupBootstrap() {
         merge(bootStrapServers,CommonClientConfigs.BOOTSTRAP_SERVERS_CONFIG);
     }
 
-    List<String> merge(List<String> root, String mergePropertyName) {
+    protected List<String> merge(List<String> root, String mergePropertyName) {
         // Copy over any injected properties, then remove the seed property
         root.addAll(mergeListProperty(mergePropertyName));
         if (!root.isEmpty()) {
@@ -117,75 +134,118 @@ class KafkaBaseBuilder {
         return root;
     }
 
-    void removeProperty(String key) {
+    public SELF removeProperty(String key) {
         finalProperties.remove(key);
+        return self();
     }
 
-    void withPrefix(String metricsPrefix) {
+    public SELF withProperty(String key, Object value) {
+        this.addProperty(key, value);
+        return self();
+    }
+
+
+    public SELF withProperties(final Map<String, Object> config) {
+        this.addProperties(config);
+        return self();
+    }
+
+    protected SELF withPrefix(String metricsPrefix) {
         if ((metricsPrefix != null) && (!metricsPrefix.startsWith(OtMetricsReporterConfig.DEFAULT_PREFIX + "."))) {
                 metricsPrefix = OtMetricsReporterConfig.DEFAULT_PREFIX + "." + metricsPrefix;
         }
         this.metricsPrefix = Optional.ofNullable(metricsPrefix);
+        return self();
     }
 
-    void withBootstrapServer(String bootStrapServer) {
+    public SELF withBootstrapServer(String bootStrapServer) {
         this.bootStrapServers.add(bootStrapServer);
+        return self();
     }
 
-    void withBootstrapServers(List<String> bootStrapServers) {
+    public SELF withBootstrapServers(List<String> bootStrapServers) {
         this.bootStrapServers.addAll(bootStrapServers);
+        return self();
     }
 
-    void withClientId(String val) {
+    public SELF withClientId(String val) {
         clientId = Optional.ofNullable(val);
+        return self();
     }
 
-    void withSecurityProtocol(SecurityProtocol protocol) {
+    public SELF withSecurityProtocol(SecurityProtocol protocol) {
         this.securityProtocol = Optional.ofNullable(protocol);
+        return self();
     }
 
-    void withRequestTimeoutMs(Duration duration) {
+    public SELF withRequestTimeoutMs(Duration duration) {
         requestTimeout = OptionalLong.of(duration.toMillis());
+        return self();
     }
-    void withRetryBackOff(Duration duration) {
+
+    public SELF withRequestTimeout(Duration duration) {
+        if (duration != null) {
+            withRequestTimeoutMs(duration);
+        }
+        return self();
+    }
+
+    public SELF withRetryBackOff(Duration duration) {
         retryBackoff = OptionalLong.of(duration.toMillis());
+        return self();
     }
 
-    void withMetricRegistry(MetricRegistry metricRegistry) {
+    public SELF withRetryBackoff(Duration duration) {
+        if (duration != null) {
+            withRetryBackOff(duration);
+        }
+        return self();
+    }
+
+    public SELF withMetricRegistry(MetricRegistry metricRegistry) {
         this.metricRegistry = Optional.ofNullable(metricRegistry);
+        return self();
     }
 
-    void withMetrics(final boolean enabled) {
+    public SELF withMetricRegistry(MetricRegistry metricRegistry, String metricsPrefix) {
+        withMetricRegistry(metricRegistry);
+        withPrefix(metricsPrefix);
+        return self();
+    }
+
+    protected SELF withMetrics(final boolean enabled) {
         this.enableMetrics = enabled;
+        return self();
     }
 
-    void withLogging(boolean enabled) {
-        enableLoggingInterceptor = enabled;
+    public SELF disableMetrics() {
+        return withMetrics(false);
     }
-    void withBucketedSamplingRate(final int rate, final int denominator) {
+
+    public SELF withLogging(boolean enabled) {
+        enableLoggingInterceptor = enabled;
+        return self();
+    }
+
+    public SELF withBucketedSamplingRate(final int rate, final int denominator) {
         loggingSampleRate = rate;
         loggingDenominator = denominator;
         loggingSamplerType = SamplerType.TimeBucket;
+        return self();
     }
-    void withRandomSamplingRate(final int rate) {
+
+    public SELF withSamplingRatePer10Seconds(int rate) {
+        return withBucketedSamplingRate(rate, LoggingInterceptorConfig.DEFAULT_BUCKET_DENOMINATOR);
+    }
+
+    public SELF withRandomSamplingRate(final int rate) {
         loggingSampleRate = rate;
         loggingSamplerType = SamplerType.Random;
+        return self();
     }
 
-    <CK,CV> Consumer<CK,CV> consumer(Deserializer<CK> keyDeserializer, Deserializer<CV> valuedeserializer) {
-        LOG.trace("Building KafkaConsumer with props {}", finalProperties);
-        if (keyDeserializer != null || valuedeserializer != null) {
-            LOG.warn("You passed an INSTANCE (as opposed to class) as a Deserializer. That's fine, but realize configure() will not be called on the Deserializer. That's per Kafka Design.");
-        }
-        return new KafkaConsumer<>(finalProperties, keyDeserializer, valuedeserializer);
-    }
-
-    <PK,PV> Producer<PK,PV> producer(Serializer<PK> keySerializer, Serializer<PV> valueSerializer) {
-        LOG.trace("Building KafkaProducer with props {}", finalProperties);
-        if (keySerializer != null || valueSerializer != null) {
-            LOG.warn("You passed an INSTANCE (as opposed to class) as a Serializer. That's fine, but realize configure() will not be called on the Serializer. That's per Kafka Design.");
-        }
-        return new KafkaProducer<>(finalProperties, keySerializer, valueSerializer);
+    public SELF disableLogging() {
+        return withLogging(false);
     }
 
     void finishBuild() {

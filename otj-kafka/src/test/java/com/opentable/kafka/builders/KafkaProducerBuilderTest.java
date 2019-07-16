@@ -47,7 +47,6 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.junit4.SpringRunner;
 
-import com.opentable.kafka.builders.KafkaProducerBuilder.AckType;
 import com.opentable.kafka.logging.LoggingInterceptorConfig;
 import com.opentable.kafka.logging.LoggingProducerInterceptor;
 import com.opentable.kafka.metrics.OtMetricsReporter;
@@ -79,7 +78,7 @@ public class KafkaProducerBuilderTest {
         KafkaProducerBuilder<Integer, String> builder = getBuilder("testme");
         Producer<Integer, String> p = builder
                 .build();
-        Map<String, Object> finalProperties = builder.getKafkaBaseBuilder().getFinalProperties();
+        Map<String, Object> finalProperties = builder.getFinalProperties();
         assertThat(finalProperties).isNotEmpty();
         assertThat(finalProperties.get(CommonClientConfigs.BOOTSTRAP_SERVERS_CONFIG)).isEqualTo("localhost:8080");
         assertThat(finalProperties).doesNotContainKeys("blah");
@@ -87,7 +86,7 @@ public class KafkaProducerBuilderTest {
         assertThat(finalProperties.get("blah2")).isEqualTo("blah2");
         assertThat(finalProperties.get(CommonClientConfigs.REQUEST_TIMEOUT_MS_CONFIG)).isEqualTo("30000");
         assertThat(finalProperties.get(CommonClientConfigs.SECURITY_PROTOCOL_CONFIG)).isEqualTo(SecurityProtocol.PLAINTEXT.name);
-        assertThat(finalProperties.get( ProducerConfig.ACKS_CONFIG)).isEqualTo(AckType.none.value);
+        assertThat(finalProperties.get( ProducerConfig.ACKS_CONFIG)).isEqualTo(KafkaProducerBaseBuilder.AckType.none.value);
         assertThat(finalProperties.get(CommonClientConfigs.RETRIES_CONFIG)).isEqualTo(5);
         assertThat(finalProperties).doesNotContainKeys( CommonClientConfigs.RETRY_BACKOFF_MS_CONFIG);
         // metrics, logging, overriding properties
@@ -116,13 +115,14 @@ public class KafkaProducerBuilderTest {
         p2.close();
     }
 
+    
     @Test
     public void withoutMetricsAndLogging() {
         KafkaProducerBuilder<Integer, String> builder = getBuilder("producer");
         Producer<Integer, String> p = builder.disableLogging().disableMetrics()
                 .build();
         p.close();
-        Map<String, Object> finalProperties = builder.getKafkaBaseBuilder().getFinalProperties();
+        Map<String, Object> finalProperties = builder.getFinalProperties();
         assertThat(finalProperties).doesNotContainKeys(OtMetricsReporterConfig.METRIC_REGISTRY_REF_CONFIG,
                 ProducerConfig.INTERCEPTOR_CLASSES_CONFIG,
                 CommonClientConfigs.METRIC_REPORTER_CLASSES_CONFIG,
@@ -136,7 +136,7 @@ public class KafkaProducerBuilderTest {
                 .withInterceptor(Foo.class)
                 .build();
         p.close();
-        Map<String, Object> finalProperties = builder.getKafkaBaseBuilder().getFinalProperties();
+        Map<String, Object> finalProperties = builder.getFinalProperties();
         assertThat(finalProperties.get(ProducerConfig.INTERCEPTOR_CLASSES_CONFIG)).isEqualTo(Foo.class.getName() + "," + LoggingProducerInterceptor.class.getName());
 
         // Also works with a property
@@ -144,7 +144,7 @@ public class KafkaProducerBuilderTest {
          p = builder
                 .build();
         p.close();
-        finalProperties = builder.getKafkaBaseBuilder().getFinalProperties();
+        finalProperties = builder.getFinalProperties();
         assertThat(finalProperties.get(ProducerConfig.INTERCEPTOR_CLASSES_CONFIG)).isEqualTo(LoggingProducerInterceptor.class.getName() + "," + Foo.class.getName());
 
 
@@ -153,7 +153,7 @@ public class KafkaProducerBuilderTest {
         p = builder.disableLogging()
                 .build();
         p.close();
-        finalProperties = builder.getKafkaBaseBuilder().getFinalProperties();
+        finalProperties = builder.getFinalProperties();
         assertThat(finalProperties.get(ProducerConfig.INTERCEPTOR_CLASSES_CONFIG)).isEqualTo(Foo.class.getName());
 
     }
@@ -166,7 +166,7 @@ public class KafkaProducerBuilderTest {
                     .removeProperty("blah")
                     .withClientId("test-producer-01")
                     .withProperty("blah2", "blah2")
-                    .withAcks(AckType.none)
+                    .withAcks(KafkaProducerBaseBuilder.AckType.none)
                     .withRetries(5)
                     .withMaxInFlightRequests(5)
                     .withRequestTimeoutMs(Duration.ofSeconds(30))

@@ -20,7 +20,7 @@
   <parent>
     <groupId>com.opentable</groupId>
     <artifactId>otj-parent-spring</artifactId>
-    <version>200</version>
+    <version>210</version>
   </parent>
 
 
@@ -36,9 +36,12 @@
     <basepom.oss.skip-scala-doc>true</basepom.oss.skip-scala-doc>
     <basepom.check.skip-javadoc>false</basepom.check.skip-javadoc>
     <basepom.check.fail-javadoc>false</basepom.check.fail-javadoc>
+    <!-- We can't go to Curator 3 or 4 without bumping to Zookeeper 3.5. Since Kafka is still shipping with 3.4, holding off -->
     <dep.curator.version>2.13.0</dep.curator.version>
-    <!-- Remove once parent is updated -->
-    <dep.otj-otl.version>0.8.23</dep.otj-otl.version>
+
+    <!-- Manage in parent -->
+    <spring-kafka.version>2.2.4.RELEASE</spring-kafka.version>
+
   </properties>
 
   <groupId>com.opentable.components</groupId>
@@ -70,6 +73,36 @@
         <artifactId>curator-test</artifactId>
         <version>${dep.curator.version}</version>
       </dependency>
+
+
+      <!-- otj-kafka-spring - put in parent -->
+      <dependency>
+        <groupId>org.springframework.kafka</groupId>
+        <artifactId>spring-kafka</artifactId>
+        <exclusions>
+          <exclusion>
+            <groupId>org.apache.kafka</groupId>
+            <artifactId>kafka-clients</artifactId>
+          </exclusion>
+        </exclusions>
+        <version>${spring-kafka.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.springframework.kafka</groupId>
+        <artifactId>spring-kafka-test</artifactId>
+        <exclusions>
+          <exclusion>
+            <groupId>org.apache.kafka</groupId>
+            <artifactId>kafka-clients</artifactId>
+          </exclusion>
+          <exclusion>
+            <groupId>org.apache.kafka</groupId>
+            <artifactId>kafka_2.11</artifactId>
+          </exclusion>
+        </exclusions>
+        <version>${spring-kafka.version}</version>
+      </dependency>
+
       </dependencies>
   </dependencyManagement>
   <modules>
@@ -77,5 +110,6 @@
     <module>otj-kafka-streams</module>
     <module>otj-kafka-tests</module>
     <module>otj-kafka-mirrormaker</module>
+    <module>otj-kafka-spring</module>
   </modules>
 </project>
