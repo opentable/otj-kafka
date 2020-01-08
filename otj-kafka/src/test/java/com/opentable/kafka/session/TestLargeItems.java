@@ -1,18 +1,22 @@
 package com.opentable.kafka.session;
 
 import java.time.Duration;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 
+import org.apache.commons.codec.binary.Hex;
+import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.kafka.clients.consumer.Consumer;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
+import org.apache.kafka.clients.consumer.ConsumerRecord;
+import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.clients.producer.Producer;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.clients.producer.RecordMetadata;
 import org.apache.kafka.common.serialization.ByteArrayDeserializer;
 import org.apache.kafka.common.serialization.ByteArraySerializer;
-import org.apache.kafka.common.serialization.IntegerDeserializer;
 import org.junit.Test;
 
 import com.opentable.kafka.builders.KafkaConsumerBaseBuilder;
@@ -21,7 +25,7 @@ import com.opentable.kafka.builders.KafkaProducerBuilder;
 import com.opentable.kafka.builders.SettableEnvironmentProvider;
 
 public class TestLargeItems {
-
+    String topic = "OT.MDA.Test.TestTopic";
     @Test(timeout = 10000)
     public void testPublishBigItem() throws ExecutionException, InterruptedException {
         /*
@@ -51,28 +55,53 @@ java.util.concurrent.ExecutionException: org.apache.kafka.common.errors.RecordTo
 Caused by: org.apache.kafka.common.errors.RecordTooLargeException: The message is 1048664 bytes when serialized which is larger than the maximum request size you have configured with the max.request.size configuration.
 
          */
-        String topic = "OT.MDA.Test.TestTopic";
+
         Producer<byte[],byte[]> producer =  producer();
         byte[] recordValue = getBigString(1024);
+        System.err.println("Checksum: " + DigestUtils.md5Hex(recordValue));
         RecordMetadata recordMetadata = producer().send(new ProducerRecord<>(topic, recordValue)).get();
         System.err.println("produced to " + recordMetadata.offset() + " " + recordMetadata.partition());
         recordValue = getBigString(1024 * 1023);
+        System.err.println("Checksum: " + DigestUtils.md5Hex(recordValue));
         recordMetadata = producer.send(new ProducerRecord<>(topic, recordValue)).get();
         System.err.println("produced to " + recordMetadata.offset() + " " + recordMetadata.partition());
 
         // All others fail
         recordValue = getBigString(1024 * 1024);
+        System.err.println("Checksum: " + DigestUtils.md5Hex(recordValue));
         recordMetadata = producer.send(new ProducerRecord<>(topic, recordValue)).get();
         System.err.println("produced to " + recordMetadata.offset() + " " + recordMetadata.partition());
 
         recordValue = getBigString(1024 * 1024 * 2);
+        System.err.println("Checksum: " + DigestUtils.md5Hex(recordValue));
         recordMetadata = producer.send(new ProducerRecord<>(topic, recordValue)).get();
         System.err.println("produced to " + recordMetadata.offset() + " " + recordMetadata.partition());
 
         recordValue = getBigString(1024 * 1024 * 4);
+        System.err.println("Checksum: " + DigestUtils.md5Hex(recordValue));
         recordMetadata = producer.send(new ProducerRecord<>(topic, recordValue)).get();
         System.err.println("produced to " + recordMetadata.offset() + " " + recordMetadata.partition());
 
+    }
+
+    // This test will always timeout
+    @Test(timeout = 30000)
+    public void consumeMessages() {
+        Consumer<byte[], byte[]> consumer = consumer("mygroup3");
+        consumer.subscribe(Collections.singletonList(topic));
+        while(true) {
+            ConsumerRecords<byte[], byte[]> records = consumer.poll(Duration.ofSeconds(1));
+            if (!records.isEmpty()) {
+                System.err.println("Received " + records.count());
+                for (ConsumerRecord<byte[], byte[]> record : records) {
+                    byte[] v = record.value();
+                    long o = record.offset();
+                    int p = record.partition();
+                    System.err.println("Checksum: " + DigestUtils.md5Hex(v));
+                    System.err.println("RECEIVED p=" + p + ", o="+ o+", v=(size=" + v.length +" )");
+                }
+            }
+        }
     }
 
     private byte[] getBigString(int msgSize) {
@@ -93,8 +122,8 @@ Caused by: org.apache.kafka.common.errors.RecordTooLargeException: The message i
         return producer("eda-kafka-feeder-ci-sf-01.qasql.opentable.com:9092");
     }
 
-    protected Consumer<Integer, byte[]> consumer() {
-        return consumer(1, "mygroup","eda-kafka-feeder-ci-sf-01.qasql.opentable.com:9092");
+    protected Consumer<byte[], byte[]> consumer(String groupId ) {
+        return consumer(1, groupId,"eda-kafka-feeder-ci-sf-01.qasql.opentable.com:9092");
     }
     protected Producer<byte[], byte[]> producer(String bootstrapServers) {
            return producerBuilder().withBootstrapServer(bootstrapServers)
@@ -109,18 +138,16 @@ Caused by: org.apache.kafka.common.errors.RecordTooLargeException: The message i
                 .build();
     }
 
-    protected Consumer<Integer, byte[]> consumer(int consumerNumber, String groupId, String bootstrapServers) {
+    protected Consumer<byte[], byte[]> consumer(int consumerNumber, String groupId, String bootstrapServers) {
         return consumerBuilder()
-                .withDeserializers(IntegerDeserializer.class, ByteArrayDeserializer.class)
+                .withDeserializers(ByteArrayDeserializer.class, ByteArrayDeserializer.class)
                 .withGroupId(groupId) // force new offset management
                 .withBootstrapServer(bootstrapServers)
                 .withAutoCommit(true)
+                .withProperty("compression.type","snappy")
                 .withProperty(ConsumerConfig.AUTO_COMMIT_INTERVAL_MS_CONFIG, 1000)
                 .withClientId("consumer-" + consumerNumber) // each is tied to the consumer number
                 .withMaxPollRecords(1) // 1 each time we poll makes book keeping much easier.
-                // Seems to take in the output log, and should cause rebalance shortly after 10s
-                .withSessionTimeoutMs(Duration.ofSeconds(10))
-                .withProperty("max.poll.interval.ms", (int) Duration.ofSeconds(11).toMillis())
                 .withAutoOffsetReset(KafkaConsumerBaseBuilder.AutoOffsetResetType.Earliest)
                 .disableLogging()
                 .disableMetrics()
