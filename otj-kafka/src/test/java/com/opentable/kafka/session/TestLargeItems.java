@@ -7,16 +7,12 @@ import java.util.concurrent.ExecutionException;
 
 import org.apache.kafka.clients.consumer.Consumer;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
-import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.Producer;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.clients.producer.RecordMetadata;
 import org.apache.kafka.common.serialization.ByteArrayDeserializer;
 import org.apache.kafka.common.serialization.ByteArraySerializer;
-import org.apache.kafka.common.serialization.BytesDeserializer;
-import org.apache.kafka.common.serialization.BytesSerializer;
 import org.apache.kafka.common.serialization.IntegerDeserializer;
-import org.apache.kafka.common.serialization.IntegerSerializer;
 import org.junit.Test;
 
 import com.opentable.kafka.builders.KafkaConsumerBaseBuilder;
@@ -56,7 +52,7 @@ Caused by: org.apache.kafka.common.errors.RecordTooLargeException: The message i
 
          */
         String topic = "OT.MDA.Test.TestTopic";
-        Producer<Integer,byte[]> producer =  producer();
+        Producer<byte[],byte[]> producer =  producer();
         byte[] recordValue = getBigString(1024);
         RecordMetadata recordMetadata = producer().send(new ProducerRecord<>(topic, recordValue)).get();
         System.err.println("produced to " + recordMetadata.offset() + " " + recordMetadata.partition());
@@ -93,17 +89,20 @@ Caused by: org.apache.kafka.common.errors.RecordTooLargeException: The message i
         return bytes;
     }
 
-    protected Producer<Integer, byte[]> producer() {
+    protected Producer<byte[], byte[]> producer() {
         return producer("eda-kafka-feeder-ci-sf-01.qasql.opentable.com:9092");
     }
 
     protected Consumer<Integer, byte[]> consumer() {
         return consumer(1, "mygroup","eda-kafka-feeder-ci-sf-01.qasql.opentable.com:9092");
     }
-    protected Producer<Integer, byte[]> producer(String bootstrapServers) {
-        return producerBuilder()
-                .withSerializers(IntegerSerializer.class, ByteArraySerializer.class)
-                .withBootstrapServer(bootstrapServers)
+    protected Producer<byte[], byte[]> producer(String bootstrapServers) {
+           return producerBuilder().withBootstrapServer(bootstrapServers)
+                .withBatchSize(100)
+                .withRetries(3)
+                .withAcks(KafkaProducerBuilder.AckType.atleastOne)
+                .withProperty("compression.type","snappy")
+                .withSerializers(new ByteArraySerializer(), new ByteArraySerializer())
                 .withClientId(UUID.randomUUID().toString()) // each producer is unique
                 .disableLogging()
                 .disableMetrics()
