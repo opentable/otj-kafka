@@ -25,6 +25,20 @@
 
     <artifactId>otj-kafka-spring</artifactId>
 
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.basepom.maven</groupId>
+                <artifactId>duplicate-finder-maven-plugin</artifactId>
+                <configuration>
+                    <!-- Morons! spring-kafka and spring-kafka-test conflict! -->
+                    <checkTestClasspath>false</checkTestClasspath>
+                </configuration>
+            </plugin>
+        </plugins>
+
+    </build>
+
     <dependencies>
         <dependency>
             <groupId>org.springframework.kafka</groupId>

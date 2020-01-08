@@ -56,6 +56,7 @@ public class OffsetMonitor implements Closeable {
         props.put(ConsumerConfig.GROUP_ID_CONFIG, consumerGroupId);
         props.put(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG, false);
         props.put(ConsumerConfig.SESSION_TIMEOUT_MS_CONFIG, (int) TIMEOUT.toMillis());
+        @SuppressWarnings("PMD.CloseResource")
         final Deserializer<byte[]> deser = Serdes.ByteArray().deserializer();
         return new KafkaConsumer<>(props, deser, deser);
     }

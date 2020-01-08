@@ -92,10 +92,11 @@ public class InstanceKafkaPartitioningStrategy implements KafkaPartitioningStrat
             if (!brokerConfig.isEnabled()) {
                 return 1;
             }
-            final AdminClient client = makeAdminClient(brokerList);
-            final DescribeTopicsResult result = client.describeTopics(Lists.newArrayList(topic));
-            final TopicDescription topicDescription = result.all().get().get(topic);
-            return topicDescription.partitions().size();
+            try (AdminClient client = makeAdminClient(brokerList)) {
+                final DescribeTopicsResult result = client.describeTopics(Lists.newArrayList(topic));
+                final TopicDescription topicDescription = result.all().get().get(topic);
+                return topicDescription.partitions().size();
+            }
     }
 
     private AdminClient makeAdminClient(final String brokerList) {

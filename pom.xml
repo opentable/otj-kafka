@@ -20,7 +20,7 @@
     <parent>
         <groupId>com.opentable</groupId>
         <artifactId>otj-parent-spring</artifactId>
-        <version>210</version>
+        <version>225</version>
     </parent>
 
     <scm>
@@ -31,6 +31,7 @@
     </scm>
 
     <properties>
+
         <!-- Open source requires JavaDocs -->
         <basepom.oss.skip-scala-doc>true</basepom.oss.skip-scala-doc>
         <basepom.check.skip-javadoc>false</basepom.check.skip-javadoc>
@@ -38,7 +39,12 @@
         <!-- We can't go to Curator 3 or 4 without bumping to Zookeeper 3.5. Since Kafka is still shipping with 3.4, holding off -->
         <dep.curator.version>2.13.0</dep.curator.version>
 
-        <!-- Managed in parent, please remove after upgrade to  211 -->
+        <!-- Managed in parent, please remove after upgrade -->
+        <dep.jackson.version>2.10.0</dep.jackson.version>
+        <dep.scala.version>2.12.8</dep.scala.version>
+        <dep.kafka.version>2.3.1</dep.kafka.version>
+        <dep.snappy.version>1.1.7.3</dep.snappy.version>
+        <!-- Haven't updated this yet, awaiting spring bump -->
         <spring-kafka.version>2.2.4.RELEASE</spring-kafka.version>
 
     </properties>
