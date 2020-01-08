@@ -29,29 +29,11 @@ public class TestLargeItems {
     @Test(timeout = 10000)
     public void testPublishBigItem() throws ExecutionException, InterruptedException {
         /*
+        Sample output
         produced to 588 10
-2020-01-08T01:14:45.878Z  INFO <> --- [kafka-producer-network-thread | 064e0707-efb5-4eba-8ef3-b4f0480d788b] org.apache.kafka.clients.Metadata        : Cluster ID: qxt8oLeyRR-d3tuHlct82g
-produced to 564 16
-
+        (above one passed)
+(This one didn't)
 java.util.concurrent.ExecutionException: org.apache.kafka.common.errors.RecordTooLargeException: The message is 1048664 bytes when serialized which is larger than the maximum request size you have configured with the max.request.size configuration.
-
-	at org.apache.kafka.clients.producer.KafkaProducer$FutureFailure.<init>(KafkaProducer.java:1186)
-	at org.apache.kafka.clients.producer.KafkaProducer.doSend(KafkaProducer.java:880)
-	at org.apache.kafka.clients.producer.KafkaProducer.send(KafkaProducer.java:803)
-	at org.apache.kafka.clients.producer.KafkaProducer.send(KafkaProducer.java:690)
-	at com.opentable.kafka.session.TestLargeItems.testPublishBigItem(TestLargeItems.java:42)
-	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
-	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
-	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
-	at java.lang.reflect.Method.invoke(Method.java:498)
-	at org.junit.runners.model.FrameworkMethod$1.runReflectiveCall(FrameworkMethod.java:50)
-	at org.junit.internal.runners.model.ReflectiveCallable.run(ReflectiveCallable.java:12)
-	at org.junit.runners.model.FrameworkMethod.invokeExplosively(FrameworkMethod.java:47)
-	at org.junit.internal.runners.statements.InvokeMethod.evaluate(InvokeMethod.java:17)
-	at org.junit.internal.runners.statements.FailOnTimeout$CallableStatement.call(FailOnTimeout.java:298)
-	at org.junit.internal.runners.statements.FailOnTimeout$CallableStatement.call(FailOnTimeout.java:292)
-	at java.util.concurrent.FutureTask.run(FutureTask.java:266)
-	at java.lang.Thread.run(Thread.java:748)
 Caused by: org.apache.kafka.common.errors.RecordTooLargeException: The message is 1048664 bytes when serialized which is larger than the maximum request size you have configured with the max.request.size configuration.
 
          */
@@ -127,9 +109,9 @@ Caused by: org.apache.kafka.common.errors.RecordTooLargeException: The message i
     }
     protected Producer<byte[], byte[]> producer(String bootstrapServers) {
            return producerBuilder().withBootstrapServer(bootstrapServers)
-                .withBatchSize(100)
-                .withRetries(3)
-                .withAcks(KafkaProducerBuilder.AckType.atleastOne)
+                .withBatchSize(100) // copied from analytics collectoe
+                .withRetries(3) //// copied from analytics collectoe
+                .withAcks(KafkaProducerBuilder.AckType.atleastOne) //// copied from analytics collectoe
                 .withProperty("compression.type","snappy")
                 .withSerializers(new ByteArraySerializer(), new ByteArraySerializer())
                 .withClientId(UUID.randomUUID().toString()) // each producer is unique
