@@ -33,6 +33,7 @@ import org.apache.kafka.common.TopicPartition;
 import org.apache.kafka.common.serialization.Deserializer;
 import org.apache.kafka.common.serialization.Serdes;
 
+@SuppressWarnings("PMD.CloseResource")
 public class OffsetMonitor implements Closeable {
     private static final Duration TIMEOUT = Duration.ofSeconds(30);
 
