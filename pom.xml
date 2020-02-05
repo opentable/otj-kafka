@@ -20,7 +20,7 @@
     <parent>
         <groupId>com.opentable</groupId>
         <artifactId>otj-parent-spring</artifactId>
-        <version>210</version>
+        <version>230</version>
     </parent>
 
     <scm>
@@ -31,15 +31,21 @@
     </scm>
 
     <properties>
+        <dep.kafka.version>2.4.0</dep.kafka.version>
+        <!-- required for kafka 2.4 -->
+        <dep.zookeeper.version>3.5.6</dep.zookeeper.version>
+        <!-- not strictly required, but might as well use an up to date -->
+        <dep.curator.version>4.2.0</dep.curator.version>
+        <!-- required by kafka 2.4 -->
+        <dep.scala.version>2.12.10</dep.scala.version>
+        <!-- We need to work on getting this to spring=kafka 2.4 -->
+        <!-- <spring-kafka.version>2.2.4.RELEASE</spring-kafka.version> -->
         <!-- Open source requires JavaDocs -->
         <basepom.oss.skip-scala-doc>true</basepom.oss.skip-scala-doc>
         <basepom.check.skip-javadoc>false</basepom.check.skip-javadoc>
         <basepom.check.fail-javadoc>false</basepom.check.fail-javadoc>
-        <!-- We can't go to Curator 3 or 4 without bumping to Zookeeper 3.5. Since Kafka is still shipping with 3.4, holding off -->
-        <dep.curator.version>2.13.0</dep.curator.version>
 
-        <!-- Managed in parent, please remove after upgrade to  211 -->
-        <spring-kafka.version>2.2.4.RELEASE</spring-kafka.version>
+
 
     </properties>
 
@@ -71,34 +77,12 @@
                 <groupId>org.apache.curator</groupId>
                 <artifactId>curator-test</artifactId>
                 <version>${dep.curator.version}</version>
-            </dependency>
-
-            <!-- Managed in parent, please remove after upgrade to  211 -->
-            <dependency>
-                <groupId>org.springframework.kafka</groupId>
-                <artifactId>spring-kafka</artifactId>
                 <exclusions>
                     <exclusion>
-                        <groupId>org.apache.kafka</groupId>
-                        <artifactId>kafka-clients</artifactId>
+                        <groupId> com.google.guava</groupId>
+                        <artifactId>guava</artifactId>
                     </exclusion>
                 </exclusions>
-                <version>${spring-kafka.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.springframework.kafka</groupId>
-                <artifactId>spring-kafka-test</artifactId>
-                <exclusions>
-                    <exclusion>
-                        <groupId>org.apache.kafka</groupId>
-                        <artifactId>kafka-clients</artifactId>
-                    </exclusion>
-                    <exclusion>
-                        <groupId>org.apache.kafka</groupId>
-                        <artifactId>kafka_2.11</artifactId>
-                    </exclusion>
-                </exclusions>
-                <version>${spring-kafka.version}</version>
             </dependency>
 
         </dependencies>

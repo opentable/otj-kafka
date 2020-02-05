@@ -1,5 +1,6 @@
 package com.opentable.kafka.session;
 
+import java.time.Duration;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -31,7 +32,8 @@ public class ProducerTask implements Runnable {
                 produce();
             }
         } finally {
-            producer.close(1, TimeUnit.MINUTES);
+            // Duration method is an optional 2.4 enhancement
+            producer.close(Duration.ofMinutes(1));
             isStopped = true;
         }
 
