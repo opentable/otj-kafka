@@ -21,6 +21,12 @@ import java.time.Duration;
 import java.util.Collections;
 import java.util.Iterator;
 
+import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.module.mrbean.MrBeanModule;
+import com.google.common.base.Charsets;
+import com.google.common.io.Resources;
+
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.junit.After;
@@ -28,17 +34,12 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.module.mrbean.MrBeanModule;
-import com.google.common.base.Charsets;
-import com.google.common.io.Resources;
-import com.opentable.kafka.embedded.EmbeddedKafkaBuilder;
-import com.opentable.kafka.embedded.EmbeddedKafkaRule;
-
 import ch.qos.logback.classic.LoggerContext;
 import ch.qos.logback.classic.joran.JoranConfigurator;
 import ch.qos.logback.core.status.OnConsoleStatusListener;
+
+import com.opentable.kafka.embedded.EmbeddedKafkaBuilder;
+import com.opentable.kafka.embedded.EmbeddedKafkaRule;
 
 public class KafkaAppenderTest
 {

@@ -31,8 +31,6 @@ import java.util.stream.Collectors;
 
 import org.apache.kafka.clients.consumer.Consumer;
 import org.apache.kafka.clients.producer.Producer;
-import org.junit.Ignore;
-import org.junit.Test;
 
 // Actual base tests are here
 public abstract class BaseSessionTest extends BaseSessionScaffold {
@@ -40,8 +38,7 @@ public abstract class BaseSessionTest extends BaseSessionScaffold {
     public abstract void moreAssertionsForTestResult(final boolean withSleep, final TestResult testResult, final long expectedTotalMessages, final long expectedRevocations);
     // Shows a simple one consumer processes as expected.
     // These have single producer/consumer, with bounded message count
-    @Test(timeout = 15000L)
-    public void testSimpleNoStrategy() throws ExecutionException, InterruptedException {
+    public void performTestSimpleNoStrategy() throws ExecutionException, InterruptedException {
         final int totalMessages = 100;
         final TestResult simpleTestResult = commonSimpleTests(totalMessages, totalMessages * 10);
         final List<ConsumedEvent.EventType> eventTypes = commonSimpleAssertions(false, simpleTestResult, totalMessages);
@@ -50,9 +47,7 @@ public abstract class BaseSessionTest extends BaseSessionScaffold {
 
     // Shows a simple one consumer processes as expected, even after losing partitions
     // These have single producer/consumer, with bounded message count
-    @Test(timeout = 35000L)
-    @Ignore
-    public void testSimpleWithStategy() throws ExecutionException, InterruptedException {
+    public void performTestSimpleWithStategy() throws ExecutionException, InterruptedException {
         final TestResult simpleTestResult = commonSimpleTests(100, 20);
         // Note the batch of 20 gets repeated.
         final List<ConsumedEvent.EventType> eventTypes = commonSimpleAssertions(true, simpleTestResult, 100 + 20);
@@ -98,9 +93,7 @@ public abstract class BaseSessionTest extends BaseSessionScaffold {
 
     // Same as the simple test, but with 3 consumers
     // Total messages remains bounded, and no sleep, so under normal circumstances no rebalance
-    @Test(timeout = 15000)
-    @Ignore
-    public void complexTestWithNoStrategy() throws ExecutionException, InterruptedException {
+    public void performComplexTestWithNoStrategy() throws ExecutionException, InterruptedException {
         final int totalMessages = 100;
         TestResult complexTestResult = commonComplexTestsWithSleep(totalMessages, 110000, 3);
         List<ConsumedEvent<String>> events = complexTestResult.getEvents();
@@ -116,9 +109,7 @@ public abstract class BaseSessionTest extends BaseSessionScaffold {
     // Unbounded producer (see ComplexPotentiallyUnBoundedListener for the cascaded logic that causes a termination)
     // multiple consumers
     // One consumer will sleep beyond session.timeout.ms
-    @Test(timeout = 35000)
-    @Ignore
-    public void complexTestWithStrategy() throws ExecutionException, InterruptedException {
+    public void performComplexTestWithStrategy() throws ExecutionException, InterruptedException {
         // We don't bound the totalMessages, instead we rely on the complex cascade in ComplexBoundedListener.
         Integer initialTotalMessages = null;
         // Sleep at item # 50 consumed for consumer #1. Create 3 consumers
