@@ -38,7 +38,7 @@
         <dep.curator.version>4.2.0</dep.curator.version>
         <!-- required by kafka 2.4 -->
         <dep.scala.version>2.12.10</dep.scala.version>
-        <!-- We need to work on getting this to spring=kafka 2.4 -->
+        <!-- We need to work on getting this to spring=kafka 2.4, but I'm not sure its really possible since official spring-kafka requires spring 5.2  -->
         <!-- <spring-kafka.version>2.2.4.RELEASE</spring-kafka.version> -->
         <!-- Open source requires JavaDocs -->
         <basepom.oss.skip-scala-doc>true</basepom.oss.skip-scala-doc>

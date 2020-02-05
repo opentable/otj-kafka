@@ -52,6 +52,7 @@ public class OTKafkaClientSupplier implements KafkaClientSupplier {
     }
 
     @Override
+    @SuppressWarnings("deprecation")
     public AdminClient getAdminClient(final Map<String, Object> config) {
         // create a new client upon each call; but expect this call to be only triggered once so this should be fine
         return AdminClient.create(config);
