@@ -38,7 +38,7 @@ import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.kafka.core.ProducerFactory;
 import org.springframework.kafka.listener.ConcurrentMessageListenerContainer;
 import org.springframework.kafka.listener.ContainerProperties.AckMode;
-import org.springframework.kafka.test.rule.KafkaEmbedded;
+import org.springframework.kafka.test.EmbeddedKafkaBroker;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.util.concurrent.SettableListenableFuture;
 
@@ -65,7 +65,7 @@ public class BatchListenerTest extends AbstractTest {
     @Configuration
     public static class Config {
 
-        @Value("${" + KafkaEmbedded.SPRING_EMBEDDED_KAFKA_BROKERS + "}")
+        @Value("${" + EmbeddedKafkaBroker.SPRING_EMBEDDED_KAFKA_BROKERS + "}")
         protected String brokerAddresses;
 
 
@@ -102,7 +102,7 @@ public class BatchListenerTest extends AbstractTest {
             return new SettableListenableFuture<>();
         }
 
-        @KafkaListener(id = "foo", topics = "topic-1", containerFactory = "kafkaListenerContainerFactory", concurrency = "1")
+        @KafkaListener(id = "foo", topics = "topic-1", containerFactory = "kafkaListenerContainerFactory", concurrency = "1", autoStartup = "false")
         public void listen(List<String> data) {
             resultFuture1().set(data);
         }
@@ -111,14 +111,12 @@ public class BatchListenerTest extends AbstractTest {
 
     @Test
     public void kafkaBatchListenerTest() throws ExecutionException, InterruptedException, TimeoutException {
-        registry.getListenerContainer("foo").pause();
-        Thread.sleep(5000);
         kafkaTemplate1.send("topic-1", 1, "1").get();
-        kafkaTemplate1.send("topic-1", 2, "1").get();
-        kafkaTemplate1.send("topic-1", 3, "1").get();
-        kafkaTemplate1.send("topic-1", 4, "1").get();
-        kafkaTemplate1.send("topic-1", 4, "1").get();
-        registry.getListenerContainer("foo").resume();
+        kafkaTemplate1.send("topic-1", 2, "2").get();
+        kafkaTemplate1.send("topic-1", 3, "3").get();
+        kafkaTemplate1.send("topic-1", 4, "4").get();
+        kafkaTemplate1.send("topic-1", 5, "5").get();
+        registry.getListenerContainer("foo").start();
         List<String> data = resultFuture1.get(20, TimeUnit.SECONDS);
         assertEquals(5, data.size());
     }

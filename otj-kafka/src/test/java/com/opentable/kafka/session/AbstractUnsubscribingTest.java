@@ -33,7 +33,7 @@ public abstract class AbstractUnsubscribingTest extends BaseSessionTest {
                     .mapToLong(ConsumerTask::getRevocations).sum();
             long empty  = wokeup.stream().mapToLong(ConsumerTask::getEmptyRevocations).sum();
             revocations += empty;
-            revocations --; // This compensates for original one
+            //revocations --; // This compensates for original one
         }
         assertThat(revocations).isEqualTo(expectedRevocations);
     }

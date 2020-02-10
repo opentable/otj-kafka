@@ -20,7 +20,7 @@
     <parent>
         <groupId>com.opentable</groupId>
         <artifactId>otj-parent-spring</artifactId>
-        <version>210</version>
+        <version>229</version>
     </parent>
 
     <scm>
@@ -38,8 +38,19 @@
         <!-- We can't go to Curator 3 or 4 without bumping to Zookeeper 3.5. Since Kafka is still shipping with 3.4, holding off -->
         <dep.curator.version>2.13.0</dep.curator.version>
 
+
+        <dep.kafka.version>2.4.0</dep.kafka.version>
+        <!-- required for kafka 2.4 -->
+        <dep.zookeeper.version>3.5.6</dep.zookeeper.version>
+        <!-- not strictly required, but might as well use an up to date -->
+       <!-- <dep.curator.version>4.2.0</dep.curator.version>-->
+        <!-- required by kafka 2.4 -->
+        <dep.scala.version>2.12.10</dep.scala.version>
+
         <!-- Managed in parent, please remove after upgrade to  211 -->
-        <spring-kafka.version>2.2.4.RELEASE</spring-kafka.version>
+        <dep.spring-kafka.version>2.2.12.RELEASE</dep.spring-kafka.version>
+
+        <dep.spring-kafka-test.version>2.4.1.RELEASE</dep.spring-kafka-test.version>
 
     </properties>
 
@@ -66,29 +77,53 @@
                 <artifactId>otj-kafka-tests</artifactId>
                 <version>${project.version}</version>
             </dependency>
+            <dependency>
+                <groupId>com.opentable.components</groupId>
+                <artifactId>otj-spring-kafka-test</artifactId>
+                <version>${project.version}</version>
+            </dependency>
             <!-- used in otj-kafka-tests -->
             <dependency>
                 <groupId>org.apache.curator</groupId>
                 <artifactId>curator-test</artifactId>
                 <version>${dep.curator.version}</version>
             </dependency>
-
-            <!-- Managed in parent, please remove after upgrade to  211 -->
-            <dependency>
-                <groupId>org.springframework.kafka</groupId>
-                <artifactId>spring-kafka</artifactId>
-                <exclusions>
-                    <exclusion>
-                        <groupId>org.apache.kafka</groupId>
-                        <artifactId>kafka-clients</artifactId>
-                    </exclusion>
-                </exclusions>
-                <version>${spring-kafka.version}</version>
-            </dependency>
             <dependency>
                 <groupId>org.springframework.kafka</groupId>
                 <artifactId>spring-kafka-test</artifactId>
                 <exclusions>
+                    <exclusion>
+                        <groupId>org.springframework</groupId>
+                        <artifactId>spring-context</artifactId>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>org.springframework</groupId>
+                        <artifactId>spring-beans</artifactId>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>org.springframework</groupId>
+                        <artifactId>spring-core</artifactId>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>org.springframework</groupId>
+                        <artifactId>spring-test</artifactId>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>org.apiguardian</groupId>
+                        <artifactId>apiguardian-api</artifactId>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>org.junit.jupiter</groupId>
+                        <artifactId>junit-jupiter-api</artifactId>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>org.junit.platform</groupId>
+                        <artifactId>junit-platform-commons</artifactId>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>org.opentest4j</groupId>
+                        <artifactId>opentest4j</artifactId>
+                    </exclusion>
                     <exclusion>
                         <groupId>org.apache.kafka</groupId>
                         <artifactId>kafka-clients</artifactId>
@@ -98,9 +133,13 @@
                         <artifactId>kafka_2.11</artifactId>
                     </exclusion>
                 </exclusions>
-                <version>${spring-kafka.version}</version>
+                <version>${dep.spring-kafka-test.version}</version>
             </dependency>
-
+            <dependency>
+                <groupId>org.apache.kafka</groupId>
+                <artifactId>kafka-streams-test-utils</artifactId>
+                <version>${dep.kafka.version}</version>
+            </dependency>
         </dependencies>
     </dependencyManagement>
 
@@ -110,5 +149,6 @@
         <module>otj-kafka-tests</module>
         <module>otj-kafka-mirrormaker</module>
         <module>otj-kafka-spring</module>
+        <module>otj-spring-kafka-test</module>
     </modules>
 </project>
