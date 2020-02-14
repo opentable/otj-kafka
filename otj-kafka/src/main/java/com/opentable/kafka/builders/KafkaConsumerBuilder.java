@@ -15,6 +15,7 @@ package com.opentable.kafka.builders;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.function.Supplier;
 
 import org.apache.kafka.clients.consumer.Consumer;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
@@ -65,6 +66,11 @@ public class KafkaConsumerBuilder<K, V> extends KafkaConsumerBaseBuilder<KafkaCo
     public Consumer<K, V> build() {
         internalBuild();
         return consumer(keyDeserializerInstance, valueDeserializerInstance);
+    }
+
+    public Supplier<Consumer<K, V>> supplier() {
+        internalBuild();
+        return () -> consumer(keyDeserializerInstance, valueDeserializerInstance);
     }
 
 }

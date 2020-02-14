@@ -38,7 +38,7 @@ import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.kafka.core.ProducerFactory;
 import org.springframework.kafka.listener.ConcurrentMessageListenerContainer;
 import org.springframework.kafka.listener.ContainerProperties.AckMode;
-import org.springframework.kafka.test.rule.KafkaEmbedded;
+import org.springframework.kafka.test.EmbeddedKafkaBroker;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.util.concurrent.SettableListenableFuture;
 
@@ -65,7 +65,7 @@ public class BatchListenerTest extends AbstractTest {
     @Configuration
     public static class Config {
 
-        @Value("${" + KafkaEmbedded.SPRING_EMBEDDED_KAFKA_BROKERS + "}")
+        @Value("${" + EmbeddedKafkaBroker.SPRING_EMBEDDED_KAFKA_BROKERS + "}")
         protected String brokerAddresses;
 
 

@@ -25,7 +25,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.kafka.core.ProducerFactory;
-import org.springframework.kafka.test.rule.KafkaEmbedded;
+import org.springframework.kafka.test.EmbeddedKafkaBroker;
 import org.springframework.test.context.ContextConfiguration;
 
 import com.opentable.kafka.spring.AbstractTest;
@@ -50,7 +50,7 @@ public class SpringKafkaProducerFactoryBuilderTest extends AbstractTest {
     @Configuration
     public static class Config {
 
-        @Value("${" + KafkaEmbedded.SPRING_EMBEDDED_KAFKA_BROKERS + "}")
+        @Value("${" + EmbeddedKafkaBroker.SPRING_EMBEDDED_KAFKA_BROKERS + "}")
         protected String brokerAddresses;
 
         @Autowired

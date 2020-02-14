@@ -1,6 +1,12 @@
 otj-kafka changelog
 ===================
 
+Future
+------
+* Added a supplier() method. If you think you'll need to create the same consumer or producer
+multiple time, this works nicely.
+* tests added.
+
 3.2.2
 -----
 * Hierarchy of builders was refactored to use inheritance. The properties defined in the `KafkaBaseBuilder` visible on child builders.

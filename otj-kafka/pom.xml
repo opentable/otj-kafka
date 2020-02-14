@@ -26,6 +26,9 @@
   <version>3.2.3-SNAPSHOT</version>
   <description>Kafka integrations component</description>
 
+  <properties>
+      <basepom.test.fork-count>1</basepom.test.fork-count>
+  </properties>
   <dependencies>
     <dependency>
       <groupId>javax.inject</groupId>

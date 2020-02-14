@@ -15,6 +15,7 @@ package com.opentable.kafka.builders;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.function.Supplier;
 
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.Producer;
@@ -65,6 +66,11 @@ public class KafkaProducerBuilder<K, V>  extends KafkaProducerBaseBuilder<KafkaP
     public Producer<K, V> build() {
         internalBuild();
         return this.producer(keySerializer, valueSerializer);
+    }
+
+    public Supplier<Producer<K, V>> supplier() {
+        internalBuild();
+        return () -> this.producer(keySerializer, valueSerializer);
     }
 
 }
