@@ -20,7 +20,7 @@
     <parent>
         <groupId>com.opentable</groupId>
         <artifactId>otj-parent-spring</artifactId>
-        <version>243</version>
+        <version>244-SNAPSHOT</version>
     </parent>
 
     <scm>
@@ -31,6 +31,9 @@
     </scm>
 
     <properties>
+        <dep.otj-logging.version>3.0.12-SNAPSHOT</dep.otj-logging.version>
+        <dep.otj-jackson.version>2.1.7-SNAPSHOT</dep.otj-jackson.version>
+        <dep.otj-server.version>3.1.3</dep.otj-server.version>
         <!-- Open source requires JavaDocs -->
         <basepom.oss.skip-scala-doc>true</basepom.oss.skip-scala-doc>
         <basepom.check.skip-javadoc>false</basepom.check.skip-javadoc>
