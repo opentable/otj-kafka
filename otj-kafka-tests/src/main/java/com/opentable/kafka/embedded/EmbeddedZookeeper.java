@@ -36,11 +36,11 @@ public class EmbeddedZookeeper implements Watcher, Closeable
         try {
             server = new TestingServer();
 
-            ZooKeeper zk = new ZooKeeper(getConnectString(), 10000, this);
-            while (!zk.getState().isConnected()) {
-                eventQueue.take();
+            try (ZooKeeper zk = new ZooKeeper(getConnectString(), 10000, this)) {
+                while (!zk.getState().isConnected()) {
+                    eventQueue.take();
+                }
             }
-            zk.close();
         } catch (Exception e) {
             Throwables.throwIfUnchecked(e);
             throw new RuntimeException(e);

@@ -18,6 +18,7 @@ import java.util.function.Supplier;
 
 import javax.inject.Inject;
 
+import org.apache.kafka.clients.admin.Admin;
 import org.apache.kafka.clients.admin.AdminClient;
 import org.apache.kafka.clients.consumer.Consumer;
 import org.apache.kafka.clients.producer.Producer;
@@ -52,7 +53,14 @@ public class OTKafkaClientSupplier implements KafkaClientSupplier {
     }
 
     @Override
+    @SuppressWarnings("deprecation")
     public AdminClient getAdminClient(final Map<String, Object> config) {
+        // create a new client upon each call; but expect this call to be only triggered once so this should be fine
+        return AdminClient.create(config);
+    }
+
+    @Override
+    public Admin getAdmin(final Map<String, Object> config) {
         // create a new client upon each call; but expect this call to be only triggered once so this should be fine
         return AdminClient.create(config);
     }

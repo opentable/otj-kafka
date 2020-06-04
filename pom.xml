@@ -20,7 +20,7 @@
     <parent>
         <groupId>com.opentable</groupId>
         <artifactId>otj-parent-spring</artifactId>
-        <version>210</version>
+        <version>9999-SNAPSHOT</version>
     </parent>
 
     <scm>
@@ -31,15 +31,27 @@
     </scm>
 
     <properties>
+        <dep.otj-core.version>5.2.0-SNAPSHOT</dep.otj-core.version>
+        <dep.otj-jvm.version>5.2.0-SNAPSHOT</dep.otj-jvm.version>
+        <dep.otj-scopes.version>5.2.0-SNAPSHOT</dep.otj-scopes.version>
+        <dep.otj-spring.version>5.2.0-SNAPSHOT</dep.otj-spring.version>
+        <dep.otj-httpheaders.version>5.2.0-SNAPSHOT</dep.otj-httpheaders.version>
+        <dep.otj-logging.version>5.2.0-SNAPSHOT</dep.otj-logging.version>
+        <dep.otj-executors.version>5.2.0-SNAPSHOT</dep.otj-executors.version>
+        <dep.otj-conservedheaders.version>5.2.0-SNAPSHOT</dep.otj-conservedheaders.version>
+        <dep.otj-metrics.version>5.2.0-SNAPSHOT</dep.otj-metrics.version>
+        <dep.otj-jaxrs.version>5.2.0-SNAPSHOT</dep.otj-jaxrs.version>
+        <dep.otj-jackson.version>5.2.0-SNAPSHOT</dep.otj-jackson.version>
+        <dep.otj-filterorder.version>5.2.0-SNAPSHOT</dep.otj-filterorder.version>
+        <dep.otj-pausedetector.version>5.2.0-SNAPSHOT</dep.otj-pausedetector.version>
+        <dep.otj-server.version>5.2.0-SNAPSHOT</dep.otj-server.version>
+        <dep.otj-webclient.version>5.2.0-SNAPSHOT</dep.otj-webclient.version>
         <!-- Open source requires JavaDocs -->
         <basepom.oss.skip-scala-doc>true</basepom.oss.skip-scala-doc>
         <basepom.check.skip-javadoc>false</basepom.check.skip-javadoc>
         <basepom.check.fail-javadoc>false</basepom.check.fail-javadoc>
         <!-- We can't go to Curator 3 or 4 without bumping to Zookeeper 3.5. Since Kafka is still shipping with 3.4, holding off -->
         <dep.curator.version>2.13.0</dep.curator.version>
-
-        <!-- Managed in parent, please remove after upgrade to  211 -->
-        <spring-kafka.version>2.2.4.RELEASE</spring-kafka.version>
 
     </properties>
 
@@ -71,34 +83,6 @@
                 <groupId>org.apache.curator</groupId>
                 <artifactId>curator-test</artifactId>
                 <version>${dep.curator.version}</version>
-            </dependency>
-
-            <!-- Managed in parent, please remove after upgrade to  211 -->
-            <dependency>
-                <groupId>org.springframework.kafka</groupId>
-                <artifactId>spring-kafka</artifactId>
-                <exclusions>
-                    <exclusion>
-                        <groupId>org.apache.kafka</groupId>
-                        <artifactId>kafka-clients</artifactId>
-                    </exclusion>
-                </exclusions>
-                <version>${spring-kafka.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.springframework.kafka</groupId>
-                <artifactId>spring-kafka-test</artifactId>
-                <exclusions>
-                    <exclusion>
-                        <groupId>org.apache.kafka</groupId>
-                        <artifactId>kafka-clients</artifactId>
-                    </exclusion>
-                    <exclusion>
-                        <groupId>org.apache.kafka</groupId>
-                        <artifactId>kafka_2.11</artifactId>
-                    </exclusion>
-                </exclusions>
-                <version>${spring-kafka.version}</version>
             </dependency>
 
         </dependencies>
