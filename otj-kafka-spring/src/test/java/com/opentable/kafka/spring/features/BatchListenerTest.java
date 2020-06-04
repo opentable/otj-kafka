@@ -17,17 +17,18 @@ package com.opentable.kafka.spring.features;
 import static org.junit.Assert.assertEquals;
 
 import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 import org.apache.kafka.common.serialization.IntegerDeserializer;
 import org.apache.kafka.common.serialization.IntegerSerializer;
 import org.apache.kafka.common.serialization.StringDeserializer;
 import org.apache.kafka.common.serialization.StringSerializer;
+import org.junit.Before;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -40,7 +41,6 @@ import org.springframework.kafka.listener.ConcurrentMessageListenerContainer;
 import org.springframework.kafka.listener.ContainerProperties.AckMode;
 import org.springframework.kafka.test.EmbeddedKafkaBroker;
 import org.springframework.test.context.ContextConfiguration;
-import org.springframework.util.concurrent.SettableListenableFuture;
 
 import com.opentable.kafka.builders.KafkaConsumerBuilder;
 import com.opentable.kafka.spring.AbstractTest;
@@ -53,14 +53,19 @@ public class BatchListenerTest extends AbstractTest {
     @Autowired
     private KafkaTemplate<Integer, String> kafkaTemplate1;
 
-    @Autowired
-    @Qualifier("resultFuture1")
-    private SettableListenableFuture<List<String>> resultFuture1;
 
     @Autowired
     private KafkaListenerEndpointRegistry registry;
 
 
+    private static CountDownLatch countDownLatch;
+    private static final List<String> data = new CopyOnWriteArrayList<>();
+
+    @Before
+    public void before() {
+        data.clear();
+        countDownLatch = new CountDownLatch(5);
+    }
 
     @Configuration
     public static class Config {
@@ -96,20 +101,16 @@ public class BatchListenerTest extends AbstractTest {
                 .build();
         }
 
-        @Bean
-        @Qualifier("resultFuture1")
-        public SettableListenableFuture<List<String>> resultFuture1() {
-            return new SettableListenableFuture<>();
-        }
-
         @KafkaListener(id = "foo", topics = "topic-1", containerFactory = "kafkaListenerContainerFactory", concurrency = "1")
         public void listen(List<String> data) {
-            resultFuture1().set(data);
+            System.err.println("Called " +data);
+            BatchListenerTest.data.addAll(data);
+            data.forEach(t -> countDownLatch.countDown());
         }
 
     }
 
-    @Test
+    @Test(timeout = 60000)
     public void kafkaBatchListenerTest() throws ExecutionException, InterruptedException, TimeoutException {
         registry.getListenerContainer("foo").pause();
         Thread.sleep(5000);
@@ -119,9 +120,9 @@ public class BatchListenerTest extends AbstractTest {
         kafkaTemplate1.send("topic-1", 4, "1").get();
         kafkaTemplate1.send("topic-1", 4, "1").get();
         registry.getListenerContainer("foo").resume();
-        List<String> data = resultFuture1.get(20, TimeUnit.SECONDS);
-        //TODO: Dmitry this test seems flaky, at least on the new PR
-        //It often sends only 3 or 4 initially.
+        //Dmitry this test was flaky, at least on the new PR
+        //The batching size in Kafka doesn't reliably give you 5, I've redone to handle this
+        countDownLatch.await();
         assertEquals(5, data.size());
     }
 
