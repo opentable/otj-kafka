@@ -120,6 +120,8 @@ public class BatchListenerTest extends AbstractTest {
         kafkaTemplate1.send("topic-1", 4, "1").get();
         registry.getListenerContainer("foo").resume();
         List<String> data = resultFuture1.get(20, TimeUnit.SECONDS);
+        //TODO: Dmitry this test seems flaky, at least on the new PR
+        //It often sends only 3 or 4 initially.
         assertEquals(5, data.size());
     }
 
