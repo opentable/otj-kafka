@@ -1,11 +1,12 @@
 otj-kafka changelog
 ===================
 
-Future
+5.2.0
 ------
 * Added a supplier() method. If you think you'll need to create the same consumer or producer
 multiple time, this works nicely.
 * tests added.
+* Recompile for Spring 5.2 and Kafka 2.4.1
 
 3.2.2
 -----

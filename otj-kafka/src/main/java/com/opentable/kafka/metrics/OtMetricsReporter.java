@@ -182,6 +182,7 @@ public class OtMetricsReporter implements MetricsReporter {
         return blacklistedChars.matcher(name).replaceAll("_");
     }
 
+    @SuppressWarnings("deprecation")
     private String getExpandedPrefix(KafkaMetric metric) {
         return sanitize(new StrSubstitutor(metric.metricName().tags()).replace(prefix));
     }

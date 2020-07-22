@@ -63,7 +63,7 @@ public abstract class BaseSessionTest extends BaseSessionScaffold {
 
         // Has consumed a total of N messages
         assertThat(eventTypes.stream().filter(t -> t == ConsumedEvent.EventType.POLL).count()).isGreaterThanOrEqualTo(totalMessages);
-        moreAssertionsForTestResult(withSleep, simpleTestResult, (long) totalMessages, withSleep ? 1L : 0L);
+        moreAssertionsForTestResult(withSleep, simpleTestResult, (long) totalMessages, withSleep ? 2L : 1L);
         return eventTypes;
     }
 
@@ -103,7 +103,7 @@ public abstract class BaseSessionTest extends BaseSessionScaffold {
         Set<UUID> consumerIds = messageEvents.stream().map(ConsumedEvent::getConsumerId).collect(Collectors.toSet());
         assertThat(consumerIds).hasSize(3);
         assertThat(eventTypeList).containsOnly(ConsumedEvent.EventType.SUBSCRIBED, ConsumedEvent.EventType.MESSAGE, ConsumedEvent.EventType.CLOSING, ConsumedEvent.EventType.POLL);
-        moreAssertionsForTestResult(false, complexTestResult,100L,0L);
+        moreAssertionsForTestResult(false, complexTestResult,100L,3L);
     }
 
     // Unbounded producer (see ComplexPotentiallyUnBoundedListener for the cascaded logic that causes a termination)
@@ -155,7 +155,7 @@ public abstract class BaseSessionTest extends BaseSessionScaffold {
         final UUID c = consumerIdWakingUp;
         List<ConsumedEvent<String>> messageEventsAfterWakingUp = eventsAfterIndex.stream().filter(t -> t.getConsumerId().equals(c)).filter(t -> t.getEventType() == ConsumedEvent.EventType.MESSAGE).collect(Collectors.toList());
         assertThat(messageEventsAfterWakingUp.size()).isGreaterThan(0);
-        moreAssertionsForTestResult(true, complexTestResult, (long) totalMessages, 1L);
+        moreAssertionsForTestResult(true, complexTestResult, (long) totalMessages, 2L);
  }
 
     private TestResult commonComplexTestsWithSleep(Integer totalMessages, int sleepCount, int consumerCount) throws ExecutionException, InterruptedException {

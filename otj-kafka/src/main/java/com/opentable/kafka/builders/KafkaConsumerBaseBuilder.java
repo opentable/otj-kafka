@@ -22,8 +22,8 @@ import java.util.OptionalLong;
 
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.consumer.ConsumerInterceptor;
+import org.apache.kafka.clients.consumer.ConsumerPartitionAssignor;
 import org.apache.kafka.clients.consumer.RangeAssignor;
-import org.apache.kafka.clients.consumer.internals.PartitionAssignor;
 import org.apache.kafka.common.serialization.Deserializer;
 
 import com.opentable.kafka.logging.LoggingConsumerInterceptor;
@@ -38,7 +38,7 @@ public abstract class KafkaConsumerBaseBuilder<SELF extends KafkaConsumerBaseBui
     private OptionalLong sessionTimeoutMs = OptionalLong.empty();
     private OptionalLong maxPollIntervalMs = OptionalLong.empty();
     private Optional<KafkaConsumerBuilder.AutoOffsetResetType> autoOffsetResetType = Optional.empty();
-    private Class<? extends PartitionAssignor> partitionStrategy = RangeAssignor.class;
+    private Class<? extends ConsumerPartitionAssignor> partitionStrategy = RangeAssignor.class;
     // Kafka is really stupid. In the properties you can only configure a no-args
     // and then they hack around it if you have one supplied
     private Class<? extends Deserializer<K>> keyDe;
@@ -101,7 +101,7 @@ public abstract class KafkaConsumerBaseBuilder<SELF extends KafkaConsumerBaseBui
         return res;
     }
 
-    public SELF withPartitionAssignmentStrategy(Class<? extends PartitionAssignor> partitionAssignmentStrategy) {
+    public SELF withPartitionAssignmentStrategy(Class<? extends ConsumerPartitionAssignor> partitionAssignmentStrategy) {
         partitionStrategy = partitionAssignmentStrategy;
         return self();
     }
