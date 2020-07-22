@@ -20,7 +20,7 @@
     <parent>
         <groupId>com.opentable</groupId>
         <artifactId>otj-parent-spring</artifactId>
-        <version>9999-SNAPSHOT</version>
+        <version>253</version>
     </parent>
 
     <scm>
@@ -31,21 +31,36 @@
     </scm>
 
     <properties>
-        <dep.otj-core.version>5.2.0-SNAPSHOT</dep.otj-core.version>
-        <dep.otj-jvm.version>5.2.0-SNAPSHOT</dep.otj-jvm.version>
-        <dep.otj-scopes.version>5.2.0-SNAPSHOT</dep.otj-scopes.version>
-        <dep.otj-spring.version>5.2.0-SNAPSHOT</dep.otj-spring.version>
-        <dep.otj-httpheaders.version>5.2.0-SNAPSHOT</dep.otj-httpheaders.version>
-        <dep.otj-logging.version>5.2.0-SNAPSHOT</dep.otj-logging.version>
-        <dep.otj-executors.version>5.2.0-SNAPSHOT</dep.otj-executors.version>
-        <dep.otj-conservedheaders.version>5.2.0-SNAPSHOT</dep.otj-conservedheaders.version>
-        <dep.otj-metrics.version>5.2.0-SNAPSHOT</dep.otj-metrics.version>
-        <dep.otj-jaxrs.version>5.2.0-SNAPSHOT</dep.otj-jaxrs.version>
-        <dep.otj-jackson.version>5.2.0-SNAPSHOT</dep.otj-jackson.version>
-        <dep.otj-filterorder.version>5.2.0-SNAPSHOT</dep.otj-filterorder.version>
-        <dep.otj-pausedetector.version>5.2.0-SNAPSHOT</dep.otj-pausedetector.version>
-        <dep.otj-server.version>5.2.0-SNAPSHOT</dep.otj-server.version>
-        <dep.otj-webclient.version>5.2.0-SNAPSHOT</dep.otj-webclient.version>
+        <!-- fix stream utils -->
+        <!-- Remove once parent updated -->
+        <dep.zookeeper.version>3.5.7</dep.zookeeper.version>
+        <dep.kafka-clients.version>2.4.1</dep.kafka-clients.version>
+        <dep.spring-boot.version>2.2.7.RELEASE</dep.spring-boot.version>
+        <dep.spring.version>5.2.6.RELEASE</dep.spring.version>
+        <dep.spring-security.version>5.2.4.RELEASE</dep.spring-security.version>
+        <dep.otj-core.version>5.2.0</dep.otj-core.version>
+        <dep.otj-jvm.version>5.2.0</dep.otj-jvm.version>
+        <dep.otj-scopes.version>5.2.0</dep.otj-scopes.version>
+        <dep.otj-jackson.version>5.2.0</dep.otj-jackson.version>
+        <dep.otj-spring.version>5.2.0</dep.otj-spring.version>
+        <dep.otj-httpheaders.version>5.2.1</dep.otj-httpheaders.version>
+        <dep.otj-executors.version>5.2.0</dep.otj-executors.version>
+        <dep.otj-logging.version>5.2.0</dep.otj-logging.version>
+        <dep.otj-conservedheaders.version>5.2.0</dep.otj-conservedheaders.version>
+        <dep.otj-metrics.version>5.2.0</dep.otj-metrics.version>
+        <dep.otj-jaxrs.version>5.2.0</dep.otj-jaxrs.version>
+        <dep.otj-filterorder.version>5.2.0</dep.otj-filterorder.version>
+        <dep.otj-pausedetector.version>5.2.0</dep.otj-pausedetector.version>
+        <dep.scala.version>2.12.10</dep.scala.version>
+        <dep.metrics4.version>4.1.7</dep.metrics4.version>
+        <dep.mockito.version>3.3.3</dep.mockito.version>
+        <dep.otj-server.version>5.2.0</dep.otj-server.version>
+        <dep.otj-rest-template.version>5.2.0</dep.otj-rest-template.version>
+        <dep.otj-webclient.version>5.2.0</dep.otj-webclient.version>
+        <dep.kafka.version>2.4.1</dep.kafka.version>
+        <dep.spring-kafka.version>2.4.6.RELEASE</dep.spring-kafka.version>
+
+
         <!-- Open source requires JavaDocs -->
         <basepom.oss.skip-scala-doc>true</basepom.oss.skip-scala-doc>
         <basepom.check.skip-javadoc>false</basepom.check.skip-javadoc>
@@ -88,6 +103,11 @@
                         <artifactId>guava</artifactId>
                     </exclusion>
                 </exclusions>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.kafka</groupId>
+                <artifactId>kafka-streams-test-utils</artifactId>
+                <version>${dep.kafka.version}</version>
             </dependency>
 
         </dependencies>
