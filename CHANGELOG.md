@@ -1,6 +1,10 @@
 otj-kafka changelog
 ===================
 
+5.2.1
+----
+* No changes, was testing Nexus
+
 5.2.0
 ------
 * Added a supplier() method. If you think you'll need to create the same consumer or producer
