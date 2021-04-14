@@ -19,7 +19,7 @@
     <packaging>pom</packaging>
     <parent>
         <groupId>com.opentable</groupId>
-        <artifactId>otj-parent-spring</artifactId>
+        <artifactId>otj-parent-dag-build</artifactId>
         <version>275-2.4.3-SNAPSHOT</version>
     </parent>
 
