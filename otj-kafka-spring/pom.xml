@@ -19,7 +19,7 @@
     <parent>
         <groupId>com.opentable.components</groupId>
         <artifactId>otj-kafka-parent</artifactId>
-        <version>5.2.2-SNAPSHOT</version>
+        <version>5.2.2-2.4.3-SNAPSHOT</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
@@ -100,12 +100,12 @@
         </dependency>
         <dependency>
             <groupId>org.apache.kafka</groupId>
-            <artifactId>kafka_2.12</artifactId>
+            <artifactId>kafka_2.13</artifactId>
             <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>org.apache.kafka</groupId>
-            <artifactId>kafka_2.12</artifactId>
+            <artifactId>kafka_2.13</artifactId>
             <classifier>test</classifier>
             <scope>test</scope>
         </dependency>

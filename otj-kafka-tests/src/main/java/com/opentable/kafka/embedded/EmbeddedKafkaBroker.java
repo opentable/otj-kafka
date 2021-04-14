@@ -180,7 +180,7 @@ public class EmbeddedKafkaBroker implements Closeable
 
     private static void retry(String description, RetryAction action) {
         final Instant start = Instant.now();
-        Exception last = null;
+        Exception last;
         while (true) {
             try {
                 action.run();

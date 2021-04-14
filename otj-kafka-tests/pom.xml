@@ -19,11 +19,11 @@
   <parent>
     <groupId>com.opentable.components</groupId>
     <artifactId>otj-kafka-parent</artifactId>
-    <version>5.2.2-SNAPSHOT</version>
+    <version>5.2.2-2.4.3-SNAPSHOT</version>
   </parent>
 
   <artifactId>otj-kafka-tests</artifactId>
-  <version>5.2.2-SNAPSHOT</version>
+  <version>5.2.2-2.4.3-SNAPSHOT</version>
   <description>Kafka integrations component (test)</description>
 
   <dependencies>
@@ -34,7 +34,7 @@
 
     <dependency>
       <groupId>org.apache.kafka</groupId>
-      <artifactId>kafka_2.12</artifactId>
+      <artifactId>kafka_2.13</artifactId>
     </dependency>
     <dependency>
       <groupId>org.apache.kafka</groupId>
@@ -66,6 +66,12 @@
     <dependency>
       <groupId>junit</groupId>
       <artifactId>junit</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>org.junit.vintage</groupId>
+      <artifactId>junit-vintage-engine</artifactId>
+      <scope>test</scope>
     </dependency>
   </dependencies>
 </project>
