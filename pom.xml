@@ -19,8 +19,8 @@
     <packaging>pom</packaging>
     <parent>
         <groupId>com.opentable</groupId>
-        <artifactId>otj-parent-dag-build</artifactId>
-        <version>286-2.4.3-SNAPSHOT</version>
+        <artifactId>otj-parent-spring</artifactId>
+        <version>286</version>
     </parent>
 
     <scm>
@@ -31,7 +31,10 @@
     </scm>
 
     <properties>
-
+        <dep.otj-rest-template.version>5.2.2</dep.otj-rest-template.version>
+        <dep.otj-webclient.version>5.2.2</dep.otj-webclient.version>
+        <dep.otj-server.version>5.2.8</dep.otj-server.version>
+        
         <!-- Open source requires JavaDocs -->
         <basepom.oss.skip-scala-doc>true</basepom.oss.skip-scala-doc>
         <basepom.check.skip-javadoc>false</basepom.check.skip-javadoc>
@@ -42,7 +45,7 @@
 
     <groupId>com.opentable.components</groupId>
     <artifactId>otj-kafka-parent</artifactId>
-    <version>5.2.2-2.4.3-SNAPSHOT</version>
+    <version>5.2.2-SNAPSHOT</version>
     <description>Kafka integrations component (parent)</description>
 
     <dependencyManagement>
