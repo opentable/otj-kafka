@@ -20,7 +20,7 @@
     <parent>
         <groupId>com.opentable</groupId>
         <artifactId>otj-parent-dag-build</artifactId>
-        <version>283-2.4.3-SNAPSHOT</version>
+        <version>286-2.4.3-SNAPSHOT</version>
     </parent>
 
     <scm>
