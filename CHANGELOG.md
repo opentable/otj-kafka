@@ -1,6 +1,14 @@
 otj-kafka changelog
 ===================
 
+5.2.3
+-----
+* Add support for compression in DSL.
+
+5.2.2
+------
+* Spring boot 2.4.5 recompile. Now incompatible with prior to Kafka 2.4
+
 5.2.1
 ----
 * No changes, was testing Nexus

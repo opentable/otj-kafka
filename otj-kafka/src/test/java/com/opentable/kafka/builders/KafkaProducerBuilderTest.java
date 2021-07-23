@@ -31,6 +31,7 @@ import org.apache.kafka.clients.producer.ProducerInterceptor;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.clients.producer.RecordMetadata;
 import org.apache.kafka.clients.producer.internals.DefaultPartitioner;
+import org.apache.kafka.common.record.CompressionType;
 import org.apache.kafka.common.security.auth.SecurityProtocol;
 import org.apache.kafka.common.serialization.IntegerSerializer;
 import org.apache.kafka.common.serialization.StringSerializer;
@@ -155,6 +156,27 @@ public class KafkaProducerBuilderTest {
         p.close();
         finalProperties = builder.getFinalProperties();
         assertThat(finalProperties.get(ProducerConfig.INTERCEPTOR_CLASSES_CONFIG)).isEqualTo(Foo.class.getName());
+
+    }
+
+    @Test
+    public void testCompression() {
+        // without
+        KafkaProducerBuilder<Integer, String> builder = getBuilder("testme");
+        try (Producer<Integer, String> p = builder
+                .build()) {
+            Map<String, Object> finalProperties = builder.getFinalProperties();
+            assertThat(finalProperties.get(ProducerConfig.COMPRESSION_TYPE_CONFIG)).isNull();
+        }
+
+
+        builder = getBuilder("testme");
+        try (Producer<Integer, String> p = builder
+                .withCompressionType(CompressionType.SNAPPY)
+                .build()) {
+            Map<String, Object> finalProperties = builder.getFinalProperties();
+            assertThat(finalProperties.get(ProducerConfig.COMPRESSION_TYPE_CONFIG)).isEqualTo(CompressionType.SNAPPY.name);
+        }
 
     }
 
