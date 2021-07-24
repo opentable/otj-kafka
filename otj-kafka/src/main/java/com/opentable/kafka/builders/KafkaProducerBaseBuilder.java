@@ -26,7 +26,6 @@ import org.apache.kafka.clients.producer.Partitioner;
 import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.clients.producer.ProducerInterceptor;
 import org.apache.kafka.clients.producer.internals.DefaultPartitioner;
-import org.apache.kafka.common.record.CompressionType;
 import org.apache.kafka.common.serialization.Serializer;
 
 import com.opentable.kafka.logging.LoggingProducerInterceptor;
@@ -40,7 +39,7 @@ public abstract class KafkaProducerBaseBuilder<SELF extends KafkaProducerBaseBui
     private OptionalInt maxInfFlight = OptionalInt.empty();
     private OptionalLong lingerMS = OptionalLong.empty();
     private OptionalLong bufferMemory = OptionalLong.empty();
-    private Optional<CompressionType> compressionType = Optional.empty();
+    private Optional<Compression> compressionType = Optional.empty();
     private Class<? extends Partitioner> partitioner = DefaultPartitioner.class;
     private Class<? extends Serializer<K>> keySe;
     private Class<? extends Serializer<V>> valueSe;
@@ -57,7 +56,7 @@ public abstract class KafkaProducerBaseBuilder<SELF extends KafkaProducerBaseBui
         return self();
     }
 
-    public SELF withCompressionType(CompressionType val) {
+    public SELF withCompressionType(Compression val) {
         this.compressionType = Optional.ofNullable(val);
         return self();
     }
@@ -156,7 +155,7 @@ public abstract class KafkaProducerBaseBuilder<SELF extends KafkaProducerBaseBui
         lingerMS.ifPresent(l -> this.addProperty(ProducerConfig.LINGER_MS_CONFIG, l));
         ackType.ifPresent(ack -> this.addProperty(ProducerConfig.ACKS_CONFIG, ack.value));
         retries.ifPresent(retries -> this.addProperty(CommonClientConfigs.RETRIES_CONFIG, retries));
-        compressionType.ifPresent(ct -> this.addProperty(ProducerConfig.COMPRESSION_TYPE_CONFIG, ct.name));
+        compressionType.ifPresent(ct -> this.addProperty(ProducerConfig.COMPRESSION_TYPE_CONFIG, ct.getKafkaCompressionType()));
 
         if (keySe != null) {
             this.addProperty(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, keySe.getName());
@@ -183,6 +182,23 @@ public abstract class KafkaProducerBaseBuilder<SELF extends KafkaProducerBaseBui
 
         AckType(String value) {
             this.value = value;
+        }
+    }
+
+    public enum Compression {
+        NONE(org.apache.kafka.common.record.CompressionType.NONE),
+        SNAPPY(org.apache.kafka.common.record.CompressionType.SNAPPY),
+        LZ4(org.apache.kafka.common.record.CompressionType.LZ4),
+        ZSTD(org.apache.kafka.common.record.CompressionType.ZSTD);
+
+        private final org.apache.kafka.common.record.CompressionType compressionType;
+
+        Compression(org.apache.kafka.common.record.CompressionType compressionType) {
+            this.compressionType = compressionType;
+        }
+
+        public String getKafkaCompressionType() {
+            return compressionType.name;
         }
     }
 }

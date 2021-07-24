@@ -31,7 +31,6 @@ import org.apache.kafka.clients.producer.ProducerInterceptor;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.clients.producer.RecordMetadata;
 import org.apache.kafka.clients.producer.internals.DefaultPartitioner;
-import org.apache.kafka.common.record.CompressionType;
 import org.apache.kafka.common.security.auth.SecurityProtocol;
 import org.apache.kafka.common.serialization.IntegerSerializer;
 import org.apache.kafka.common.serialization.StringSerializer;
@@ -172,10 +171,10 @@ public class KafkaProducerBuilderTest {
 
         builder = getBuilder("testme");
         try (Producer<Integer, String> p = builder
-                .withCompressionType(CompressionType.SNAPPY)
+                .withCompressionType(KafkaProducerBaseBuilder.Compression.SNAPPY)
                 .build()) {
             Map<String, Object> finalProperties = builder.getFinalProperties();
-            assertThat(finalProperties.get(ProducerConfig.COMPRESSION_TYPE_CONFIG)).isEqualTo(CompressionType.SNAPPY.name);
+            assertThat(finalProperties.get(ProducerConfig.COMPRESSION_TYPE_CONFIG)).isEqualTo(KafkaProducerBaseBuilder.Compression.SNAPPY.getKafkaCompressionType());
         }
 
     }
