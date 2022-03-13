@@ -35,6 +35,7 @@ import javax.annotation.PreDestroy;
 
 import com.google.common.base.Preconditions;
 
+import com.google.common.base.Throwables;
 import org.apache.kafka.clients.admin.AdminClient;
 import org.apache.kafka.clients.admin.AdminClientConfig;
 import org.apache.kafka.clients.admin.NewTopic;
@@ -44,6 +45,7 @@ import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.common.KafkaException;
 import org.apache.kafka.common.PartitionInfo;
+import org.apache.kafka.common.errors.UnknownTopicOrPartitionException;
 import org.apache.kafka.common.serialization.Deserializer;
 import org.apache.kafka.common.serialization.Serdes;
 import org.apache.kafka.common.serialization.Serializer;
@@ -124,9 +126,17 @@ public class EmbeddedKafkaBroker implements Closeable
     private void maybeCreateConsumerOffsets() throws InterruptedException {
         final String consumerOffsets = "__consumer_offsets";
         retry("create consumer offsets", () -> {
-            Map<String, TopicDescription> description = admin.describeTopics(Collections.singleton(consumerOffsets)).all().get(10, TimeUnit.SECONDS);
-            if (description.isEmpty()) {
-                createTopic(consumerOffsets);
+            try {
+                Map<String, TopicDescription> description = admin.describeTopics(Collections.singleton(consumerOffsets)).all().get(10, TimeUnit.SECONDS);
+                LOG.info("topic {} already exists, size {}", consumerOffsets, description.size());
+            } catch (ExecutionException executionException) {
+                if (Throwables.getRootCause(executionException) instanceof UnknownTopicOrPartitionException) {
+                    LOG.info("topic not found, will try to create topic {}", consumerOffsets);
+                    createTopic(consumerOffsets);
+                    return;
+                }
+                // if we get here, then it's not an exception we know how to handle, thus rethrow
+                throw executionException;
             }
         });
     }
@@ -183,6 +193,7 @@ public class EmbeddedKafkaBroker implements Closeable
         Exception last;
         while (true) {
             try {
+                LOG.info("start {}", description);
                 action.run();
                 LOG.info("{} after {}", description, Duration.between(start, Instant.now()));
                 return;
