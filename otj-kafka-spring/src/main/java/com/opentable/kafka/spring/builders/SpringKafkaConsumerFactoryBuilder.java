@@ -27,6 +27,7 @@ import org.springframework.kafka.config.KafkaListenerContainerFactory;
 import org.springframework.kafka.core.ConsumerFactory;
 import org.springframework.kafka.core.DefaultKafkaConsumerFactory;
 import org.springframework.kafka.listener.BatchErrorHandler;
+import org.springframework.kafka.listener.CommonErrorHandler;
 import org.springframework.kafka.listener.ConcurrentMessageListenerContainer;
 import org.springframework.kafka.listener.ContainerProperties;
 import org.springframework.kafka.listener.ContainerProperties.AckMode;
@@ -272,7 +273,18 @@ public class SpringKafkaConsumerFactoryBuilder<K, V>  extends KafkaConsumerBaseB
         pollTimeout.map(Duration::toMillis).ifPresent(containerProperties::setPollTimeout);
         ackMode.ifPresent(containerProperties::setAckMode);
         syncCommits.ifPresent(containerProperties::setSyncCommits);
-        ackOnError.ifPresent(containerProperties::setAckOnError);
+
+        factory.setCommonErrorHandler(new CommonErrorHandler() {
+            @Override
+            public boolean isAckAfterHandle() {
+                return ackOnError.orElse(false);
+            }
+
+            @Override
+            public boolean remainingRecords() {
+                return ackOnError.orElse(false);
+            }
+        });
 
         concurrency.ifPresent(factory::setConcurrency);
         batchListener.ifPresent(factory::setBatchListener);
