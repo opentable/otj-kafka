@@ -46,8 +46,9 @@ import com.opentable.kafka.spring.builders.SpringKafkaConsumerFactoryBuilderTest
 
 @ContextConfiguration(classes = Config.class)
 @TestPropertySource(properties = {
-    "ot.kafka.consumer.test.ack-mode=MANUAL",
-    "ot.kafka.consumer.test.concurrency=1"
+        "ot.kafka.consumer.test.ack-mode=MANUAL",
+        "ot.kafka.consumer.test.concurrency=1",
+        "spring.main.allow-circular-references=true"
 })
 public class SpringKafkaConsumerFactoryBuilderTest extends AbstractTest {
 

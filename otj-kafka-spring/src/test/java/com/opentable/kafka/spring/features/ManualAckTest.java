@@ -40,6 +40,7 @@ import org.springframework.kafka.listener.ContainerProperties.AckMode;
 import org.springframework.kafka.support.Acknowledgment;
 import org.springframework.kafka.test.EmbeddedKafkaBroker;
 import org.springframework.test.context.ContextConfiguration;
+import org.springframework.test.context.TestPropertySource;
 import org.springframework.util.concurrent.SettableListenableFuture;
 
 import com.opentable.kafka.builders.KafkaConsumerBuilder;
@@ -47,6 +48,7 @@ import com.opentable.kafka.spring.AbstractTest;
 import com.opentable.kafka.spring.builders.KafkaFactoryBuilderFactoryBean;
 
 @ContextConfiguration(classes = ManualAckTest.Config.class)
+@TestPropertySource(properties = { "spring.main.allow-circular-references=true" })
 public class ManualAckTest extends AbstractTest {
 
 
