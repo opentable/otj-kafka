@@ -47,6 +47,7 @@ import org.springframework.messaging.handler.annotation.Headers;
 import org.springframework.messaging.handler.annotation.Payload;
 import org.springframework.messaging.support.MessageBuilder;
 import org.springframework.test.context.ContextConfiguration;
+import org.springframework.test.context.TestPropertySource;
 import org.springframework.util.concurrent.SettableListenableFuture;
 
 import com.opentable.conservedheaders.ConservedHeader;
@@ -55,6 +56,7 @@ import com.opentable.kafka.spring.AbstractTest;
 import com.opentable.kafka.spring.builders.KafkaFactoryBuilderFactoryBean;
 
 @ContextConfiguration(classes = HeadersTest.Config.class)
+@TestPropertySource(properties = { "spring.main.allow-circular-references=true" })
 public class HeadersTest extends AbstractTest {
 
 

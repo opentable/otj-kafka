@@ -45,8 +45,10 @@ import org.springframework.test.context.ContextConfiguration;
 import com.opentable.kafka.builders.KafkaConsumerBuilder;
 import com.opentable.kafka.spring.AbstractTest;
 import com.opentable.kafka.spring.builders.KafkaFactoryBuilderFactoryBean;
+import org.springframework.test.context.TestPropertySource;
 
 @ContextConfiguration(classes = BatchListenerTest.Config.class)
+@TestPropertySource(properties = { "spring.main.allow-circular-references=true" })
 public class BatchListenerTest extends AbstractTest {
 
 
