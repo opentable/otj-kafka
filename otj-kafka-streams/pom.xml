@@ -19,11 +19,11 @@
   <parent>
     <groupId>com.opentable.components</groupId>
     <artifactId>otj-kafka-parent</artifactId>
-    <version>5.2.3</version>
+    <version>5.2.4-SNAPSHOT</version>
   </parent>
 
   <artifactId>otj-kafka-streams</artifactId>
-  <version>5.2.3</version>
+  <version>5.2.4-SNAPSHOT</version>
   <description>Kafka streams integrations component</description>
 
   <dependencies>
