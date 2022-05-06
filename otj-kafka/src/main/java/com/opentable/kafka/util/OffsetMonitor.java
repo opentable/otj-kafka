@@ -68,6 +68,7 @@ public class OffsetMonitor implements Closeable {
     }
 
     @Override
+    @SuppressWarnings("PMD.UseTryWithResources")
     public void close() {
         try {
             consumer.close();

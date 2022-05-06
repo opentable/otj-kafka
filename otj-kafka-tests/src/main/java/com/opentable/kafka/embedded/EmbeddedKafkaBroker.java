@@ -143,6 +143,7 @@ public class EmbeddedKafkaBroker implements Closeable
 
     @Override
     @PreDestroy
+    @SuppressWarnings("PMD.UseTryWithResources")
     public void close()
     {
         try {
