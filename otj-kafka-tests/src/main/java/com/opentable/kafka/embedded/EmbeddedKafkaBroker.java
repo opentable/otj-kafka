@@ -33,6 +33,7 @@ import java.util.concurrent.TimeoutException;
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 
+import com.google.common.base.Preconditions;
 import com.google.common.base.Throwables;
 
 import org.apache.kafka.clients.admin.AdminClient;
@@ -255,8 +256,9 @@ public class EmbeddedKafkaBroker implements Closeable
         return config;
     }
 
-        public String getKafkaBrokerConnect()
+    public String getKafkaBrokerConnect()
     {
+        Preconditions.checkState(kafka !=  null, "broker not started yet");
         return "localhost:" + kafka.boundPort(ListenerName.normalised("PLAINTEXT"));
     }
 
