@@ -69,7 +69,6 @@ public class EmbeddedKafkaBroker implements Closeable
     private EmbeddedZookeeper ezk;
     private KafkaServer kafka;
     private AdminClient admin;
-    //private int port;
     private final boolean autoCreateTopics;
     private final int nPartitions;
 
