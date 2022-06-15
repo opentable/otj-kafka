@@ -231,7 +231,6 @@ public class EmbeddedKafkaBroker implements Closeable
 
     private Properties createProperties() {
         Properties config = new Properties();
-        //config.put(AdminClientConfig.BOOTSTRAP_SERVERS_CONFIG, getKafkaBrokerConnect());
         config.put(KafkaConfig.ZkConnectProp(), ezk.getConnectString());
         config.put(KafkaConfig.ListenersProp(), "PLAINTEXT://localhost:0");
         config.put(KafkaConfig.LogDirProp(), stateDir.resolve("logs").toString());
