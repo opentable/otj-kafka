@@ -1,6 +1,10 @@
 otj-kafka changelog
 ===================
 
+5.2.4
+-----
+* Fix some flaky tests due to  races in `EmbeddedKafkaBroker`
+
 5.2.3
 -----
 * Parent POM-328 [changes see here]( https://github.com/opentable/otj-parent/blob/master/CHANGELOG.md#328)
