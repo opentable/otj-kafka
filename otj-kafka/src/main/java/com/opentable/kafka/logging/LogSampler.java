@@ -22,7 +22,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import io.github.bucket4j.Bandwidth;
-import io.github.bucket4j.Bucket4j;
+import io.github.bucket4j.Bucket;
 import io.github.bucket4j.local.LocalBucket;
 
 /**
@@ -63,7 +63,7 @@ public abstract class LogSampler {
                 this.bucket = Optional.empty();
             } else {
                 limit = Bandwidth.simple(howOftenPerNSEconds, Duration.ofSeconds(nSeconds));
-                this.bucket = Optional.ofNullable(Bucket4j.builder().addLimit(limit).build());
+                this.bucket = Optional.ofNullable(Bucket.builder().addLimit(limit).build());
             }
         }
 

@@ -50,7 +50,6 @@ import org.slf4j.LoggerFactory;
 
 import io.github.bucket4j.Bandwidth;
 import io.github.bucket4j.Bucket;
-import io.github.bucket4j.Bucket4j;
 import io.github.bucket4j.Refill;
 
 import com.opentable.concurrent.OTExecutors;
@@ -99,7 +98,7 @@ public class OffsetMetrics implements Closeable {
     static final String PREFIX = "kafka.";
     private static final Logger LOG = LoggerFactory.getLogger(OffsetMetrics.class);
 
-    private final Bucket logLimitBucket = Bucket4j
+    private final Bucket logLimitBucket = Bucket
             .builder()
             .addLimit(Bandwidth.classic(6, Refill.greedy(1, Duration.ofMinutes(10))))
             .build();
