@@ -1,6 +1,10 @@
 otj-kafka changelog
 ===================
 
+5.2.5
+-----
+* recompile to compensate for binary compatibility break in bucket4j
+
 5.2.4
 -----
 * Fix some flaky tests due to  races in `EmbeddedKafkaBroker`

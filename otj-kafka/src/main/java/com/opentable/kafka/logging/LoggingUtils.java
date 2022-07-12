@@ -41,7 +41,6 @@ import org.springframework.core.io.support.PropertiesLoaderUtils;
 
 import io.github.bucket4j.Bandwidth;
 import io.github.bucket4j.Bucket;
-import io.github.bucket4j.Bucket4j;
 
 import com.opentable.conservedheaders.ConservedHeader;
 import com.opentable.kafka.builders.EnvironmentProvider;
@@ -109,7 +108,7 @@ class LoggingUtils {
 
 
     private Bucket getBucket(Bandwidth bandWidth) {
-        return Bucket4j.builder().addLimit(bandWidth).build();
+        return Bucket.builder().addLimit(bandWidth).build();
     }
 
     @SuppressWarnings("OptionalUsedAsFieldOrParameterType")
