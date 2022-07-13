@@ -140,8 +140,8 @@ public class HeadersTest extends AbstractTest {
     @Test
     public void headersSendReceiveTest() throws ExecutionException, InterruptedException, TimeoutException {
         final UUID req = UUID.randomUUID();
-        MDC.put(ConservedHeader.REQUEST_ID.getLogName(), req.toString());
-        MDC.put(ConservedHeader.CORRELATION_ID.getLogName(), "foo");
+        MDC.put(ConservedHeader.REQUEST_ID.getMDCKey(), req.toString());
+        MDC.put(ConservedHeader.CORRELATION_ID.getMDCKey(), "foo");
         kafkaTemplate1.send(MessageBuilder
             .withPayload("1")
             .setHeader("X-Custom-Header", "X-Custom-Header")
