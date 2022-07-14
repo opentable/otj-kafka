@@ -31,9 +31,9 @@
     </scm>
 
     <properties>
-        <dep.otj-conservedheaders.version>5.2.4-SNAPSHOT</dep.otj-conservedheaders.version>
-        <dep.otj-logging.version>5.3.1-SNAPSHOT</dep.otj-logging.version>
-        <dep.otj-metrics.version>5.3.1-SNAPSHOT</dep.otj-metrics.version>
+        <dep.otj-conservedheaders.version>5.2.4</dep.otj-conservedheaders.version>
+        <dep.otj-logging.version>5.3.1</dep.otj-logging.version>
+        <dep.otj-metrics.version>5.3.1</dep.otj-metrics.version>
 
         <!-- Open source requires JavaDocs -->
         <basepom.oss.skip-scala-doc>true</basepom.oss.skip-scala-doc>
