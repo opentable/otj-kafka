@@ -217,7 +217,7 @@ class LoggingUtils {
      * @return value
      */
     private String getHeaderValue(final ConservedHeader header) {
-        return MDC.get(header.getLogName());
+        return MDC.get(header.getMDCKey());
     }
 
     /**
@@ -248,8 +248,8 @@ class LoggingUtils {
         // Copy conserved headers over. We keep their names the same here.
         final Headers headers = record.headers();
         Arrays.asList(ConservedHeader.values()).forEach((header) -> {
-            if (getHeaderValue(header) != null) {
-                headers.add(header.getLogName(), getHeaderValue(header).getBytes(CHARSET));
+            if (getHeaderValue(header) != null) { // if not in MDC
+                headers.add(header.getMDCKey(), getHeaderValue(header).getBytes(CHARSET));
             }
         });
         /*

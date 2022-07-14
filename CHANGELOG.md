@@ -1,6 +1,11 @@
 otj-kafka changelog
 ===================
 
+5.2.6
+-----
+* POM 344
+* OTPL-6894 minor tweaks
+
 5.2.5
 -----
 * recompile to compensate for binary compatibility break in bucket4j
