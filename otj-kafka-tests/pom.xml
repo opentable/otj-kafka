@@ -19,11 +19,11 @@
   <parent>
     <groupId>com.opentable.components</groupId>
     <artifactId>otj-kafka-parent</artifactId>
-    <version>5.2.7</version>
+    <version>5.2.8-SNAPSHOT</version>
   </parent>
 
   <artifactId>otj-kafka-tests</artifactId>
-  <version>5.2.7</version>
+  <version>5.2.8-SNAPSHOT</version>
   <description>Kafka integrations component (test)</description>
 
   <dependencies>
