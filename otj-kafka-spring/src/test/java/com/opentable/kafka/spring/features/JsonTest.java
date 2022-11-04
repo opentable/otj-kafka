@@ -54,8 +54,9 @@ import com.opentable.kafka.spring.builders.KafkaFactoryBuilderFactoryBean;
 
 @ContextConfiguration(classes = {JsonTest.Config.class, OpenTableJacksonConfiguration.class})
 @TestPropertySource(properties = {
-    "ot.kafka.consumer.test.ack-mode=MANUAL",
-    "ot.kafka.consumer.test.concurrency=1"
+        "ot.kafka.consumer.test.ack-mode=MANUAL",
+        "ot.kafka.consumer.test.concurrency=1",
+        "spring.main.allow-circular-references=true"
 })
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
 public class JsonTest extends AbstractTest {

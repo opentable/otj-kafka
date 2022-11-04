@@ -20,7 +20,7 @@
     <parent>
         <groupId>com.opentable</groupId>
         <artifactId>otj-parent-spring</artifactId>
-        <version>287</version>
+        <version>344</version>
     </parent>
 
     <scm>
@@ -31,17 +31,20 @@
     </scm>
 
     <properties>
+        <dep.otj-conservedheaders.version>5.2.4</dep.otj-conservedheaders.version>
+        <dep.otj-logging.version>5.3.1</dep.otj-logging.version>
+        <dep.otj-metrics.version>5.3.1</dep.otj-metrics.version>
+
         <!-- Open source requires JavaDocs -->
         <basepom.oss.skip-scala-doc>true</basepom.oss.skip-scala-doc>
         <basepom.check.skip-javadoc>false</basepom.check.skip-javadoc>
         <basepom.check.fail-javadoc>false</basepom.check.fail-javadoc>
-        <dep.curator.version>4.2.0</dep.curator.version>
-
+        <dep.curator.version>5.2.0</dep.curator.version>
     </properties>
 
     <groupId>com.opentable.components</groupId>
     <artifactId>otj-kafka-parent</artifactId>
-    <version>5.2.3-SNAPSHOT</version>
+    <version>5.2.8-SNAPSHOT</version>
     <description>Kafka integrations component (parent)</description>
 
     <dependencyManagement>

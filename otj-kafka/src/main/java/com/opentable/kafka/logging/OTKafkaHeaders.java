@@ -29,7 +29,7 @@ public enum OTKafkaHeaders {
     REFERRING_HOST("ot-kafkalibrary-referring-host"),
     REFERRING_INSTANCE_NO("ot-kafkalibrary-referring-instance-no"),
     REFERRING_SERVICE("ot-kafkalibrary-referring-service"),
-    REQUEST_ID(ConservedHeader.REQUEST_ID.getLogName()),
+    REQUEST_ID(ConservedHeader.REQUEST_ID.getMDCKey()),
     TRACE_FLAG("ot-kafkalibrary-trace-flag"),
     ENV("ot-kafkalibrary-env"),
     ENV_FLAVOR("ot-kafkalibrary-env-flavor"),

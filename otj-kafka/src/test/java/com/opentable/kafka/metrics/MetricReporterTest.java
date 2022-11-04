@@ -64,7 +64,7 @@ import com.opentable.service.ServiceInfo;
 })
 public class MetricReporterTest {
 
-    public static final String REQUEST_ID_KEY = ConservedHeader.REQUEST_ID.getLogName();
+    public static final String REQUEST_ID_KEY = ConservedHeader.REQUEST_ID.getMDCKey();
 
     @Rule
     public final ReadWriteRule rw = new ReadWriteRule();

@@ -180,7 +180,7 @@ public class LoggingInterceptorsTest {
         props.forEach(builder::withProperty);
         Producer<String, String> producer = builder.build();
         final UUID req = UUID.randomUUID();
-        MDC.put(ConservedHeader.REQUEST_ID.getLogName(), req.toString());
+        MDC.put(ConservedHeader.REQUEST_ID.getMDCKey(), req.toString());
         writeTestRecords(1, numTestRecords, producer);
         List<EdaMessageTraceV1> edaMessageTraceV1s = loggingUtils.getMessageTraceV1s();
         Assertions.assertThat(edaMessageTraceV1s).hasSize(numTestRecords);
@@ -211,7 +211,7 @@ public class LoggingInterceptorsTest {
         props.forEach(builder::withProperty);
         Producer<String, String> producer = builder.build();
         final UUID req = UUID.randomUUID();
-        MDC.put(ConservedHeader.REQUEST_ID.getLogName(), req.toString());
+        MDC.put(ConservedHeader.REQUEST_ID.getMDCKey(), req.toString());
         writeTestRecords(1, numTestRecords, producer);
         List<EdaMessageTraceV1> edaMessageTraceV1s = loggingUtils.getMessageTraceV1s();
         Assertions.assertThat(edaMessageTraceV1s).hasSize(numTestRecords);
@@ -262,8 +262,8 @@ public class LoggingInterceptorsTest {
     public void consumerTest() {
         final int numTestRecords = 100;
         final UUID req = UUID.randomUUID();
-        MDC.put(ConservedHeader.REQUEST_ID.getLogName(), req.toString());
-        MDC.put(ConservedHeader.CORRELATION_ID.getLogName(), "foo");
+        MDC.put(ConservedHeader.REQUEST_ID.getMDCKey(), req.toString());
+        MDC.put(ConservedHeader.CORRELATION_ID.getMDCKey(), "foo");
         writeTestRecords(1, numTestRecords, createProducer(StringSerializer.class, StringSerializer.class));
         ConsumerRecords<String, String> r = readTestRecords(numTestRecords, createConsumer("test", StringDeserializer.class, StringDeserializer.class));
         // We demonstrate here that conserved headers + environment + a random added header all propagate.
@@ -272,7 +272,7 @@ public class LoggingInterceptorsTest {
             Headers headers = rec.headers();
             Assertions.assertThat(Integer.parseInt(new String(headers.lastHeader("myIndex").value(), StandardCharsets.UTF_8))).isEqualTo(expected);
             expected++;
-            Assertions.assertThat(new String(headers.lastHeader(ConservedHeader.CORRELATION_ID.getLogName()).value(), StandardCharsets.UTF_8)).isEqualTo("foo");
+            Assertions.assertThat(new String(headers.lastHeader(ConservedHeader.CORRELATION_ID.getMDCKey()).value(), StandardCharsets.UTF_8)).isEqualTo("foo");
             Assertions.assertThat(getHeaderValue(headers, OTKafkaHeaders.REFERRING_SERVICE)).isEqualTo(environmentProvider.getReferringService());
             Assertions.assertThat(getHeaderValue(headers, OTKafkaHeaders.ENV)).isEqualTo(environmentProvider.getEnvironment());
             Assertions.assertThat(getHeaderValue(headers, OTKafkaHeaders.ENV_FLAVOR)).isEqualTo(environmentProvider.getEnvironmentFlavor());
@@ -286,7 +286,7 @@ public class LoggingInterceptorsTest {
         final int numTestRecords = 100;
         final UUID req = UUID.randomUUID();
         loggingUtils = new CapturingLoggingUtils(environmentProvider);
-        MDC.put(ConservedHeader.REQUEST_ID.getLogName(), req.toString());
+        MDC.put(ConservedHeader.REQUEST_ID.getMDCKey(), req.toString());
         writeTestRecords(1, numTestRecords, createProducer(StringSerializer.class, StringSerializer.class));
         Map<String, Object> props = ImmutableMap.of(
                 LoggingInterceptorConfig.LOGGING_ENV_REF + "_TEST", loggingUtils,
@@ -327,7 +327,7 @@ public class LoggingInterceptorsTest {
         final int numTestRecords = 100;
         final UUID req = UUID.randomUUID();
         loggingUtils = new CapturingLoggingUtils(environmentProvider);
-        MDC.put(ConservedHeader.REQUEST_ID.getLogName(), req.toString());
+        MDC.put(ConservedHeader.REQUEST_ID.getMDCKey(), req.toString());
         writeTestRecords(1, numTestRecords, createProducer(StringSerializer.class, StringSerializer.class));
         Map<String, Object> props = ImmutableMap.of(
             LoggingInterceptorConfig.LOGGING_ENV_REF + "_TEST", loggingUtils,

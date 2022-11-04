@@ -1,13 +1,26 @@
 otj-kafka changelog
 ===================
 
-5.2.3
+5.2.7
 -----
 * Add support for compression in DSL.
 
-5.2.2
-------
-* Spring boot 2.4.5 recompile. Now incompatible with prior to Kafka 2.4
+5.2.6
+-----
+* POM 344
+* OTPL-6894 minor tweaks
+
+5.2.5
+-----
+* recompile to compensate for binary compatibility break in bucket4j
+
+5.2.4
+-----
+* Fix some flaky tests due to  races in `EmbeddedKafkaBroker`
+
+5.2.3
+-----
+* Parent POM-328 [changes see here]( https://github.com/opentable/otj-parent/blob/master/CHANGELOG.md#328)
 
 5.2.1
 ----

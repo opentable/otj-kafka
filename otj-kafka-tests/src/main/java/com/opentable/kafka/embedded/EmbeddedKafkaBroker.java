@@ -16,7 +16,6 @@ package com.opentable.kafka.embedded;
 import java.io.Closeable;
 import java.io.IOException;
 import java.io.UncheckedIOException;
-import java.net.ServerSocket;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
@@ -25,6 +24,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Properties;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
@@ -34,18 +34,19 @@ import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 
 import com.google.common.base.Preconditions;
+import com.google.common.base.Throwables;
 
 import org.apache.kafka.clients.admin.AdminClient;
 import org.apache.kafka.clients.admin.AdminClientConfig;
 import org.apache.kafka.clients.admin.NewTopic;
 import org.apache.kafka.clients.admin.TopicDescription;
-import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.common.KafkaException;
-import org.apache.kafka.common.PartitionInfo;
+import org.apache.kafka.common.TopicPartitionInfo;
+import org.apache.kafka.common.errors.UnknownTopicOrPartitionException;
+import org.apache.kafka.common.network.ListenerName;
 import org.apache.kafka.common.serialization.Deserializer;
-import org.apache.kafka.common.serialization.Serdes;
 import org.apache.kafka.common.serialization.Serializer;
 import org.apache.kafka.common.serialization.StringDeserializer;
 import org.apache.kafka.common.serialization.StringSerializer;
@@ -60,7 +61,7 @@ import com.opentable.io.DeleteRecursively;
 public class EmbeddedKafkaBroker implements Closeable
 {
     private static final Logger LOG = LoggerFactory.getLogger(EmbeddedKafkaBroker.class);
-    private static final Duration TIMEOUT = Duration.ofSeconds(10);
+    private static final Duration GLOBAL_OPERATION_TIMEOUT = Duration.ofSeconds(10);
     private static final Duration LOOP_SLEEP = Duration.ofMillis(500);
 
     private final List<String> topicsToCreate;
@@ -68,7 +69,6 @@ public class EmbeddedKafkaBroker implements Closeable
     private EmbeddedZookeeper ezk;
     private KafkaServer kafka;
     private AdminClient admin;
-    private int port;
     private final boolean autoCreateTopics;
     private final int nPartitions;
 
@@ -103,7 +103,7 @@ public class EmbeddedKafkaBroker implements Closeable
 
         try {
             LOG.info("waiting for embedded kafka broker to become ready");
-            admin = AdminClient.create(createProperties());
+            admin = AdminClient.create(createAdminProperties());
             waitForCoordinator();
 
             LOG.info("About to create topics");
@@ -124,15 +124,24 @@ public class EmbeddedKafkaBroker implements Closeable
     private void maybeCreateConsumerOffsets() throws InterruptedException {
         final String consumerOffsets = "__consumer_offsets";
         retry("create consumer offsets", () -> {
-            Map<String, TopicDescription> description = admin.describeTopics(Collections.singleton(consumerOffsets)).all().get(10, TimeUnit.SECONDS);
-            if (description.isEmpty()) {
-                createTopic(consumerOffsets);
+            try {
+                Map<String, TopicDescription> description = admin.describeTopics(Collections.singleton(consumerOffsets)).all().get(10, TimeUnit.SECONDS);
+                LOG.info("topic {} already exists, size {}", consumerOffsets, description.size());
+            } catch (ExecutionException executionException) {
+                if (Throwables.getRootCause(executionException) instanceof UnknownTopicOrPartitionException) {
+                    LOG.info("topic not found, will try to create topic {}", consumerOffsets);
+                    createTopic(consumerOffsets);
+                    return;
+                }
+                // if we get here, then it's not an exception we know how to handle, thus rethrow
+                throw executionException;
             }
         });
     }
 
     @Override
     @PreDestroy
+    @SuppressWarnings("PMD.UseTryWithResources")
     public void close()
     {
         try {
@@ -148,28 +157,24 @@ public class EmbeddedKafkaBroker implements Closeable
             Files.walkFileTree(stateDir, DeleteRecursively.INSTANCE);
         } catch (IOException e) {
             LOG.error("while deleting {}", stateDir, e);
+            throw new RuntimeException(e);
         }
     }
 
     private void waitForTopics() throws InterruptedException {
-        LOG.info("waiting for topics");
         final Instant start = Instant.now();
-        final Properties props = new Properties();
-        props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, getKafkaBrokerConnect());
-        props.put(ConsumerConfig.GROUP_ID_CONFIG, "test-wait-for-topics");
-        props.put(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG, false);
-        props.put(ConsumerConfig.SESSION_TIMEOUT_MS_CONFIG, (int) TIMEOUT.toMillis());
-        final Deserializer<byte[]> deser = Serdes.ByteArray().deserializer();
-        try (KafkaConsumer<byte[], byte[]> consumer = new KafkaConsumer<>(props, deser, deser)) {
-            for (final String topic : topicsToCreate) {
-                retry(topic + " topic available", () -> {
-                    final List<PartitionInfo> parts = consumer.partitionsFor(topic);
-                    if (parts == null || parts.size() != nPartitions) {
-                        throw new KafkaException("partitions not ready yet: " + parts);
-                    }
-                });
+        LOG.info("waiting for topics");
+        retry("topics available", () -> {
+            Map<String, TopicDescription> res = admin.describeTopics(topicsToCreate).all().get();
+            for (String t : topicsToCreate) {
+                List<TopicPartitionInfo> partitions = Optional.ofNullable(res.get(t))
+                    .map(TopicDescription::partitions)
+                    .orElse(Collections.emptyList());
+                if (partitions.size() < nPartitions) {
+                    throw new KafkaException("partitions not ready yet (" + nPartitions + "): " + partitions);
+                }
             }
-        }
+        });
         LOG.info("topics ready, all having {} partition{}, took{}",
                 nPartitions, nPartitions != 1 ? "s" : "", Duration.between(start, Instant.now()));
     }
@@ -183,6 +188,7 @@ public class EmbeddedKafkaBroker implements Closeable
         Exception last;
         while (true) {
             try {
+                LOG.info("start {}", description);
                 action.run();
                 LOG.info("{} after {}", description, Duration.between(start, Instant.now()));
                 return;
@@ -212,30 +218,20 @@ public class EmbeddedKafkaBroker implements Closeable
             Thread.currentThread().interrupt();
             throw new RuntimeException("interrupted", e);
         }
-        if (Instant.now().isAfter(start.plus(TIMEOUT))) {
-            throw new RuntimeException("timed out", last);
+        if (Instant.now().isAfter(start.plus(GLOBAL_OPERATION_TIMEOUT))) {
+            throw new RuntimeException("operation timed out", last);
         }
     }
 
     private KafkaConfig createConfig()
     {
-        try (ServerSocket ss = new ServerSocket(0)) {
-            port = ss.getLocalPort();
-        } catch (IOException e) {
-            throw new UncheckedIOException(e);
-        }
-
-        Properties config = createProperties();
-        return new KafkaConfig(config);
+        return new KafkaConfig(createProperties());
     }
 
     private Properties createProperties() {
-        Preconditions.checkState(port > 0, "no port set yet");
-
         Properties config = new Properties();
-        config.put(AdminClientConfig.BOOTSTRAP_SERVERS_CONFIG, getKafkaBrokerConnect());
         config.put(KafkaConfig.ZkConnectProp(), ezk.getConnectString());
-        config.put(KafkaConfig.ListenersProp(), "PLAINTEXT://localhost:" + port);
+        config.put(KafkaConfig.ListenersProp(), "PLAINTEXT://localhost:0");
         config.put(KafkaConfig.LogDirProp(), stateDir.resolve("logs").toString());
         config.put(KafkaConfig.ZkConnectionTimeoutMsProp(), "10000");
         config.put(KafkaConfig.ReplicaSocketTimeoutMsProp(), "1500");
@@ -252,10 +248,16 @@ public class EmbeddedKafkaBroker implements Closeable
         return config;
     }
 
+    private Properties createAdminProperties() {
+        Properties config = createProperties();
+        config.put(AdminClientConfig.BOOTSTRAP_SERVERS_CONFIG, getKafkaBrokerConnect());
+        return config;
+    }
+
     public String getKafkaBrokerConnect()
     {
-        Preconditions.checkState(port > 0, "no port set yet");
-        return "localhost:" + port;
+        Preconditions.checkState(kafka !=  null, "broker not started yet");
+        return "localhost:" + kafka.boundPort(ListenerName.normalised("PLAINTEXT"));
     }
 
     public EmbeddedZookeeper getZookeeper() {
