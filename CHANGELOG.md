@@ -1,6 +1,10 @@
 otj-kafka changelog
 ===================
 
+5.2.7
+-----
+* Add support for compression in DSL.
+
 5.2.6
 -----
 * POM 344

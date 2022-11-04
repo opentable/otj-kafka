@@ -158,6 +158,27 @@ public class KafkaProducerBuilderTest {
 
     }
 
+    @Test
+    public void testCompression() {
+        // without
+        KafkaProducerBuilder<Integer, String> builder = getBuilder("testme");
+        try (Producer<Integer, String> p = builder
+                .build()) {
+            Map<String, Object> finalProperties = builder.getFinalProperties();
+            assertThat(finalProperties.get(ProducerConfig.COMPRESSION_TYPE_CONFIG)).isNull();
+        }
+
+
+        builder = getBuilder("testme");
+        try (Producer<Integer, String> p = builder
+                .withCompressionType(KafkaProducerBaseBuilder.Compression.SNAPPY)
+                .build()) {
+            Map<String, Object> finalProperties = builder.getFinalProperties();
+            assertThat(finalProperties.get(ProducerConfig.COMPRESSION_TYPE_CONFIG)).isEqualTo(KafkaProducerBaseBuilder.Compression.SNAPPY.getKafkaCompressionType());
+        }
+
+    }
+
     private KafkaProducerBuilder<Integer, String> getBuilder(String name) {
         return builderFactoryBean.producerBuilder(name)
                     .withBootstrapServer("localhost:8080")
