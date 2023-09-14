@@ -42,6 +42,7 @@ import com.opentable.service.AppInfo;
  * NOTE: Normally the right thing to do is to use automatic rebalancing (Kafka default), which is a proven
  * scalable strategy that elastically scales. Use this class ONLY if there is a reason.
  */
+@SuppressWarnings("PMD")
 public class InstanceKafkaPartitioningStrategy implements KafkaPartitioningStrategy {
         private static final Logger LOG = LoggerFactory.getLogger(InstanceKafkaPartitioningStrategy.class);
         private final BrokerConfig brokerConfig;
