@@ -1,5 +1,8 @@
 otj-kafka changelog
 ===================
+5.2.9
+-----
+* updated to use jetty 10.0.12 and sb2.7.15 (pom 374)
 
 5.2.7
 -----
