@@ -32,9 +32,13 @@
 
     <properties>
         <!-- Open source requires JavaDocs -->
-        <basepom.oss.skip-scala-doc>true</basepom.oss.skip-scala-doc>
-        <basepom.check.skip-javadoc>false</basepom.check.skip-javadoc>
+        <!-- new basepom uses this -->
+        <basepom.javadoc.skip>false</basepom.javadoc.skip>
         <basepom.check.fail-javadoc>false</basepom.check.fail-javadoc>
+
+<!--        <basepom.oss.skip-scala-doc>true</basepom.oss.skip-scala-doc>-->
+<!--        <basepom.check.skip-javadoc>false</basepom.check.skip-javadoc>-->
+
         <dep.curator.version>5.2.0</dep.curator.version>
     </properties>
 
