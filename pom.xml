@@ -35,6 +35,7 @@
         <!-- new basepom uses this -->
         <basepom.javadoc.skip>false</basepom.javadoc.skip>
         <basepom.check.fail-javadoc>false</basepom.check.fail-javadoc>
+        <basepom.oss.skip-scala-doc>true</basepom.oss.skip-scala-doc>
 
 <!--        <basepom.oss.skip-scala-doc>true</basepom.oss.skip-scala-doc>-->
 <!--        <basepom.check.skip-javadoc>false</basepom.check.skip-javadoc>-->
